@@ -1,0 +1,159 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>applyController.m</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="applyController.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>applyController.m</h1><!--introduction--><p><b>Summary:</b> Script to apply the learned controller to a (simulated) system</p><p>Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</p><p>Last modified: 2013-06-04</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">High-Level Steps</a></li><li><a href="#2">Code</a></li></ul></div><h2>High-Level Steps<a name="1"></a></h2><div><ol><li>Generate a single trajectory rollout by applying the controller</li><li>Generate many rollouts for testing the performance of the controller</li><li>Save the data</li></ol></div><h2>Code<a name="2"></a></h2><pre class="codeinput"><span class="comment">% 1. Generate trajectory rollout given the current policy</span>
+<span class="keyword">if</span> isfield(plant,<span class="string">'constraint'</span>), HH = maxH; <span class="keyword">else</span> HH = H; <span class="keyword">end</span>
+[xx, yy, realCost{j+J}, latent{j}] = <span class="keyword">...</span>
+  rollout(gaussian(mu0, S0), policy, HH, plant, cost);
+disp(xx);                           <span class="comment">% display states of observed trajectory</span>
+x = [x; xx]; y = [y; yy];                            <span class="comment">% augment training set</span>
+<span class="keyword">if</span> plotting.verbosity &gt; 0
+  <span class="keyword">if</span> ~ishandle(3); figure(3); <span class="keyword">else</span> set(0,<span class="string">'CurrentFigure'</span>,3); <span class="keyword">end</span>
+  hold <span class="string">on</span>; plot(1:length(realCost{J+j}),realCost{J+j},<span class="string">'r'</span>); drawnow;
+<span class="keyword">end</span>
+
+<span class="comment">% 2. Make many rollouts to test the controller quality</span>
+<span class="keyword">if</span> plotting.verbosity &gt; 1
+  lat = cell(1,10);
+  <span class="keyword">for</span> i=1:10
+    [~,~,~,lat{i}] = rollout(gaussian(mu0, S0), policy, HH, plant, cost);
+  <span class="keyword">end</span>
+
+  <span class="keyword">if</span> ~ishandle(4); figure(4); <span class="keyword">else</span> set(0,<span class="string">'CurrentFigure'</span>,4); <span class="keyword">end</span>; clf(4);
+
+  ldyno = length(dyno);
+  <span class="keyword">for</span> i=1:ldyno       <span class="comment">% plot the rollouts on top of predicted error bars</span>
+    subplot(ceil(ldyno/sqrt(ldyno)),ceil(sqrt(ldyno)),i); hold <span class="string">on</span>;
+    errorbar( 0:length(M{j}(i,:))-1, M{j}(i,:), <span class="keyword">...</span>
+      2*sqrt(squeeze(Sigma{j}(i,i,:))) );
+    <span class="keyword">for</span> ii=1:10
+      plot( 0:size(lat{ii}(:,dyno(i)),1)-1, lat{ii}(:,dyno(i)), <span class="string">'r'</span> );
+    <span class="keyword">end</span>
+    plot( 0:size(latent{j}(:,dyno(i)),1)-1, latent{j}(:,dyno(i)),<span class="string">'g'</span>);
+    axis <span class="string">tight</span>
+  <span class="keyword">end</span>
+  drawnow;
+<span class="keyword">end</span>
+
+<span class="comment">% 3. Save data</span>
+filename = [basename num2str(j) <span class="string">'_H'</span> num2str(H)]; save(filename);
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% applyController.m
+% *Summary:* Script to apply the learned controller to a (simulated) system
+%
+% Copyright (C) 2008-2013 by
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modified: 2013-06-04
+%
+%% High-Level Steps
+% # Generate a single trajectory rollout by applying the controller
+% # Generate many rollouts for testing the performance of the controller
+% # Save the data
+
+%% Code
+
+% 1. Generate trajectory rollout given the current policy
+if isfield(plant,'constraint'), HH = maxH; else HH = H; end
+[xx, yy, realCost{j+J}, latent{j}] = ...
+  rollout(gaussian(mu0, S0), policy, HH, plant, cost);
+disp(xx);                           % display states of observed trajectory
+x = [x; xx]; y = [y; yy];                            % augment training set
+if plotting.verbosity > 0
+  if ~ishandle(3); figure(3); else set(0,'CurrentFigure',3); end
+  hold on; plot(1:length(realCost{J+j}),realCost{J+j},'r'); drawnow;
+end
+
+% 2. Make many rollouts to test the controller quality
+if plotting.verbosity > 1
+  lat = cell(1,10);
+  for i=1:10
+    [~,~,~,lat{i}] = rollout(gaussian(mu0, S0), policy, HH, plant, cost);
+  end
+  
+  if ~ishandle(4); figure(4); else set(0,'CurrentFigure',4); end; clf(4);
+  
+  ldyno = length(dyno);
+  for i=1:ldyno       % plot the rollouts on top of predicted error bars
+    subplot(ceil(ldyno/sqrt(ldyno)),ceil(sqrt(ldyno)),i); hold on;
+    errorbar( 0:length(M{j}(i,:))-1, M{j}(i,:), ...
+      2*sqrt(squeeze(Sigma{j}(i,i,:))) );
+    for ii=1:10
+      plot( 0:size(lat{ii}(:,dyno(i)),1)-1, lat{ii}(:,dyno(i)), 'r' );
+    end
+    plot( 0:size(latent{j}(:,dyno(i)),1)-1, latent{j}(:,dyno(i)),'g');
+    axis tight
+  end
+  drawnow;
+end
+
+% 3. Save data
+filename = [basename num2str(j) '_H' num2str(H)]; save(filename);
+
+##### SOURCE END #####
+--></body></html>

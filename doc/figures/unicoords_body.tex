@@ -1,0 +1,92 @@
+%set the plot display orientation
+%synatax: \tdplotsetdisplay{\theta_d}{\phi_d}
+\tdplotsetmaincoords{65}{100}
+
+%define polar coordinates for some vector
+%TODO: look into using 3d spherical coordinate system
+\pgfmathsetmacro{\magW}{4}
+\pgfmathsetmacro{\psiW}{-30}
+\pgfmathsetmacro{\theW}{10}
+\pgfmathsetmacro{\phiW}{15}
+
+%start tikz picture, and use the tdplot_main_coords style to implement the display 
+%coordinate transformation provided by 3dplot
+\footnotesize
+\begin{tikzpicture}[scale=0.85,tdplot_main_coords]
+
+%set up some coordinates ... GET FROM MATLAB
+%-----------------------
+\coordinate (O) at (1.7321,-1,0);
+\coordinate (B) at (2.5,4.3301,0);
+\coordinate (Bp) at (4.2321,3.3301,0);
+\coordinate (W) at (2.7256,4.1999,1.4772);
+\coordinate (Wt) at (3.1767,3.9394,4.4316);
+\coordinate (Wtp) at (2.7256,4.1999,4.4316);
+\coordinate (Wbp) at (2.7256,4.1999,0);
+\coordinate (T) at (2.7969,2.8138,5.7578);
+\coordinate (F) at (2.7612,3.5069,3.6175);
+
+%draw figure contents
+%--------------------
+
+%draw the main coordinate system axes
+\tdplotsetrotatedcoordsorigin{(O)}
+\tdplotsetrotatedcoords{0}{0}{0}
+\draw[tdplot_rotated_coords,-latex,blue,thick] (0,0,0) -- (1.5,0,0)
+node[anchor=south east]{$\vec i$};
+\draw[tdplot_rotated_coords,-latex,blue,thick] (0,0,0) -- (0,1.5,0)
+node[anchor=south]{$\vec j$};
+\draw[tdplot_rotated_coords,-latex,blue,thick] (0,0,0) -- (0,0,1.5)
+node[anchor=south]{$\vec k$};
+\draw[dashed] (W) -- (Wt);
+\draw[dashed] (Wtp) -- (Wbp);
+\draw[dashed] (B) -- (W);
+
+\draw[red,-latex] (B) -- (Bp);
+\draw[red,-latex] (Bp) -- (O);
+\node at (0,0.8,-1.7) {\color{red} $x_\te{c}$};
+\node at (0,3.2,-1.4) {\color{red} $y_\te{c}$};
+\tdplotsetrotatedcoords{\psiW}{0}{0}
+\tdplotsetrotatedcoordsorigin{(Bp)}
+\draw[tdplot_rotated_coords,very thin] (-0.35,0,0) -- (-0.35,-0.35,0) -- (0,-0.35,0);
+
+
+% draw frame
+\draw[very thick,black] (W) -- (T);
+\tdplotsetrotatedcoords{\psiW}{100}{0}
+\tdplotsetrotatedcoordsorigin{(F)}
+\draw[tdplot_rotated_coords,fill=black] (0,0,0) circle (0.12);
+
+% draw turntable
+\tdplotsetrotatedcoords{\psiW}{\theW}{\phiW}
+\tdplotsetrotatedcoordsorigin{(T)}
+\draw[tdplot_rotated_coords,very thick,fill=black,fill opacity=0.2] (0,0,0) circle (1.5);
+\draw[tdplot_rotated_coords,fill=black] (0,0,0) circle (0.12);
+\tdplotdrawarcarrow[tdplot_rotated_coords,red]{(T)}{0.65}{0}{270}{}{}
+\tdplotdrawarcarrow[tdplot_rotated_coords,blue]{(T)}{0.4}{0}{270}{}{}
+\node at (0,3.25,4.8) {\color{red} $\psi_\te{t}$};
+\node at (0,1.7,4.2) {\color{blue} $u_\te{t}$};
+
+% draw wheel
+\tdplotsetrotatedcoords{\psiW}{100}{0} % add 90 to j angle
+\tdplotsetrotatedcoordsorigin{(W)}
+\draw[tdplot_rotated_coords,very thick,fill=black,fill opacity=0.2] (0,0,0) circle (1.5);
+\draw[tdplot_rotated_coords,fill=black] (0,0,0) circle (0.12);
+\tdplotdrawarcarrow[tdplot_rotated_coords,red]{(W)}{0.6}{0}{270}{}{}
+\tdplotdrawarcarrow[tdplot_rotated_coords,blue]{(W)}{0.4}{0}{270}{}{}
+\node at (0,4.35,0.5) {\color{red} $\phi_\te{w}$};
+\node at (0,3.3,-0.1) {\color{blue} $u_\te{w}$};
+
+
+
+% show theta and phi
+\tdplotdrawarcarrow[red]{(O)}{0.8}{0}{60}{anchor=north}{\color{red} $\psi$}
+\tdplotsetrotatedcoords{\psiW}{190}{-90} % add 180 to j angle
+\tdplotsetrotatedcoordsorigin{(W)}
+\tdplotdrawarcarrow[tdplot_rotated_coords,red]{(W)}{2.8}{80}{90}{anchor=south}{\color{red} $\theta$}
+\tdplotsetrotatedcoords{\psiW}{100}{0} % add 90 to j angle
+\tdplotsetrotatedcoordsorigin{(W)}
+\tdplotdrawarcarrow[tdplot_rotated_coords,red]{(W)}{2.8}{180}{195}{anchor=south}{\color{red} $\phi$}
+
+
+\end{tikzpicture}

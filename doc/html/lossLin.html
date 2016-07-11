@@ -1,0 +1,162 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>lossLin.m</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="lossLin.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>lossLin.m</h1><!--introduction--><p><b>Summary:</b> Function to compute the expected loss and its derivatives, given an input distribution, under a linear loss function: L = a^T(x - b). Note, this loss function can return negative loss.</p><pre class="language-matlab">[L dLdm dLds S dSdm dSds C dCdm dCds] = lossLin(cost,m,s)
+</pre><p><b>Input arguments:</b></p><pre>  cost
+    .a      gradient of linear loss function,                       [D x 1]
+    .b      targets, the value of x for which there is zero loss    [D x 1]
+  m         mean of input distribution                              [D x 1]
+  s         covariance matrix of input distribution                 [D x D]</pre><p><b>Output arguments:</b></p><pre class="language-matlab">L               <span class="string">expected</span> <span class="string">loss</span>                                  <span class="string">[1   x    1 ]</span>
+dLdm            <span class="string">derivative</span> <span class="string">of</span> <span class="string">L</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">mean</span>                 <span class="string">[1   x    D ]</span>
+dLds            <span class="string">derivative</span> <span class="string">of</span> <span class="string">L</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">covariance</span>           <span class="string">[1   x   D^2]</span>
+S               <span class="string">variance</span> <span class="string">of</span> <span class="string">loss</span>                               <span class="string">[1   x    1 ]</span>
+dSdm            <span class="string">derivative</span> <span class="string">of</span> <span class="string">S</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">mean</span>                 <span class="string">[1   x    D ]</span>
+dSds            <span class="string">derivative</span> <span class="string">of</span> <span class="string">S</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">covariance</span>           <span class="string">[1   x   D^2]</span>
+C               <span class="string">inv(S)</span> <span class="string">times</span> <span class="string">input-output</span> <span class="string">covariance</span>           <span class="string">[D   x    1 ]</span>
+dCdm            <span class="string">derivative</span> <span class="string">of</span> <span class="string">C</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">mean</span>                 <span class="string">[D   x    D ]</span>
+dCds            <span class="string">derivative</span> <span class="string">of</span> <span class="string">C</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">covariance</span>           <span class="string">[D   x   D^2]</span>
+</pre><p>Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</p><p>Last modified: 2013-03-05</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">High-Level Steps</a></li><li><a href="#2">Code</a></li></ul></div><h2>High-Level Steps<a name="1"></a></h2><div><ol><li>Expected cost</li><li>Variance of cost</li><li>inv(s)* cov(x,L)</li></ol></div><pre class="codeinput"><span class="keyword">function</span> [L dLdm dLds S dSdm dSds C dCdm dCds] = lossLin(cost,m,s)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput">a = cost.a(:); b = cost.b(:); D = length(m);
+<span class="keyword">if</span> length(a) ~= D || length(b) ~= D;
+    error(<span class="string">'a or b not the same length as m'</span>); <span class="keyword">end</span>
+
+<span class="comment">% 1) Mean</span>
+L = a'*(m - b);
+dLdm = a';
+dLds = zeros(D);
+
+<span class="comment">% 2) Variance</span>
+S = a'*s*a;
+dSdm = zeros(1,D);
+dSds = a*a';
+
+<span class="comment">% 3) inv(s) * input-output covariance cov(x,L)</span>
+C = a;
+dCdm = zeros(D); dCds = zeros(D,D^2);
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% lossLin.m
+% *Summary:* Function to compute the expected loss and its derivatives, given an 
+% input distribution, under a linear loss function: L = a^T(x - b). Note, this
+% loss function can return negative loss.
+%
+%   [L dLdm dLds S dSdm dSds C dCdm dCds] = lossLin(cost,m,s)
+%
+% *Input arguments:*
+%
+%    cost
+%      .a      gradient of linear loss function,                       [D x 1]
+%      .b      targets, the value of x for which there is zero loss    [D x 1]
+%    m         mean of input distribution                              [D x 1]
+%    s         covariance matrix of input distribution                 [D x D]
+%
+% *Output arguments:*
+%
+%   L               expected loss                                  [1   x    1 ]
+%   dLdm            derivative of L wrt input mean                 [1   x    D ]
+%   dLds            derivative of L wrt input covariance           [1   x   D^2] 
+%   S               variance of loss                               [1   x    1 ]
+%   dSdm            derivative of S wrt input mean                 [1   x    D ]
+%   dSds            derivative of S wrt input covariance           [1   x   D^2]    
+%   C               inv(S) times input-output covariance           [D   x    1 ]   
+%   dCdm            derivative of C wrt input mean                 [D   x    D ]  
+%   dCds            derivative of C wrt input covariance           [D   x   D^2]  
+%
+% Copyright (C) 2008-2013 by
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modified: 2013-03-05
+%
+%% High-Level Steps
+% # Expected cost
+% # Variance of cost
+% # inv(s)* cov(x,L)
+
+function [L dLdm dLds S dSdm dSds C dCdm dCds] = lossLin(cost,m,s)
+%% Code
+
+a = cost.a(:); b = cost.b(:); D = length(m);
+if length(a) ~= D || length(b) ~= D;
+    error('a or b not the same length as m'); end
+
+% 1) Mean
+L = a'*(m - b);
+dLdm = a';
+dLds = zeros(D);
+
+% 2) Variance
+S = a'*s*a;
+dSdm = zeros(1,D);
+dSds = a*a';
+
+% 3) inv(s) * input-output covariance cov(x,L)
+C = a;
+dCdm = zeros(D); dCds = zeros(D,D^2);
+
+
+##### SOURCE END #####
+--></body></html>

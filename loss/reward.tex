@@ -1,0 +1,66 @@
+\documentclass{article}
+\renewcommand{\rmdefault}{psbx}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{textcomp}
+\usepackage{eulervm}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\setlength{\textwidth}{160mm}
+\setlength{\oddsidemargin}{0mm}
+\setlength{\parindent}{0 mm}
+
+\newcommand{\bfm}{{\bf m}}
+\newcommand{\bfs}{{\bf s}}
+\newcommand{\bfz}{{\bf z}}
+\newcommand{\E}{{\mathbb E}}
+\newcommand{\V}{{\mathbb V}}
+
+\title{The Reward Function}
+\author{Carl Edward Rasmussen}
+\date{July 17th 2008}
+
+\begin{document}
+
+\maketitle
+
+The \emph{reward} $R$ of being in state $\bfs$ is 
+\[
+R(\bfs)\;=\;\exp\big(\!-\tfrac{1}{2}(\bfs-\bfz)^\top T^{-1}(\bfs-\bfz)\big),
+\]
+where $\bfz$ and $T$ are parameters of the reward function, which
+typically depend on the specific task. We assume that the state is
+uncertain, with a Gaussian distribution
+\[
+\bfs\;\sim\;{\cal N}(\bfm, S),
+\]
+with mean $\bfm$ and covariance matrix $S$. We wish to compute the
+\emph{expected} reward
+\[
+\mu\;=\;\E[R]\;=\;\langle R(\bfs)\rangle_{\bfs\sim{\cal N}(\bfm,S)}\;=\;|I+ST^{-1}|^{-1/2}
+\exp\big(\!-\tfrac{1}{2}(\bfm-\bfz)^\top (S+T)^{-1}(\bfm-\bfz)\big),
+\]
+and to compute the \emph{variance} of the reward we first define
+\[
+r^2\;=\;\E[R^2]\;=\;|I+2ST^{-1}|^{-1/2}
+\exp\big(\!-(\bfm-\bfz)^\top (2S+T)^{-1}(\bfm-\bfz)\big),
+\]
+so that
+\[
+\sigma^2\;=\;\V[R]\;=\;\E[R^2]-\E^2[R]\;=\;r^2-\mu^2.
+\]
+We also need the derivatives of these two quanteties wrt the
+parameters of the state distribution. For the expected reward we have
+\[
+\frac{d\mu}{d\bfm}\;=\;-\mu(S+T)^{-1}(\bfm-\bfz),\qquad
+\frac{d\mu}{dS}\;=\;\tfrac{1}{2}\mu\big[(S+T)^{-1}(\bfm-\bfz)(\bfm-\bfz)^\top
+-I\big](S+T)^{-1},
+\]
+and for the variance
+\[
+\frac{d\sigma^2}{d\bfm}\;=\;-2r^2(2S+T)^{-1}(\bfm-\bfz)-2\mu\frac{d\mu}{d\bfm},
+\qquad\frac{d\sigma^2}{dS}\;=\;r^2\big
+[2(2S+T)^{-1}(\bfm-\bfz)(\bfm-\bfz)^\top -I\big](2S+T)^{-1} -2\mu\frac{d\mu}{dS}.
+\]
+\end{document}

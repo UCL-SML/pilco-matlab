@@ -1,0 +1,287 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>loss_unicycle.m</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="loss_unicycle.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>loss_unicycle.m</h1><!--introduction--><p>Robotic unicycle loss function. The loss is <img src="loss_unicycle_eq22825.png" alt="$1-\exp(-0.5*a*d^2)$">, where <img src="loss_unicycle_eq34276.png" alt="$a$"> is a (positive) constant and <img src="loss_unicycle_eq26389.png" alt="$d^2$"> is the squared difference between the current configuration of the unicycle and a target set point.</p><p>The mean and the variance of the loss are computed by averaging over the Gaussian distribution of the state <img src="loss_unicycle_eq32292.png" alt="$p(x) = \mathcal N(m,s)$"> with mean <img src="loss_unicycle_eq81831.png" alt="$m$"> and covariance matrix <img src="loss_unicycle_eq72999.png" alt="$s$">, plus cost.expl times the standard deviation of the loss (averaged wrt the same Gaussian), where the exploration paramater cost.expl defaults to zero.</p><p>Negative values of the exploration parameter are used to encourage exploration and positive values avoid regions of uncertainty in the policy. Derivatives are computed when desired.</p><p>The mean and the variance of the loss are computed by averaging over the Gaussian distribution of the state <img src="loss_unicycle_eq32292.png" alt="$p(x) = \mathcal N(m,s)$"> with mean <img src="loss_unicycle_eq81831.png" alt="$m$"> and covariance matrix <img src="loss_unicycle_eq72999.png" alt="$s$">. Derivatives of these quantities are computed when desired.</p><pre class="language-matlab"><span class="keyword">function</span> [L, dLdm, dLds, S2] = loss_unicycle(cost, m, s)
+</pre><p><b>Input arguments:</b></p><pre class="language-matlab">cost            <span class="string">cost</span> <span class="string">structure</span>
+  .p            parameters: [radius of wheel, length of rod]    [2 x  1 ]
+  .width        array <span class="string">of</span> <span class="string">widths</span> <span class="string">of</span> <span class="string">the</span> <span class="string">cost</span> <span class="string">(summed together)</span>
+  .expl         (optional) exploration <span class="string">parameter</span>; default: 0
+m               <span class="string">mean</span> <span class="string">of</span> <span class="string">state</span> <span class="string">distribution</span>                      <span class="string">[D x  1 ]</span>
+s               <span class="string">covariance</span> <span class="string">matrix</span> <span class="string">for</span> <span class="string">the</span> <span class="string">state</span> <span class="string">distribution</span>    <span class="string">[D x  D ]</span>
+</pre><p><b>Output arguments:</b></p><pre class="language-matlab">L     <span class="string">expected</span> <span class="string">cost</span>                                             <span class="string">[1 x  1 ]</span>
+dLdm  <span class="string">derivative</span> <span class="string">of</span> <span class="string">expected</span> <span class="string">cost</span> <span class="string">wrt.</span> <span class="string">state</span> <span class="string">mean</span> <span class="string">vector</span>        <span class="string">[1 x  D ]</span>
+dLds  <span class="string">derivative</span> <span class="string">of</span> <span class="string">expected</span> <span class="string">cost</span> <span class="string">wrt.</span> <span class="string">state</span> <span class="string">covariance</span> <span class="string">matrix</span>  <span class="string">[1 x D^2]</span>
+S2    <span class="string">variance</span> <span class="string">of</span> <span class="string">cost</span>                                          <span class="string">[1 x  1 ]</span>
+</pre><p>Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</p><p>Last modified: 2013-03-26</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">High-Level Steps</a></li><li><a href="#2">Code</a></li></ul></div><h2>High-Level Steps<a name="1"></a></h2><div><ol><li>Precomputations</li><li>Define static penalty as distance from target setpoint</li><li>Trigonometric augmentation</li><li>Calculate loss</li></ol></div><pre class="codeinput"><span class="keyword">function</span> [L, dLdm, dLds, S2] = loss_unicycle(cost, m, s)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput">rw = cost.p(1); r = cost.p(2);
+<span class="keyword">if</span> isfield(cost,<span class="string">'width'</span>); cw = cost.width; <span class="keyword">else</span> cw = 1; <span class="keyword">end</span>
+<span class="keyword">if</span> ~isfield(cost,<span class="string">'expl'</span>) || isempty(cost.expl); b = 0; <span class="keyword">else</span> b =  cost.expl; <span class="keyword">end</span>
+
+I6 = 8;  I9 = 10;                           <span class="comment">% coordinates of theta and psi</span>
+Ixc = 6; Iyc = 7;                               <span class="comment">% coordinates of xc and yc</span>
+
+<span class="comment">% 1. Some precomputations</span>
+D = size(s,2);                                           <span class="comment">% state dimension</span>
+D0 = D + 2;             <span class="comment">% state dimension (augmented with I6-I9 and I6+I9)</span>
+D1 = D0 + 8;                              <span class="comment">% state dimension (with sin/cos)</span>
+L = 0; dLdm = zeros(1,D); dLds = zeros(1,D*D); S2 = 0;
+
+P = [eye(D); zeros(2,D)]; P(D+1:end,I6) = [1;-1]; P(D+1:end,I9) = [1;1];
+
+M = zeros(D1,1); M(1:D0) = P*m; S = zeros(D1); S(1:D0,1:D0) = P*s*P';
+Mdm = [P; zeros(D1-D0,D)]; Sdm = zeros(D1*D1,D);
+Mds = zeros(D1,D*D); Sds = kron(Mdm,Mdm);
+
+<span class="comment">% 2. Define static penalty as distance from target setpoint</span>
+Q = zeros(D+10);
+C1 = [rw r/2 r/2];
+Q([D+4 D+6 D+8],[D+4 D+6 D+8]) = 8*(C1'*C1);                          <span class="comment">% dz</span>
+C2 = [1 -r];
+Q([Ixc D+9],[Ixc D+9]) = 0.5*(C2'*C2);                                <span class="comment">% dx</span>
+C3 = [1 -(r+rw)];
+Q([Iyc D+3],[Iyc D+3]) = 0.5*(C3'*C3);                                <span class="comment">% dy</span>
+Q(9,9) = (1/(4*pi))^2;                                    <span class="comment">% yaw angle loss</span>
+
+target = zeros(D1,1); target([D+4 D+6 D+8 D+10]) = 1;    <span class="comment">% target setpoint</span>
+
+<span class="comment">% 3. Trigonometric augmentation</span>
+i = 1:D0; k = D0+1:D1;
+[M(k) S(k,k) C mdm sdm Cdm mds sds Cds] = <span class="keyword">...</span>
+  gTrig(M(i),S(i,i),[I6 D+1 D+2 I9]);
+[S Mdm Mds Sdm Sds] = <span class="keyword">...</span>
+  fillIn(S,C,mdm,sdm,Cdm,mds,sds,Cds,Mdm,Sdm,Mds,Sds,i,k,D1);
+
+<span class="comment">% 4. Calculate loss</span>
+<span class="keyword">for</span> i = 1:length(cw)                    <span class="comment">% scale mixture of immediate costs</span>
+  cost.z = target; cost.W = Q/cw(i)^2;
+  [r rdM rdS s2 s2dM s2dS] = lossSat(cost, M, S);
+
+  L = L + r; S2 = S2 + s2;
+  dLdm = dLdm + rdM(:)'*Mdm + rdS(:)'*Sdm;
+  dLds = dLds + rdM(:)'*Mds + rdS(:)'*Sds;
+
+  <span class="keyword">if</span> (b~=0 || ~isempty(b)) &amp;&amp; abs(s2)&gt;1e-12
+    L = L + b*sqrt(s2);
+    dLdm = dLdm + b/sqrt(s2) * ( s2dM(:)'*Mdm + s2dS(:)'*Sdm )/2;
+    dLds = dLds + b/sqrt(s2) * ( s2dM(:)'*Mds + s2dS(:)'*Sds )/2;
+  <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+<span class="comment">% normalize</span>
+n = length(cw); L = L/n; dLdm = dLdm/n; dLds = dLds/n; S2 = S2/n;
+
+<span class="comment">% Fill in covariance matrix...and derivatives ----------------------------</span>
+</pre><pre class="codeinput"><span class="keyword">function</span> [S Mdm Mds Sdm Sds] = <span class="keyword">...</span>
+  fillIn(S,C,mdm,sdm,Cdm,mds,sds,Cds,Mdm,Sdm,Mds,Sds,i,k,D)
+X = reshape(1:D*D,[D D]); XT = X';                    <span class="comment">% vectorized indices</span>
+I=0*X; I(i,i)=1; ii=X(I==1)'; I=0*X; I(k,k)=1; kk=X(I==1)';
+I=0*X; I(i,k)=1; ik=X(I==1)'; ki=XT(I==1)';
+
+Mdm(k,:)  = mdm*Mdm(i,:) + mds*Sdm(ii,:);                      <span class="comment">% chainrule</span>
+Mds(k,:)  = mdm*Mds(i,:) + mds*Sds(ii,:);
+Sdm(kk,:) = sdm*Mdm(i,:) + sds*Sdm(ii,:);
+Sds(kk,:) = sdm*Mds(i,:) + sds*Sds(ii,:);
+dCdm      = Cdm*Mdm(i,:) + Cds*Sdm(ii,:);
+dCds      = Cdm*Mds(i,:) + Cds*Sds(ii,:);
+
+S(i,k) = S(i,i)*C; S(k,i) = S(i,k)';                        <span class="comment">% off-diagonal</span>
+SS = kron(eye(length(k)),S(i,i)); CC = kron(C',eye(length(i)));
+Sdm(ik,:) = SS*dCdm + CC*Sdm(ii,:); Sdm(ki,:) = Sdm(ik,:);
+Sds(ik,:) = SS*dCds + CC*Sds(ii,:); Sds(ki,:) = Sds(ik,:);
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% loss_unicycle.m
+% Robotic unicycle loss function. The loss is $1-\exp(-0.5*a*d^2)$, where
+% $a$ is a (positive) constant and $d^2$ is the squared difference between
+% the current configuration of the unicycle and a target set point.
+%
+% The mean and the variance of the loss are computed by averaging over the
+% Gaussian distribution of the state $p(x) = \mathcal N(m,s)$ with mean $m$
+% and covariance matrix $s$, plus cost.expl times the standard deviation of 
+% the loss (averaged wrt the same Gaussian), where the exploration paramater 
+% cost.expl defaults to zero.
+%
+% Negative values of the exploration parameter are used to encourage
+% exploration and positive values avoid regions of uncertainty in the
+% policy. Derivatives are computed when desired.
+%
+% The mean and the variance of the loss are computed by averaging over the
+% Gaussian distribution of the state $p(x) = \mathcal N(m,s)$ with mean $m$
+% and covariance matrix $s$.
+% Derivatives of these quantities are computed when desired.
+%
+%
+%   function [L, dLdm, dLds, S2] = loss_unicycle(cost, m, s)
+%
+%
+% *Input arguments:*
+%
+%
+%   cost            cost structure
+%     .p            parameters: [radius of wheel, length of rod]    [2 x  1 ]
+%     .width        array of widths of the cost (summed together)
+%     .expl         (optional) exploration parameter; default: 0
+%   m               mean of state distribution                      [D x  1 ]
+%   s               covariance matrix for the state distribution    [D x  D ]
+%   
+% *Output arguments:*
+%
+%   L     expected cost                                             [1 x  1 ]
+%   dLdm  derivative of expected cost wrt. state mean vector        [1 x  D ]
+%   dLds  derivative of expected cost wrt. state covariance matrix  [1 x D^2]
+%   S2    variance of cost                                          [1 x  1 ]
+%
+% Copyright (C) 2008-2013 by
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modified: 2013-03-26
+%
+%% High-Level Steps
+% # Precomputations
+% # Define static penalty as distance from target setpoint
+% # Trigonometric augmentation
+% # Calculate loss
+
+function [L, dLdm, dLds, S2] = loss_unicycle(cost, m, s)
+%% Code
+rw = cost.p(1); r = cost.p(2);
+if isfield(cost,'width'); cw = cost.width; else cw = 1; end
+if ~isfield(cost,'expl') || isempty(cost.expl); b = 0; else b =  cost.expl; end
+
+I6 = 8;  I9 = 10;                           % coordinates of theta and psi
+Ixc = 6; Iyc = 7;                               % coordinates of xc and yc
+
+% 1. Some precomputations
+D = size(s,2);                                           % state dimension
+D0 = D + 2;             % state dimension (augmented with I6-I9 and I6+I9)
+D1 = D0 + 8;                              % state dimension (with sin/cos)
+L = 0; dLdm = zeros(1,D); dLds = zeros(1,D*D); S2 = 0;
+
+P = [eye(D); zeros(2,D)]; P(D+1:end,I6) = [1;-1]; P(D+1:end,I9) = [1;1];
+
+M = zeros(D1,1); M(1:D0) = P*m; S = zeros(D1); S(1:D0,1:D0) = P*s*P';
+Mdm = [P; zeros(D1-D0,D)]; Sdm = zeros(D1*D1,D);
+Mds = zeros(D1,D*D); Sds = kron(Mdm,Mdm);
+
+% 2. Define static penalty as distance from target setpoint
+Q = zeros(D+10);
+C1 = [rw r/2 r/2];
+Q([D+4 D+6 D+8],[D+4 D+6 D+8]) = 8*(C1'*C1);                          % dz
+C2 = [1 -r];
+Q([Ixc D+9],[Ixc D+9]) = 0.5*(C2'*C2);                                % dx
+C3 = [1 -(r+rw)];
+Q([Iyc D+3],[Iyc D+3]) = 0.5*(C3'*C3);                                % dy
+Q(9,9) = (1/(4*pi))^2;                                    % yaw angle loss
+
+target = zeros(D1,1); target([D+4 D+6 D+8 D+10]) = 1;    % target setpoint
+
+% 3. Trigonometric augmentation
+i = 1:D0; k = D0+1:D1;
+[M(k) S(k,k) C mdm sdm Cdm mds sds Cds] = ...
+  gTrig(M(i),S(i,i),[I6 D+1 D+2 I9]);
+[S Mdm Mds Sdm Sds] = ...
+  fillIn(S,C,mdm,sdm,Cdm,mds,sds,Cds,Mdm,Sdm,Mds,Sds,i,k,D1);
+
+% 4. Calculate loss
+for i = 1:length(cw)                    % scale mixture of immediate costs
+  cost.z = target; cost.W = Q/cw(i)^2;
+  [r rdM rdS s2 s2dM s2dS] = lossSat(cost, M, S);
+  
+  L = L + r; S2 = S2 + s2;
+  dLdm = dLdm + rdM(:)'*Mdm + rdS(:)'*Sdm;
+  dLds = dLds + rdM(:)'*Mds + rdS(:)'*Sds;
+  
+  if (b~=0 || ~isempty(b)) && abs(s2)>1e-12
+    L = L + b*sqrt(s2);
+    dLdm = dLdm + b/sqrt(s2) * ( s2dM(:)'*Mdm + s2dS(:)'*Sdm )/2;
+    dLds = dLds + b/sqrt(s2) * ( s2dM(:)'*Mds + s2dS(:)'*Sds )/2;
+  end
+end
+
+% normalize
+n = length(cw); L = L/n; dLdm = dLdm/n; dLds = dLds/n; S2 = S2/n;
+
+% Fill in covariance matrix...and derivatives REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH
+function [S Mdm Mds Sdm Sds] = ...
+  fillIn(S,C,mdm,sdm,Cdm,mds,sds,Cds,Mdm,Sdm,Mds,Sds,i,k,D)
+X = reshape(1:D*D,[D D]); XT = X';                    % vectorized indices
+I=0*X; I(i,i)=1; ii=X(I==1)'; I=0*X; I(k,k)=1; kk=X(I==1)';
+I=0*X; I(i,k)=1; ik=X(I==1)'; ki=XT(I==1)';
+
+Mdm(k,:)  = mdm*Mdm(i,:) + mds*Sdm(ii,:);                      % chainrule
+Mds(k,:)  = mdm*Mds(i,:) + mds*Sds(ii,:);
+Sdm(kk,:) = sdm*Mdm(i,:) + sds*Sdm(ii,:);
+Sds(kk,:) = sdm*Mds(i,:) + sds*Sds(ii,:);
+dCdm      = Cdm*Mdm(i,:) + Cds*Sdm(ii,:);
+dCds      = Cdm*Mds(i,:) + Cds*Sds(ii,:);
+
+S(i,k) = S(i,i)*C; S(k,i) = S(i,k)';                        % off-diagonal
+SS = kron(eye(length(k)),S(i,i)); CC = kron(C',eye(length(i)));
+Sdm(ik,:) = SS*dCdm + CC*Sdm(ii,:); Sdm(ki,:) = Sdm(ik,:);
+Sds(ik,:) = SS*dCds + CC*Sds(ii,:); Sds(ki,:) = Sds(ik,:);
+##### SOURCE END #####
+--></body></html>

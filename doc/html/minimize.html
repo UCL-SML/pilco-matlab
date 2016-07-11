@@ -1,0 +1,586 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>minimize.m</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="minimize.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>minimize.m</h1><p>minimize.m - minimize a smooth differentiable multivariate function using LBFGS (Limited memory LBFGS) or CG (Conjugate Gradients) Usage: [X, fX, i] = minimize(X, F, p, other, ... ) where   X    is an initial guess (any type: vector, matrix, cell array, struct)   F    is the objective function (function pointer or name)   p    parameters - if p is a number, it corresponds to p.length below     p.length     allowed 1) # linesearches or 2) if -ve minus # func evals     p.method     minimization method, 'BFGS', 'LBFGS' or 'CG'     p.verbosity  0 quiet, 1 line, 2 line + warnings (default), 3 graphical     p.mem        number of directions used in LBFGS (default 100)   other, ...     other parameters, passed to the function F   X     returned minimizer   fX    vector of function values showing minimization progress   i     final number of linesearches or function evaluations The function F must take the following syntax [f, df] = F(X, other, ...) where f is the function value and df its partial derivatives. The types of X and df must be identical (vector, matrix, cell array, struct, etc).</p><p>Copyright (C) 1996 - 2011 by Carl Edward Rasmussen, 2013-02-12.</p><pre class="codeinput"><span class="comment">% Permission is hereby granted, free of charge, to any person OBTAINING A COPY</span>
+<span class="comment">% OF THIS SOFTWARE AND ASSOCIATED DOCUMENTATION FILES (THE "SOFTWARE"), TO DEAL</span>
+<span class="comment">% IN THE SOFTWARE WITHOUT RESTRICTION, INCLUDING WITHOUT LIMITATION THE RIGHTS</span>
+<span class="comment">% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell</span>
+<span class="comment">% copies of the Software, and to permit persons to whom the Software is</span>
+<span class="comment">% furnished to do so, subject to the following conditions:</span>
+<span class="comment">%</span>
+<span class="comment">% The above copyright notice and this permission notice shall be included in</span>
+<span class="comment">% all copies or substantial portions of the Software.</span>
+<span class="comment">%</span>
+<span class="comment">% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR</span>
+<span class="comment">% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,</span>
+<span class="comment">% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE</span>
+<span class="comment">% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER</span>
+<span class="comment">% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,</span>
+<span class="comment">% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE</span>
+<span class="comment">% SOFTWARE.</span>
+
+<span class="keyword">function</span> [X, fX, i, p] = minimize(X, F, p, varargin)
+<span class="keyword">if</span> isnumeric(p), p = struct(<span class="string">'length'</span>, p); <span class="keyword">end</span>             <span class="comment">% convert p to struct</span>
+<span class="keyword">if</span> p.length &gt; 0, p.S = <span class="string">'linesearch #'</span>; <span class="keyword">else</span> p.S = <span class="string">'function evaluation #'</span>; <span class="keyword">end</span>;
+x = unwrap(X);                                <span class="comment">% convert initial guess to vector</span>
+<span class="keyword">if</span> ~isfield(p,<span class="string">'method'</span>), <span class="keyword">if</span> length(x) &gt; 1000, p.method = @LBFGS;
+                         <span class="keyword">else</span> p.method = @BFGS; <span class="keyword">end</span>; <span class="keyword">end</span>   <span class="comment">% set default method</span>
+<span class="keyword">if</span> ~isfield(p,<span class="string">'verbosity'</span>), p.verbosity = 1; <span class="keyword">end</span>   <span class="comment">% default 1 line text output</span>
+<span class="keyword">if</span> ~isfield(p,<span class="string">'MFEPLS'</span>), p.MFEPLS = 10; <span class="keyword">end</span>    <span class="comment">% Max Func Evals Per Line Search</span>
+<span class="keyword">if</span> ~isfield(p,<span class="string">'MSR'</span>), p.MSR = 100; <span class="keyword">end</span>                <span class="comment">% Max Slope Ratio default</span>
+<span class="keyword">if</span> isfield(p,<span class="string">'fh'</span>)&amp;&amp;~isempty(p.fh)&amp;&amp;ishandle(p.fh); clf(p.fh); <span class="keyword">end</span>
+f(F, X, varargin{:});                                   <span class="comment">% set up the function f</span>
+[fx, dfx] = f(x);                      <span class="comment">% initial function value and derivatives</span>
+<span class="keyword">if</span> ~isscalar(fx); error(<span class="string">'Objective function value must be a scalar'</span>); <span class="keyword">end</span>
+<span class="keyword">if</span> any(isnan(fx+dfx)) || any(isinf(fx+dfx));
+  error(<span class="string">'Evaluating objective function with initial parameters returns NaN or Inf'</span>);
+<span class="keyword">end</span>
+<span class="keyword">if</span> p.verbosity, printf(<span class="string">'Initial Function Value %4.6e\n'</span>, fx); <span class="keyword">end</span>
+<span class="keyword">if</span> p.verbosity &gt; 2,
+  ah = ahandles(p);
+  hold(ah(1),<span class="string">'on'</span>); xlabel(ah(1),p.S); ylabel(ah(1),<span class="string">'function value'</span>);
+  plot(ah(1),p.length &lt; 0, fx, <span class="string">'+'</span>); drawnow;
+<span class="keyword">end</span>
+[x, fX, i, p] = feval(p.method, x, fx, dfx, p);  <span class="comment">% minimize using direction method</span>
+X = rewrap(X, x);                   <span class="comment">% convert answer to original representation</span>
+<span class="keyword">if</span> p.verbosity, printf(<span class="string">'\n'</span>); <span class="keyword">end</span>
+
+<span class="keyword">function</span> [x, fx, i, p] = CG(x0, fx0, dfx0, p)
+<span class="keyword">if</span> ~isfield(p, <span class="string">'SIG'</span>), p.SIG = 0.1; <span class="keyword">end</span>       <span class="comment">% default for line search quality</span>
+i = p.length &lt; 0; ok = 1;                         <span class="comment">% initialize resource counter</span>
+r = -dfx0; s = -r'*r; b = -1/(s-1); bs = -1; fx = fx0;       <span class="comment">% steepest descent</span>
+<span class="keyword">while</span> i &lt; abs(p.length)
+  b = b*bs/min(b*s,bs/p.MSR);    <span class="comment">% suitable initial step size using slope ratio</span>
+  b = min(b,1/norm(r));                    <span class="comment">% limit step size in parameter space</span>
+  b = max(b,1e-7/norm(r));
+  [x, b, fx0, dfx, i] = lineSearch(x0, fx0, dfx0, r, s, b, i, p);
+  <span class="keyword">if</span> i &lt; 0                                              <span class="comment">% if line search failed</span>
+    i = -i; <span class="keyword">if</span> ok, ok = 0; r = -dfx; <span class="keyword">else</span> <span class="keyword">break</span>; <span class="keyword">end</span>     <span class="comment">% try steepest or stop</span>
+  <span class="keyword">else</span>
+    ok = 1; bs = b*s;        <span class="comment">% record step times slope (for slope ratio method)</span>
+    r = (dfx'*(dfx-dfx0))/(dfx0'*dfx0)*r - dfx;             <span class="comment">% Polack-Ribiere CG</span>
+  <span class="keyword">end</span>
+  s = r'*dfx; <span class="keyword">if</span> s &gt;= 0, r = -dfx; s = r'*dfx; ok = 0; <span class="keyword">end</span>  <span class="comment">% slope must be -ve</span>
+  x0 = x; dfx0 = dfx; fx = [fx; fx0];        <span class="comment">% replace old values with new ones</span>
+<span class="keyword">end</span>
+
+<span class="keyword">function</span> [x, fx, i, p] = BFGS(x0, fx0, dfx0, p)
+<span class="keyword">if</span> ~isfield(p, <span class="string">'SIG'</span>), p.SIG = 0.5; <span class="keyword">end</span>       <span class="comment">% default for line search quality</span>
+i = p.length &lt; 0; ok = 1;                         <span class="comment">% initialize resource counter</span>
+x = x0; fx = fx0; r = -dfx0; s = -r'*r; b = -1/(s-1); H = eye(length(x0));
+<span class="keyword">while</span> i &lt; abs(p.length)
+ b = min(b,1/norm(r));                    <span class="comment">% limit step size in parameter space</span>
+ b = max(b,1e-7/norm(r));
+  [x, b, fx0, dfx, i] = lineSearch(x0, fx0, dfx0, r, s, b, i, p);
+  <span class="keyword">if</span> i &lt; 0
+    i = -i; <span class="keyword">if</span> ok, ok = 0; <span class="keyword">else</span> <span class="keyword">break</span>; <span class="keyword">end</span>;              <span class="comment">% try steepest or stop</span>
+  <span class="keyword">else</span>
+    ok = 1; t = x - x0; y = dfx - dfx0; ty = t'*y; Hy = H*y;
+    H = H + (ty+y'*Hy)/ty^2*t*t' - 1/ty*Hy*t' - 1/ty*t*Hy';       <span class="comment">% BFGS update</span>
+  <span class="keyword">end</span>
+  r = -H*dfx; s = r'*dfx; x0 = x; dfx0 = dfx; fx = [fx; fx0];
+  p.H = H;
+
+<span class="keyword">end</span>
+
+<span class="keyword">function</span> [x, fx, i, p] = LBFGS(x0, fx0, dfx0, p);
+<span class="keyword">if</span> ~isfield(p, <span class="string">'SIG'</span>), p.SIG = 0.5; <span class="keyword">end</span>       <span class="comment">% default for line search quality</span>
+n = length(x0); k = 0; ok = 1; x = x0; fx = fx0; bs = -1/p.MSR;
+<span class="keyword">if</span> isfield(p, <span class="string">'mem'</span>), m = p.mem; <span class="keyword">else</span> m = min(100, n); <span class="keyword">end</span>    <span class="comment">% set memory size</span>
+a = zeros(1, m); t = zeros(n, m); y = zeros(n, m);            <span class="comment">% allocate memory</span>
+i = p.length &lt; 0;                                 <span class="comment">% initialize resource counter</span>
+<span class="keyword">while</span> i &lt; abs(p.length)
+  q = dfx0;
+  <span class="keyword">for</span> j = rem(k-1:-1:max(0,k-m),m)+1
+    a(j) = t(:,j)'*q/rho(j); q = q-a(j)*y(:,j);
+  <span class="keyword">end</span>
+  <span class="keyword">if</span> k == 0, r = -q/(q'*q); <span class="keyword">else</span> r = -t(:,j)'*y(:,j)/(y(:,j)'*y(:,j))*q; <span class="keyword">end</span>
+  <span class="keyword">for</span> j = rem(max(0,k-m):k-1,m)+1
+    r = r-t(:,j)*(a(j)+y(:,j)'*r/rho(j));
+  <span class="keyword">end</span>
+  s = r'*dfx0; <span class="keyword">if</span> s &gt;= 0, r = -dfx0; s = r'*dfx0; k = 0; ok = 0; <span class="keyword">end</span>
+  b = bs/min(bs,s/p.MSR);              <span class="comment">% suitable initial step size (usually 1)</span>
+  b = min(b,1/norm(r));                    <span class="comment">% limit step size in parameter space</span>
+  b = max(b,1e-7/norm(r));
+  <span class="keyword">if</span> isnan(r) | isinf(r)                                <span class="comment">% if nonsense direction</span>
+    i = -i;                                              <span class="comment">% try steepest or stop</span>
+  <span class="keyword">else</span>
+    [x, b, fx0, dfx, i] = lineSearch(x0, fx0, dfx0, r, s, b, i, p);
+  <span class="keyword">end</span>
+  <span class="keyword">if</span> i &lt; 0                                              <span class="comment">% if line search failed</span>
+    i = -i; <span class="keyword">if</span> ok, ok = 0; k = 0; <span class="keyword">else</span> <span class="keyword">break</span>; <span class="keyword">end</span>        <span class="comment">% try steepest or stop</span>
+  <span class="keyword">else</span>
+    j = rem(k,m)+1; t(:,j) = x-x0; y(:,j) = dfx-dfx0; rho(j) = t(:,j)'*y(:,j);
+    ok = 1; k = k+1; bs = b*s;
+  <span class="keyword">end</span>
+  x0 = x; dfx0 = dfx; fx = [fx; fx0];                  <span class="comment">% replace and add values</span>
+<span class="keyword">end</span>
+
+<span class="keyword">function</span> [x, a, fx, df, i] = lineSearch(x0, f0, df0, d, s, a, i, p)
+<span class="keyword">if</span> p.length &lt; 0, LIMIT = min(p.MFEPLS, -i-p.length); <span class="keyword">else</span> LIMIT = p.MFEPLS; <span class="keyword">end</span>
+p0.x = 0.0; p0.f = f0; p0.df = df0; p0.s = s; p1 = p0;         <span class="comment">% init p0 and p1</span>
+j = 0; p3.x = a; wp(p0, p.SIG, 0);         <span class="comment">% set step &amp; Wolfe-Powell conditions</span>
+<span class="keyword">if</span> p.verbosity &gt; 2
+  A = [-a a]/5; nd = norm(d); ah = ahandles(p);
+  hold(ah(2),<span class="string">'off'</span>); plot(ah(2),0, f0, <span class="string">'k+'</span>); hold(ah(2),<span class="string">'on'</span>); plot(ah(2),nd*A, f0+s*A, <span class="string">'k-'</span>);
+  xlabel(ah(2),<span class="string">'distance in line search direction'</span>); ylabel(ah(2),<span class="string">'function value'</span>);
+<span class="keyword">end</span>
+<span class="keyword">while</span> 1                               <span class="comment">% keep extrapolating as long as necessary</span>
+  ok = 0;
+  <span class="keyword">while</span> ~ok &amp;&amp; j &lt; LIMIT
+    <span class="keyword">try</span>           <span class="comment">% try, catch and bisect to safeguard extrapolation evaluation</span>
+      j = j+1; [p3.f p3.df] = f(x0+p3.x*d); p3.s = p3.df'*d; ok = 1;
+      <span class="keyword">if</span> isnan(p3.f+p3.s) || isinf(p3.f+p3.s)
+        error(<span class="string">'Objective function returned Inf or NaN'</span>,<span class="string">''</span>);
+      <span class="keyword">end</span>;
+    <span class="keyword">catch</span>
+      <span class="keyword">if</span> p.verbosity &gt; 1, printf(<span class="string">'\n'</span>); warning(lasterr); <span class="keyword">end</span> <span class="comment">% warn or silence</span>
+      p3.x = (p1.x+p3.x)/2; ok = 0; p3.f = NaN;  p3.s = NaN;<span class="comment">% bisect, and retry</span>
+    <span class="keyword">end</span>
+  <span class="keyword">end</span>
+  <span class="keyword">if</span> p.verbosity &gt; 2
+    ah = ahandles(p); hold(ah(2),<span class="string">'on'</span>);
+    plot(ah(2),nd*p3.x, p3.f, <span class="string">'b+'</span>); plot(ah(2),nd*(p3.x+A), p3.f+p3.s*A, <span class="string">'b-'</span>); drawnow
+  <span class="keyword">end</span>
+  <span class="keyword">if</span> wp(p3) || j &gt;= LIMIT, <span class="keyword">break</span>; <span class="keyword">end</span>                                    <span class="comment">% done?</span>
+  p0 = p1; p1 = p3;                                  <span class="comment">% move points back one unit</span>
+  p3.x = p0.x + minCubic(p1.x-p0.x, p1.f-p0.f, p0.s, p1.s, 1);    <span class="comment">% cubic extrap</span>
+<span class="keyword">end</span>
+<span class="keyword">while</span> 1                                <span class="comment">% keep interpolating as long as necessary</span>
+  <span class="keyword">if</span> isnan(p3.f+p3.s) || isinf(p3.f+p3.s); p2 = p1; <span class="keyword">break</span>; <span class="keyword">end</span> <span class="comment">% if final extrap failed</span>
+  <span class="keyword">if</span> p1.f &gt; p3.f, p2 = p3; <span class="keyword">else</span> p2 = p1; <span class="keyword">end</span>           <span class="comment">% make p2 the best so far</span>
+  <span class="keyword">if</span> wp(p2) &gt; 1 || j &gt;= LIMIT, <span class="keyword">break</span>; <span class="keyword">end</span>                                <span class="comment">% done?</span>
+  p2.x = p1.x + minCubic(p3.x-p1.x, p3.f-p1.f, p1.s, p3.s, 0);    <span class="comment">% cubic interp</span>
+  ok = 0;
+  <span class="keyword">while</span> ~ok &amp;&amp; j &lt; LIMIT;   <span class="comment">% until function successfully evaluated or j = LIMIT</span>
+    <span class="keyword">try</span>                                     <span class="comment">% try to evaluate objective function</span>
+       j = j+1; [p2.f p2.df] = f(x0+p2.x*d); p2.s = p2.df'*d; ok = 1;
+       <span class="keyword">if</span> isnan(p2.f+p2.s) || isinf(p2.f+p2.s)
+           error(<span class="string">'Objective function returned Inf or NaN'</span>,<span class="string">''</span>);
+       <span class="keyword">end</span>
+    <span class="keyword">catch</span>                             <span class="comment">% failed to successfully evaluate function</span>
+       <span class="keyword">if</span> p.verbosity &gt; 1, printf(<span class="string">'\n'</span>); warning(lasterr); <span class="keyword">end</span> <span class="comment">% warn or silence</span>
+       p2.x = (p1.x+p2.x)/2; ok = 0; <span class="keyword">if</span> LIMIT == j; p2 = p1; <span class="keyword">end</span>
+    <span class="keyword">end</span>
+  <span class="keyword">end</span>
+  <span class="keyword">if</span> p.verbosity &gt; 2
+    ah = ahandles(p); hold(ah(2),<span class="string">'on'</span>);
+    plot(ah(2),nd*p2.x, p2.f, <span class="string">'r+'</span>); plot(ah(2),nd*(p2.x+A), p2.f+p2.s*A, <span class="string">'r'</span>); drawnow
+  <span class="keyword">end</span>
+  <span class="keyword">if</span> wp(p2) &gt; -1 &amp;&amp; p2.s &gt; 0 || wp(p2) &lt; -1, p3 = p2; <span class="keyword">else</span> p1 = p2; <span class="keyword">end</span> <span class="comment">% bracket</span>
+<span class="keyword">end</span>
+x = x0+p2.x*d; fx = p2.f; df = p2.df; a = p2.x;        <span class="comment">% return the value found</span>
+<span class="keyword">if</span> p.length &lt; 0, i = i+j; <span class="keyword">else</span> i = i+1; <span class="keyword">end</span> <span class="comment">% count func evals or line searches</span>
+<span class="keyword">if</span> p.verbosity, printf(<span class="string">'%s %6i;  value %4.6e\r'</span>, p.S, i, fx); <span class="keyword">end</span>
+<span class="keyword">if</span> wp(p2) &lt; 2, i = -i; <span class="keyword">end</span>                                   <span class="comment">% indicate faliure</span>
+<span class="keyword">if</span> p.verbosity &gt; 2
+  ah = ahandles(p); hold(ah(1),<span class="string">'on'</span>); hold(ah(2),<span class="string">'on'</span>);
+  <span class="keyword">if</span> i&gt;0, plot(ah(2),norm(d)*p2.x, fx, <span class="string">'go'</span>); <span class="keyword">end</span>
+  plot(ah(1),abs(i), fx, <span class="string">'+'</span>); drawnow;
+<span class="keyword">end</span>
+
+<span class="keyword">function</span> z = minCubic(x, df, s0, s1, extr)   <span class="comment">% minimizer of approximating cubic</span>
+INT = 0.1; EXT = 5.0;                    <span class="comment">% interpolate and extrapolation limits</span>
+A = -6*df+3*(s0+s1)*x; B = 3*df-(2*s0+s1)*x; z = -s0*x*x/(B+sqrt(B*B-A*s0*x));
+<span class="keyword">if</span> extr                                                 <span class="comment">% are we extrapolating?</span>
+  <span class="keyword">if</span> ~isreal(z) | ~isfinite(z) | z &lt; x | z &gt; x*EXT, z = EXT*x; <span class="keyword">end</span>  <span class="comment">% fix bad z</span>
+  z = max(z, (1+INT)*x);                          <span class="comment">% extrapolate by at least INT</span>
+<span class="keyword">else</span>                                               <span class="comment">% else, we are interpolating</span>
+  <span class="keyword">if</span> ~isreal(z) | ~isfinite(z) | z &lt; 0 | z &gt; x, z = x/2; <span class="keyword">end</span>;       <span class="comment">% fix bad z</span>
+  z = min(max(z, INT*x), (1-INT)*x);    <span class="comment">% at least INT away from the boundaries</span>
+<span class="keyword">end</span>
+
+<span class="keyword">function</span> y = wp(p, SIG, RHO)
+<span class="keyword">persistent</span> a b c sig rho;
+<span class="keyword">if</span> nargin == 3    <span class="comment">% if three arguments, then set up the Wolfe-Powell conditions</span>
+  a = RHO*p.s; b = p.f; c = -SIG*p.s; sig = SIG; rho = RHO; y = 0;
+<span class="keyword">else</span>
+  <span class="keyword">if</span> p.f &gt; a*p.x+b                                  <span class="comment">% function value too large?</span>
+    <span class="keyword">if</span> a &gt; 0, y = -1; <span class="keyword">else</span> y = -2; <span class="keyword">end</span>
+  <span class="keyword">else</span>
+    <span class="keyword">if</span> p.s &lt; -c, y = 0; <span class="keyword">elseif</span> p.s &gt; c, y = 1; <span class="keyword">else</span> y = 2; <span class="keyword">end</span>
+<span class="comment">%   if sig*abs(p.s) &gt; c, a = rho*p.s; b = p.f-a*p.x; c = sig*abs(p.s); end</span>
+  <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+<span class="keyword">function</span> [fx, dfx] = f(varargin)
+<span class="keyword">persistent</span> F p;
+<span class="keyword">if</span> nargout == 0
+  p = varargin; <span class="keyword">if</span> ischar(p{1}), F = str2func(p{1}); <span class="keyword">else</span> F = p{1}; <span class="keyword">end</span>
+<span class="keyword">else</span>
+  [fx, dfx] = F(rewrap(p{2}, varargin{1}), p{3:end}); dfx = unwrap(dfx);
+<span class="keyword">end</span>
+
+<span class="keyword">function</span> v = unwrap(s)   <span class="comment">% extract num elements of s (any type) into v (vector)</span>
+v = [];
+<span class="keyword">if</span> isnumeric(s)
+  v = s(:);                        <span class="comment">% numeric values are recast to column vector</span>
+<span class="keyword">elseif</span> isstruct(s)
+  v = unwrap(struct2cell(orderfields(s))); <span class="comment">% alphabetize, conv to cell, recurse</span>
+<span class="keyword">elseif</span> iscell(s)                                      <span class="comment">% cell array elements are</span>
+  <span class="keyword">for</span> i = 1:numel(s), v = [v; unwrap(s{i})]; <span class="keyword">end</span>         <span class="comment">% handled sequentially</span>
+<span class="keyword">end</span>                                                   <span class="comment">% other types are ignored</span>
+
+<span class="keyword">function</span> [s v] = rewrap(s, v)    <span class="comment">% map elements of v (vector) onto s (any type)</span>
+<span class="keyword">if</span> isnumeric(s)
+  <span class="keyword">if</span> numel(v) &lt; numel(s)
+    error(<span class="string">'The vector for conversion contains too few elements'</span>)
+  <span class="keyword">end</span>
+  s = reshape(v(1:numel(s)), size(s));            <span class="comment">% numeric values are reshaped</span>
+  v = v(numel(s)+1:end);                        <span class="comment">% remaining arguments passed on</span>
+<span class="keyword">elseif</span> isstruct(s)
+  [s p] = orderfields(s); p(p) = 1:numel(p);      <span class="comment">% alphabetize, store ordering</span>
+  [t v] = rewrap(struct2cell(s), v);                 <span class="comment">% convert to cell, recurse</span>
+  s = orderfields(cell2struct(t,fieldnames(s),1),p);  <span class="comment">% conv to struct, reorder</span>
+<span class="keyword">elseif</span> iscell(s)
+  <span class="keyword">for</span> i = 1:numel(s)             <span class="comment">% cell array elements are handled sequentially</span>
+    [s{i} v] = rewrap(s{i}, v);
+  <span class="keyword">end</span>
+<span class="keyword">end</span>                                             <span class="comment">% other types are not processed</span>
+
+<span class="keyword">function</span> printf(varargin)
+fprintf(varargin{:}); <span class="keyword">if</span> exist(<span class="string">'fflush'</span>,<span class="string">'builtin'</span>) fflush(stdout); <span class="keyword">end</span>
+
+<span class="keyword">function</span> ah = ahandles(p)
+<span class="keyword">persistent</span> fh
+<span class="keyword">if</span> isfield(p,<span class="string">'fh'</span>) &amp;&amp; ~isempty(p.fh) &amp;&amp; ishandle(p.fh); fh = p.fh;
+<span class="keyword">elseif</span> isempty(fh) || ~ishandle(fh); fh = figure;
+<span class="keyword">end</span>
+ah(1) = subplot(2,1,1,<span class="string">'Parent'</span>,fh); ah(2) = subplot(2,1,2,<span class="string">'Parent'</span>,fh);
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% minimize.m
+% minimize.m - minimize a smooth differentiable multivariate function using
+% LBFGS (Limited memory LBFGS) or CG (Conjugate Gradients)
+% Usage: [X, fX, i] = minimize(X, F, p, other, ... )
+% where
+%   X    is an initial guess (any type: vector, matrix, cell array, struct)
+%   F    is the objective function (function pointer or name)
+%   p    parameters - if p is a number, it corresponds to p.length below
+%     p.length     allowed 1) # linesearches or 2) if -ve minus # func evals 
+%     p.method     minimization method, 'BFGS', 'LBFGS' or 'CG'
+%     p.verbosity  0 quiet, 1 line, 2 line + warnings (default), 3 graphical
+%     p.mem        number of directions used in LBFGS (default 100)
+%   other, ...     other parameters, passed to the function F
+%   X     returned minimizer
+%   fX    vector of function values showing minimization progress
+%   i     final number of linesearches or function evaluations
+% The function F must take the following syntax [f, df] = F(X, other, ...)
+% where f is the function value and df its partial derivatives. The types of X
+% and df must be identical (vector, matrix, cell array, struct, etc).
+%
+% Copyright (C) 1996 - 2011 by Carl Edward Rasmussen, 2013-02-12.
+
+% Permission is hereby granted, free of charge, to any person OBTAINING A COPY
+% OF THIS SOFTWARE AND ASSOCIATED DOCUMENTATION FILES (THE "SOFTWARE"), TO DEAL
+% IN THE SOFTWARE WITHOUT RESTRICTION, INCLUDING WITHOUT LIMITATION THE RIGHTS
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+%
+% The above copyright notice and this permission notice shall be included in
+% all copies or substantial portions of the Software.
+%
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+
+function [X, fX, i, p] = minimize(X, F, p, varargin)
+if isnumeric(p), p = struct('length', p); end             % convert p to struct
+if p.length > 0, p.S = 'linesearch #'; else p.S = 'function evaluation #'; end;
+x = unwrap(X);                                % convert initial guess to vector
+if ~isfield(p,'method'), if length(x) > 1000, p.method = @LBFGS;
+                         else p.method = @BFGS; end; end   % set default method
+if ~isfield(p,'verbosity'), p.verbosity = 1; end   % default 1 line text output
+if ~isfield(p,'MFEPLS'), p.MFEPLS = 10; end    % Max Func Evals Per Line Search
+if ~isfield(p,'MSR'), p.MSR = 100; end                % Max Slope Ratio default
+if isfield(p,'fh')&&~isempty(p.fh)&&ishandle(p.fh); clf(p.fh); end
+f(F, X, varargin{:});                                   % set up the function f
+[fx, dfx] = f(x);                      % initial function value and derivatives
+if ~isscalar(fx); error('Objective function value must be a scalar'); end
+if any(isnan(fx+dfx)) || any(isinf(fx+dfx)); 
+  error('Evaluating objective function with initial parameters returns NaN or Inf');
+end
+if p.verbosity, printf('Initial Function Value %4.6e\n', fx); end
+if p.verbosity > 2,
+  ah = ahandles(p);
+  hold(ah(1),'on'); xlabel(ah(1),p.S); ylabel(ah(1),'function value');
+  plot(ah(1),p.length < 0, fx, '+'); drawnow;
+end
+[x, fX, i, p] = feval(p.method, x, fx, dfx, p);  % minimize using direction method 
+X = rewrap(X, x);                   % convert answer to original representation
+if p.verbosity, printf('\n'); end
+
+function [x, fx, i, p] = CG(x0, fx0, dfx0, p)
+if ~isfield(p, 'SIG'), p.SIG = 0.1; end       % default for line search quality 
+i = p.length < 0; ok = 1;                         % initialize resource counter
+r = -dfx0; s = -r'*r; b = -1/(s-1); bs = -1; fx = fx0;       % steepest descent
+while i < abs(p.length)
+  b = b*bs/min(b*s,bs/p.MSR);    % suitable initial step size using slope ratio
+  b = min(b,1/norm(r));                    % limit step size in parameter space
+  b = max(b,1e-7/norm(r));
+  [x, b, fx0, dfx, i] = lineSearch(x0, fx0, dfx0, r, s, b, i, p);
+  if i < 0                                              % if line search failed
+    i = -i; if ok, ok = 0; r = -dfx; else break; end     % try steepest or stop
+  else
+    ok = 1; bs = b*s;        % record step times slope (for slope ratio method)
+    r = (dfx'*(dfx-dfx0))/(dfx0'*dfx0)*r - dfx;             % Polack-Ribiere CG
+  end  
+  s = r'*dfx; if s >= 0, r = -dfx; s = r'*dfx; ok = 0; end  % slope must be -ve 
+  x0 = x; dfx0 = dfx; fx = [fx; fx0];        % replace old values with new ones
+end
+
+function [x, fx, i, p] = BFGS(x0, fx0, dfx0, p)
+if ~isfield(p, 'SIG'), p.SIG = 0.5; end       % default for line search quality
+i = p.length < 0; ok = 1;                         % initialize resource counter
+x = x0; fx = fx0; r = -dfx0; s = -r'*r; b = -1/(s-1); H = eye(length(x0));
+while i < abs(p.length)
+ b = min(b,1/norm(r));                    % limit step size in parameter space
+ b = max(b,1e-7/norm(r));
+  [x, b, fx0, dfx, i] = lineSearch(x0, fx0, dfx0, r, s, b, i, p);
+  if i < 0
+    i = -i; if ok, ok = 0; else break; end;              % try steepest or stop
+  else
+    ok = 1; t = x - x0; y = dfx - dfx0; ty = t'*y; Hy = H*y;
+    H = H + (ty+y'*Hy)/ty^2*t*t' - 1/ty*Hy*t' - 1/ty*t*Hy';       % BFGS update
+  end
+  r = -H*dfx; s = r'*dfx; x0 = x; dfx0 = dfx; fx = [fx; fx0];
+  p.H = H;
+  
+end
+
+function [x, fx, i, p] = LBFGS(x0, fx0, dfx0, p);
+if ~isfield(p, 'SIG'), p.SIG = 0.5; end       % default for line search quality
+n = length(x0); k = 0; ok = 1; x = x0; fx = fx0; bs = -1/p.MSR;
+if isfield(p, 'mem'), m = p.mem; else m = min(100, n); end    % set memory size
+a = zeros(1, m); t = zeros(n, m); y = zeros(n, m);            % allocate memory
+i = p.length < 0;                                 % initialize resource counter
+while i < abs(p.length)
+  q = dfx0;
+  for j = rem(k-1:-1:max(0,k-m),m)+1
+    a(j) = t(:,j)'*q/rho(j); q = q-a(j)*y(:,j);
+  end
+  if k == 0, r = -q/(q'*q); else r = -t(:,j)'*y(:,j)/(y(:,j)'*y(:,j))*q; end
+  for j = rem(max(0,k-m):k-1,m)+1
+    r = r-t(:,j)*(a(j)+y(:,j)'*r/rho(j));
+  end
+  s = r'*dfx0; if s >= 0, r = -dfx0; s = r'*dfx0; k = 0; ok = 0; end
+  b = bs/min(bs,s/p.MSR);              % suitable initial step size (usually 1)
+  b = min(b,1/norm(r));                    % limit step size in parameter space
+  b = max(b,1e-7/norm(r));
+  if isnan(r) | isinf(r)                                % if nonsense direction
+    i = -i;                                              % try steepest or stop
+  else
+    [x, b, fx0, dfx, i] = lineSearch(x0, fx0, dfx0, r, s, b, i, p); 
+  end
+  if i < 0                                              % if line search failed
+    i = -i; if ok, ok = 0; k = 0; else break; end        % try steepest or stop
+  else
+    j = rem(k,m)+1; t(:,j) = x-x0; y(:,j) = dfx-dfx0; rho(j) = t(:,j)'*y(:,j);
+    ok = 1; k = k+1; bs = b*s;
+  end
+  x0 = x; dfx0 = dfx; fx = [fx; fx0];                  % replace and add values
+end
+
+function [x, a, fx, df, i] = lineSearch(x0, f0, df0, d, s, a, i, p)
+if p.length < 0, LIMIT = min(p.MFEPLS, -i-p.length); else LIMIT = p.MFEPLS; end
+p0.x = 0.0; p0.f = f0; p0.df = df0; p0.s = s; p1 = p0;         % init p0 and p1
+j = 0; p3.x = a; wp(p0, p.SIG, 0);         % set step & Wolfe-Powell conditions
+if p.verbosity > 2
+  A = [-a a]/5; nd = norm(d); ah = ahandles(p);
+  hold(ah(2),'off'); plot(ah(2),0, f0, 'k+'); hold(ah(2),'on'); plot(ah(2),nd*A, f0+s*A, 'k-');
+  xlabel(ah(2),'distance in line search direction'); ylabel(ah(2),'function value');
+end
+while 1                               % keep extrapolating as long as necessary
+  ok = 0; 
+  while ~ok && j < LIMIT
+    try           % try, catch and bisect to safeguard extrapolation evaluation
+      j = j+1; [p3.f p3.df] = f(x0+p3.x*d); p3.s = p3.df'*d; ok = 1; 
+      if isnan(p3.f+p3.s) || isinf(p3.f+p3.s)
+        error('Objective function returned Inf or NaN','');
+      end;
+    catch
+      if p.verbosity > 1, printf('\n'); warning(lasterr); end % warn or silence
+      p3.x = (p1.x+p3.x)/2; ok = 0; p3.f = NaN;  p3.s = NaN;% bisect, and retry
+    end
+  end
+  if p.verbosity > 2
+    ah = ahandles(p); hold(ah(2),'on');
+    plot(ah(2),nd*p3.x, p3.f, 'b+'); plot(ah(2),nd*(p3.x+A), p3.f+p3.s*A, 'b-'); drawnow
+  end
+  if wp(p3) || j >= LIMIT, break; end                                    % done?
+  p0 = p1; p1 = p3;                                  % move points back one unit
+  p3.x = p0.x + minCubic(p1.x-p0.x, p1.f-p0.f, p0.s, p1.s, 1);    % cubic extrap
+end
+while 1                                % keep interpolating as long as necessary
+  if isnan(p3.f+p3.s) || isinf(p3.f+p3.s); p2 = p1; break; end % if final extrap failed
+  if p1.f > p3.f, p2 = p3; else p2 = p1; end           % make p2 the best so far
+  if wp(p2) > 1 || j >= LIMIT, break; end                                % done?
+  p2.x = p1.x + minCubic(p3.x-p1.x, p3.f-p1.f, p1.s, p3.s, 0);    % cubic interp
+  ok = 0; 
+  while ~ok && j < LIMIT;   % until function successfully evaluated or j = LIMIT
+    try                                     % try to evaluate objective function
+       j = j+1; [p2.f p2.df] = f(x0+p2.x*d); p2.s = p2.df'*d; ok = 1;
+       if isnan(p2.f+p2.s) || isinf(p2.f+p2.s)
+           error('Objective function returned Inf or NaN','');
+       end
+    catch                             % failed to successfully evaluate function
+       if p.verbosity > 1, printf('\n'); warning(lasterr); end % warn or silence
+       p2.x = (p1.x+p2.x)/2; ok = 0; if LIMIT == j; p2 = p1; end
+    end
+  end
+  if p.verbosity > 2
+    ah = ahandles(p); hold(ah(2),'on');
+    plot(ah(2),nd*p2.x, p2.f, 'r+'); plot(ah(2),nd*(p2.x+A), p2.f+p2.s*A, 'r'); drawnow
+  end
+  if wp(p2) > -1 && p2.s > 0 || wp(p2) < -1, p3 = p2; else p1 = p2; end % bracket
+end
+x = x0+p2.x*d; fx = p2.f; df = p2.df; a = p2.x;        % return the value found
+if p.length < 0, i = i+j; else i = i+1; end % count func evals or line searches
+if p.verbosity, printf('%s %6i;  value %4.6e\r', p.S, i, fx); end 
+if wp(p2) < 2, i = -i; end                                   % indicate faliure 
+if p.verbosity > 2
+  ah = ahandles(p); hold(ah(1),'on'); hold(ah(2),'on');
+  if i>0, plot(ah(2),norm(d)*p2.x, fx, 'go'); end
+  plot(ah(1),abs(i), fx, '+'); drawnow;
+end
+
+function z = minCubic(x, df, s0, s1, extr)   % minimizer of approximating cubic
+INT = 0.1; EXT = 5.0;                    % interpolate and extrapolation limits
+A = -6*df+3*(s0+s1)*x; B = 3*df-(2*s0+s1)*x; z = -s0*x*x/(B+sqrt(B*B-A*s0*x));
+if extr                                                 % are we extrapolating?
+  if ~isreal(z) | ~isfinite(z) | z < x | z > x*EXT, z = EXT*x; end  % fix bad z
+  z = max(z, (1+INT)*x);                          % extrapolate by at least INT
+else                                               % else, we are interpolating
+  if ~isreal(z) | ~isfinite(z) | z < 0 | z > x, z = x/2; end;       % fix bad z
+  z = min(max(z, INT*x), (1-INT)*x);    % at least INT away from the boundaries
+end
+
+function y = wp(p, SIG, RHO)
+persistent a b c sig rho;
+if nargin == 3    % if three arguments, then set up the Wolfe-Powell conditions
+  a = RHO*p.s; b = p.f; c = -SIG*p.s; sig = SIG; rho = RHO; y = 0;
+else
+  if p.f > a*p.x+b                                  % function value too large?
+    if a > 0, y = -1; else y = -2; end                  
+  else
+    if p.s < -c, y = 0; elseif p.s > c, y = 1; else y = 2; end
+%   if sig*abs(p.s) > c, a = rho*p.s; b = p.f-a*p.x; c = sig*abs(p.s); end
+  end
+end
+
+function [fx, dfx] = f(varargin)
+persistent F p;
+if nargout == 0
+  p = varargin; if ischar(p{1}), F = str2func(p{1}); else F = p{1}; end
+else
+  [fx, dfx] = F(rewrap(p{2}, varargin{1}), p{3:end}); dfx = unwrap(dfx);
+end
+
+function v = unwrap(s)   % extract num elements of s (any type) into v (vector) 
+v = [];   
+if isnumeric(s)
+  v = s(:);                        % numeric values are recast to column vector
+elseif isstruct(s)
+  v = unwrap(struct2cell(orderfields(s))); % alphabetize, conv to cell, recurse
+elseif iscell(s)                                      % cell array elements are
+  for i = 1:numel(s), v = [v; unwrap(s{i})]; end         % handled sequentially
+end                                                   % other types are ignored
+
+function [s v] = rewrap(s, v)    % map elements of v (vector) onto s (any type)
+if isnumeric(s)
+  if numel(v) < numel(s)
+    error('The vector for conversion contains too few elements')
+  end
+  s = reshape(v(1:numel(s)), size(s));            % numeric values are reshaped
+  v = v(numel(s)+1:end);                        % remaining arguments passed on
+elseif isstruct(s) 
+  [s p] = orderfields(s); p(p) = 1:numel(p);      % alphabetize, store ordering
+  [t v] = rewrap(struct2cell(s), v);                 % convert to cell, recurse
+  s = orderfields(cell2struct(t,fieldnames(s),1),p);  % conv to struct, reorder
+elseif iscell(s)
+  for i = 1:numel(s)             % cell array elements are handled sequentially
+    [s{i} v] = rewrap(s{i}, v);
+  end
+end                                             % other types are not processed
+
+function printf(varargin)
+fprintf(varargin{:}); if exist('fflush','builtin') fflush(stdout); end
+
+function ah = ahandles(p)
+persistent fh
+if isfield(p,'fh') && ~isempty(p.fh) && ishandle(p.fh); fh = p.fh;
+elseif isempty(fh) || ~ishandle(fh); fh = figure;
+end
+ah(1) = subplot(2,1,1,'Parent',fh); ah(2) = subplot(2,1,2,'Parent',fh);
+
+##### SOURCE END #####
+--></body></html>

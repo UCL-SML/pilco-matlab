@@ -1,0 +1,58 @@
+
+% This LaTeX was auto-generated from an M-file by MATLAB.
+% To make changes, update the M-file and republish this document.
+
+
+
+    
+    
+
+\subsection*{rewrap.m} 
+
+\begin{par}
+\textbf{Summary:} Map the numerical elements in the vector $v$ onto the variables $s$, which can be of any type. The number of numerical elements must match; on exit, $v$ should be empty. Non-numerical entries are just copied. See also the reverse unwrap.m.
+\end{par} \vspace{1em}
+
+\begin{verbatim}  [s v] = rewrap(s, v)\end{verbatim}
+    \begin{par}
+\textbf{Input arguments:}
+\end{par} \vspace{1em}
+\begin{verbatim}s     structure, cell, or numeric values
+v     structure, cell, or numeric values\end{verbatim}
+\begin{par}
+\textbf{Output arguments:}
+\end{par} \vspace{1em}
+\begin{verbatim}s     structure, cell, or numeric values
+v     [empty]\end{verbatim}
+\begin{par}
+Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+\end{par} \vspace{1em}
+\begin{par}
+Last modified: 2013-03-25
+\end{par} \vspace{1em}
+
+\begin{lstlisting}
+function [s v] = rewrap(s, v)
+\end{lstlisting}
+
+
+\subsection*{Code} 
+
+
+\begin{lstlisting}
+if isnumeric(s)
+  if numel(v) < numel(s)
+    error('The vector for conversion contains too few elements')
+  end
+  s = reshape(v(1:numel(s)), size(s));            % numeric values are reshaped
+  v = v(numel(s)+1:end);                        % remaining arguments passed on
+elseif isstruct(s)
+  [s p] = orderfields(s); p(p) = 1:numel(p);      % alphabetize, store ordering
+  [t v] = rewrap(struct2cell(s), v);                 % convert to cell, recurse
+  s = orderfields(cell2struct(t,fieldnames(s),1),p);  % conv to struct, reorder
+elseif iscell(s)
+  for i = 1:numel(s)             % cell array elements are handled sequentially
+    [s{i} v] = rewrap(s{i}, v);
+  end
+end
+\end{lstlisting}

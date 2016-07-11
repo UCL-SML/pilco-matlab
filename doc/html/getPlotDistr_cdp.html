@@ -1,0 +1,208 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>getPlotDistr_cdp.m</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="getPlotDistr_cdp.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>getPlotDistr_cdp.m</h1><!--introduction--><p><b>Summary:</b> Compute means and covariances of the Cartesian coordinates of the tips both the inner and outer pendulum assuming that the joint state <img src="getPlotDistr_cdp_eq43551.png" alt="$x$"> of the cart-double-pendulum system is Gaussian, i.e., <img src="getPlotDistr_cdp_eq30108.png" alt="$x\sim N(m, s)$"></p><pre>   function [M1, S1, M2, S2] = getPlotDistr_cdp(m, s, ell1, ell2)</pre><p><b>Input arguments:</b></p><pre class="language-matlab">m       <span class="string">mean</span> <span class="string">of</span> <span class="string">full</span> <span class="string">state</span>                                    <span class="string">[6 x 1]</span>
+s       <span class="string">covariance</span> <span class="string">of</span> <span class="string">full</span> <span class="string">state</span>                              <span class="string">[6 x 6]</span>
+ell1    <span class="string">length</span> <span class="string">of</span> <span class="string">inner</span> <span class="string">pendulum</span>
+ell2    <span class="string">length</span> <span class="string">of</span> <span class="string">outer</span> <span class="string">pendulum</span>
+</pre><pre class="language-matlab">Note: this code <span class="string">assumes</span> <span class="string">that</span> <span class="string">the</span> <span class="string">following</span> <span class="string">order</span> <span class="string">of</span> <span class="string">the</span> <span class="string">state:</span>
+       1: cart pos.,
+       2: cart vel.,
+       3: pend1 angular <span class="string">velocity</span>,
+       4: pend2 angular <span class="string">velocity</span>,
+       5: pend1 angle,
+       6: pend2 angle
+</pre><p><b>Output arguments:</b></p><pre class="language-matlab">M1      <span class="string">mean</span> <span class="string">of</span> <span class="string">tip</span> <span class="string">of</span> <span class="string">inner</span> <span class="string">pendulum</span>                         <span class="string">[2 x 1]</span>
+S1      <span class="string">covariance</span> <span class="string">of</span> <span class="string">tip</span> <span class="string">of</span> <span class="string">inner</span> <span class="string">pendulum</span>                   <span class="string">[2 x 2]</span>
+M2      <span class="string">mean</span> <span class="string">of</span> <span class="string">tip</span> <span class="string">of</span> <span class="string">outer</span> <span class="string">pendulum</span>                         <span class="string">[2 x 1]</span>
+S2      <span class="string">covariance</span> <span class="string">of</span> <span class="string">tip</span> <span class="string">of</span> <span class="string">outer</span> <span class="string">pendulum</span>                   <span class="string">[2 x 2]</span>
+</pre><p>Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</p><p>Last modification: 2013-03-06</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">High-Level Steps</a></li><li><a href="#2">Code</a></li></ul></div><h2>High-Level Steps<a name="1"></a></h2><div><ol><li>Augment input distribution to complex angle representation</li><li>Compute means of tips of pendulums (in Cartesian coordinates)</li><li>Compute covariances of tips of pendulums (in Cartesian coordinates)</li></ol></div><pre class="codeinput"><span class="keyword">function</span> [M1, S1, M2, S2] = getPlotDistr_cdp(m, s, ell1, ell2)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput"><span class="comment">% 1. Augment input distribution (complex representation)</span>
+[m1 s1 c1] = gTrig(m, s, [5 6], [ell1, ell2]); <span class="comment">% map input through sin/cos</span>
+m1 = [m; m1];        <span class="comment">% mean of joint</span>
+c1 = s*c1;           <span class="comment">% cross-covariance between input and prediction</span>
+s1 = [s c1; c1' s1]; <span class="comment">% covariance of joint</span>
+
+<span class="comment">% 2. Mean of the tips of the pendulums (Cart. coord.)</span>
+M1 = [m1(1) - m1(7); m1(8)];     <span class="comment">% p2: E[x -l1\sin\theta_2]; E[l2\cos\theta_2]</span>
+M2 = [M1(1) - m1(9); M1(2) + m1(10)];               <span class="comment">% p3: mean of cart. coord.</span>
+
+<span class="comment">% 2. Put covariance matrices together (Cart. coord.)</span>
+<span class="comment">% first set of coordinates (tip of 1st pendulum)</span>
+S1(1,1) = s1(1,1) + s1(7,7) -2*s1(1,7);
+S1(2,2) = s1(8,8);
+S1(1,2) = s1(1,8) - s1(7,8);
+S1(2,1) = S1(1,2)';
+
+<span class="comment">% second set of coordinates (tip of 2nd pendulum)</span>
+S2(1,1) = S1(1,1) + s1(9,9)  + 2*(s1(1,9) - s1(7,9));
+S2(2,2) = s1(8,8) + s1(10,10) + 2*s1(8,10);
+S2(1,2) = s1(1,8) - s1(7,8) - s1(9,8) <span class="keyword">...</span>
+        + s1(1,10) - s1(7,10) - s1(9,10);
+S2(2,1) = S2(1,2)';
+
+<span class="comment">% make sure we have proper covariances (sometimes numerical problems occur)</span>
+<span class="keyword">try</span>
+  chol(S1);
+<span class="keyword">catch</span>
+  warning(<span class="string">'matrix S1 not pos.def. (getPlotDistr)'</span>);
+  S1 = S1 + (1e-6 - min(eig(S1)))*eye(2);
+<span class="keyword">end</span>
+
+<span class="keyword">try</span>
+  chol(S2);
+<span class="keyword">catch</span>
+  warning(<span class="string">'matrix S2 not pos.def. (getPlotDistr)'</span>);
+  S2 = S2 + (1e-6 - min(eig(S2)))*eye(2);
+<span class="keyword">end</span>
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% getPlotDistr_cdp.m
+% *Summary:* Compute means and covariances of the Cartesian coordinates of
+% the tips both the inner and outer pendulum assuming that the joint state
+% $x$ of the cart-double-pendulum system is Gaussian, i.e., $x\sim N(m, s)$
+%
+%
+%     function [M1, S1, M2, S2] = getPlotDistr_cdp(m, s, ell1, ell2)
+%
+%
+%
+% *Input arguments:*
+%
+%   m       mean of full state                                    [6 x 1]
+%   s       covariance of full state                              [6 x 6]
+%   ell1    length of inner pendulum
+%   ell2    length of outer pendulum
+%
+%   Note: this code assumes that the following order of the state:
+%          1: cart pos., 
+%          2: cart vel., 
+%          3: pend1 angular velocity,
+%          4: pend2 angular velocity, 
+%          5: pend1 angle, 
+%          6: pend2 angle
+%
+% *Output arguments:*
+%
+%   M1      mean of tip of inner pendulum                         [2 x 1]
+%   S1      covariance of tip of inner pendulum                   [2 x 2]
+%   M2      mean of tip of outer pendulum                         [2 x 1]
+%   S2      covariance of tip of outer pendulum                   [2 x 2]
+%
+% Copyright (C) 2008-2013 by 
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modification: 2013-03-06
+%
+%% High-Level Steps
+% # Augment input distribution to complex angle representation
+% # Compute means of tips of pendulums (in Cartesian coordinates)
+% # Compute covariances of tips of pendulums (in Cartesian coordinates)
+
+function [M1, S1, M2, S2] = getPlotDistr_cdp(m, s, ell1, ell2)
+%% Code
+
+% 1. Augment input distribution (complex representation)
+[m1 s1 c1] = gTrig(m, s, [5 6], [ell1, ell2]); % map input through sin/cos
+m1 = [m; m1];        % mean of joint
+c1 = s*c1;           % cross-covariance between input and prediction
+s1 = [s c1; c1' s1]; % covariance of joint
+
+% 2. Mean of the tips of the pendulums (Cart. coord.)
+M1 = [m1(1) - m1(7); m1(8)];     % p2: E[x -l1\sin\theta_2]; E[l2\cos\theta_2]
+M2 = [M1(1) - m1(9); M1(2) + m1(10)];               % p3: mean of cart. coord.
+
+% 2. Put covariance matrices together (Cart. coord.)
+% first set of coordinates (tip of 1st pendulum)
+S1(1,1) = s1(1,1) + s1(7,7) -2*s1(1,7);
+S1(2,2) = s1(8,8); 
+S1(1,2) = s1(1,8) - s1(7,8);
+S1(2,1) = S1(1,2)';
+
+% second set of coordinates (tip of 2nd pendulum)
+S2(1,1) = S1(1,1) + s1(9,9)  + 2*(s1(1,9) - s1(7,9));
+S2(2,2) = s1(8,8) + s1(10,10) + 2*s1(8,10);
+S2(1,2) = s1(1,8) - s1(7,8) - s1(9,8) ...
+        + s1(1,10) - s1(7,10) - s1(9,10);
+S2(2,1) = S2(1,2)';
+
+% make sure we have proper covariances (sometimes numerical problems occur)
+try
+  chol(S1); 
+catch
+  warning('matrix S1 not pos.def. (getPlotDistr)');
+  S1 = S1 + (1e-6 - min(eig(S1)))*eye(2);
+end
+
+try
+  chol(S2); 
+catch
+  warning('matrix S2 not pos.def. (getPlotDistr)');
+  S2 = S2 + (1e-6 - min(eig(S2)))*eye(2);
+end
+##### SOURCE END #####
+--></body></html>

@@ -1,0 +1,166 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>sq_dist</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="sq_dist.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#1">sq_dist.m</a></li><li><a href="#2">Code</a></li></ul></div><h2>sq_dist.m<a name="1"></a></h2><p>sq_dist - a function to compute a matrix of all pairwise squared distances between two sets of vectors, stored in the columns of the two matrices, a (of size D by n) and b (of size D by m). If only a single argument is given or the second matrix is empty, the missing matrix is taken to be identical to the first.</p><p>Special functionality: If an optional third matrix argument Q is given, it must be of size n by m, and in this case a vector of the traces of the product of Q' and the coordinatewise squared distances is returned.</p><p>NOTE: The program code is written in the C language for efficiency and is contained in the file sq_dist.c, and should be compiled using matlabs mex facility. However, this file also contains a (less efficient) matlab implementation, supplied only as a help to people unfamiliar with mex. If the C code has been properly compiled and is avaiable, it automatically takes precendence over the matlab code in this file.</p><p>Usage: C = sq_dist(a, b)    or: C = sq_dist(a)  or equiv.: C = sq_dist(a, [])    or: c = sq_dist(a, b, Q) where the b matrix may be empty.</p><p>where a is of size D by n, b is of size D by m (or empty), C and Q are of size n by m and c is of size D by 1.</p><p>Copyright (c) 2003, 2004, 2005 and 2006 Carl Edward Rasmussen. 2006-03-09.</p><pre class="codeinput"><span class="keyword">function</span> C = sq_dist(a, b, Q);
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput"><span class="keyword">if</span> nargin &lt; 1 | nargin &gt; 3 | nargout &gt; 1
+  error(<span class="string">'Wrong number of arguments.'</span>);
+<span class="keyword">end</span>
+
+<span class="keyword">if</span> nargin == 1 | isempty(b)                   <span class="comment">% input arguments are taken to be</span>
+  b = a;                                   <span class="comment">% identical if b is missing or empty</span>
+<span class="keyword">end</span>
+
+[D, n] = size(a);
+[d, m] = size(b);
+<span class="keyword">if</span> d ~= D
+  error(<span class="string">'Error: column lengths must agree.'</span>);
+<span class="keyword">end</span>
+
+<span class="keyword">if</span> nargin &lt; 3
+  C = zeros(n,m);
+  <span class="keyword">for</span> d = 1:D
+    C = C + (repmat(b(d,:), n, 1) - repmat(a(d,:)', 1, m)).^2;
+  <span class="keyword">end</span>
+  <span class="comment">% C = repmat(sum(a.*a)',1,m)+repmat(sum(b.*b),n,1)-2*a'*b could be used to</span>
+  <span class="comment">% replace the 3 lines above; it would be faster, but numerically less stable.</span>
+<span class="keyword">else</span>
+  <span class="keyword">if</span> [n m] == size(Q)
+    C = zeros(D,1);
+    <span class="keyword">for</span> d = 1:D
+      C(d) = sum(sum((repmat(b(d,:), n, 1) - repmat(a(d,:)', 1, m)).^2.*Q));
+    <span class="keyword">end</span>
+  <span class="keyword">else</span>
+    error(<span class="string">'Third argument has wrong size.'</span>);
+  <span class="keyword">end</span>
+<span class="keyword">end</span>
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% sq_dist.m
+% sq_dist - a function to compute a matrix of all pairwise squared distances
+% between two sets of vectors, stored in the columns of the two matrices, a
+% (of size D by n) and b (of size D by m). If only a single argument is given
+% or the second matrix is empty, the missing matrix is taken to be identical
+% to the first.
+%
+% Special functionality: If an optional third matrix argument Q is given, it
+% must be of size n by m, and in this case a vector of the traces of the
+% product of Q' and the coordinatewise squared distances is returned.
+%
+% NOTE: The program code is written in the C language for efficiency and is
+% contained in the file sq_dist.c, and should be compiled using matlabs mex
+% facility. However, this file also contains a (less efficient) matlab
+% implementation, supplied only as a help to people unfamiliar with mex. If
+% the C code has been properly compiled and is avaiable, it automatically
+% takes precendence over the matlab code in this file.
+%
+% Usage: C = sq_dist(a, b)
+%    or: C = sq_dist(a)  or equiv.: C = sq_dist(a, [])
+%    or: c = sq_dist(a, b, Q)
+% where the b matrix may be empty.
+%
+% where a is of size D by n, b is of size D by m (or empty), C and Q are of
+% size n by m and c is of size D by 1.
+%
+% Copyright (c) 2003, 2004, 2005 and 2006 Carl Edward Rasmussen. 2006-03-09.
+
+function C = sq_dist(a, b, Q);
+%% Code
+
+if nargin < 1 | nargin > 3 | nargout > 1
+  error('Wrong number of arguments.');
+end
+
+if nargin == 1 | isempty(b)                   % input arguments are taken to be
+  b = a;                                   % identical if b is missing or empty
+end 
+
+[D, n] = size(a); 
+[d, m] = size(b);
+if d ~= D
+  error('Error: column lengths must agree.');
+end
+
+if nargin < 3
+  C = zeros(n,m);
+  for d = 1:D
+    C = C + (repmat(b(d,:), n, 1) - repmat(a(d,:)', 1, m)).^2;
+  end
+  % C = repmat(sum(a.*a)',1,m)+repmat(sum(b.*b),n,1)-2*a'*b could be used to 
+  % replace the 3 lines above; it would be faster, but numerically less stable.
+else
+  if [n m] == size(Q)
+    C = zeros(D,1);
+    for d = 1:D
+      C(d) = sum(sum((repmat(b(d,:), n, 1) - repmat(a(d,:)', 1, m)).^2.*Q));
+    end
+  else
+    error('Third argument has wrong size.');
+  end
+end
+
+##### SOURCE END #####
+--></body></html>

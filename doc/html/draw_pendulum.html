@@ -1,0 +1,214 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>draw_pendulum</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="draw_pendulum.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#1">draw_pendulum.m</a></li><li><a href="#2">Code</a></li></ul></div><h2>draw_pendulum.m<a name="1"></a></h2><p><b>Summary:</b> Draw the pendulum system with reward, applied torque, and predictive uncertainty of the tips of the pendulums</p><pre>  function draw_pendulum(theta, torque, cost, text1, text2, M, S)</pre><p><b>Input arguments:</b></p><pre class="language-matlab">theta1     <span class="string">angle</span> <span class="string">of</span> <span class="string">inner</span> <span class="string">pendulum</span>
+theta2     <span class="string">angle</span> <span class="string">of</span> <span class="string">outer</span> <span class="string">pendulum</span>
+f1         <span class="string">torque</span> <span class="string">applied</span> <span class="string">to</span> <span class="string">inner</span> <span class="string">pendulum</span>
+f2         <span class="string">torque</span> <span class="string">applied</span> <span class="string">to</span> <span class="string">outer</span> <span class="string">pendulum</span>
+cost       <span class="string">cost</span> <span class="string">structure</span>
+  .fcn     <span class="keyword">function</span> handle (it is assumed to use saturating cost)
+  .&lt;&gt;      other fields <span class="string">that</span> <span class="string">are</span> <span class="string">passed</span> <span class="string">to</span> <span class="string">cost</span>
+text1      (optional) text <span class="string">field</span> <span class="string">1</span>
+text2      (optional) text <span class="string">field</span> <span class="string">2</span>
+M          (optional) mean <span class="string">of</span> <span class="string">state</span>
+S          (optional) covariance <span class="string">of</span> <span class="string">state</span>
+</pre><p>Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</p><p>Last modified: 2013-03-18</p><pre class="codeinput"><span class="keyword">function</span> draw_pendulum(theta, torque, cost, text1, text2, M, S)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput">l = 0.6;
+xmin = -1.2*l;
+xmax = 1.2*l;
+umax = 0.5;
+height = 0;
+
+<span class="comment">% Draw pendulum</span>
+pendulum = [0, 0; l*sin(theta), -l*cos(theta)];
+clf; hold <span class="string">on</span>
+plot(pendulum(:,1), pendulum(:,2),<span class="string">'r'</span>,<span class="string">'linewidth'</span>,4)
+
+<span class="comment">% plot ellipses around tips of pendulum (if M, S exist)</span>
+<span class="keyword">try</span>
+  <span class="keyword">if</span> max(max(S))&gt;0
+    err = linspace(-1,1,100)*sqrt(S(2,2));
+    plot(l*sin(M(2)+2*err),-l*cos(M(2)+2*err),<span class="string">'b'</span>,<span class="string">'linewidth'</span>,1)
+    plot(l*sin(M(2)+err),-l*cos(M(2)+err),<span class="string">'b'</span>,<span class="string">'linewidth'</span>,2)
+    plot(l*sin(M(2)),-l*cos(M(2)),<span class="string">'b.'</span>,<span class="string">'markersize'</span>,20)
+  <span class="keyword">end</span>
+<span class="keyword">catch</span>
+<span class="keyword">end</span>
+
+<span class="comment">% Draw useful information</span>
+<span class="comment">% target location</span>
+plot(0,l,<span class="string">'k+'</span>,<span class="string">'MarkerSize'</span>,20);
+plot([xmin, xmax], [-height, -height],<span class="string">'k'</span>,<span class="string">'linewidth'</span>,2)
+<span class="comment">% joint</span>
+plot(0,0,<span class="string">'k.'</span>,<span class="string">'markersize'</span>,24)
+plot(0,0,<span class="string">'y.'</span>,<span class="string">'markersize'</span>,14)
+<span class="comment">% tip of pendulum</span>
+plot(l*sin(theta),-l*cos(theta),<span class="string">'k.'</span>,<span class="string">'markersize'</span>,24)
+plot(l*sin(theta),-l*cos(theta),<span class="string">'y.'</span>,<span class="string">'markersize'</span>,14)
+plot(0,-2*l,<span class="string">'.w'</span>,<span class="string">'markersize'</span>,0.005)
+<span class="comment">% applied torque</span>
+plot([0 torque/umax*xmax],[-0.5, -0.5],<span class="string">'g'</span>,<span class="string">'linewidth'</span>,10);
+<span class="comment">% immediate reward</span>
+reward = 1-cost.fcn(cost,[0, theta]',zeros(2));
+plot([0 reward*xmax],[-0.7, -0.7],<span class="string">'y'</span>, <span class="string">'linewidth'</span>,10);
+text(0,-0.5,<span class="string">'applied  torque'</span>)
+text(0,-0.7,<span class="string">'immediate reward'</span>)
+<span class="keyword">if</span> exist(<span class="string">'text1'</span>,<span class="string">'var'</span>)
+  text(0,-0.9, text1)
+<span class="keyword">end</span>
+<span class="keyword">if</span> exist(<span class="string">'text2'</span>,<span class="string">'var'</span>)
+  text(0,-1.1, text2)
+<span class="keyword">end</span>
+
+set(gca,<span class="string">'DataAspectRatio'</span>,[1 1 1],<span class="string">'XLim'</span>,[xmin xmax],<span class="string">'YLim'</span>,[-2*l 2*l]);
+axis <span class="string">off</span>;
+drawnow;
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% draw_pendulum.m
+% *Summary:* Draw the pendulum system with reward, applied torque, 
+% and predictive uncertainty of the tips of the pendulums
+%
+%    function draw_pendulum(theta, torque, cost, text1, text2, M, S)
+%
+%
+% *Input arguments:*
+%
+%   theta1     angle of inner pendulum
+%   theta2     angle of outer pendulum
+%   f1         torque applied to inner pendulum
+%   f2         torque applied to outer pendulum
+%   cost       cost structure
+%     .fcn     function handle (it is assumed to use saturating cost)
+%     .<>      other fields that are passed to cost
+%   text1      (optional) text field 1
+%   text2      (optional) text field 2
+%   M          (optional) mean of state
+%   S          (optional) covariance of state
+%
+%
+% Copyright (C) 2008-2013 by
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modified: 2013-03-18
+
+
+function draw_pendulum(theta, torque, cost, text1, text2, M, S)
+%% Code
+
+l = 0.6;
+xmin = -1.2*l; 
+xmax = 1.2*l;    
+umax = 0.5;
+height = 0;
+
+% Draw pendulum
+pendulum = [0, 0; l*sin(theta), -l*cos(theta)];
+clf; hold on
+plot(pendulum(:,1), pendulum(:,2),'r','linewidth',4)
+
+% plot ellipses around tips of pendulum (if M, S exist)
+try
+  if max(max(S))>0
+    err = linspace(-1,1,100)*sqrt(S(2,2));
+    plot(l*sin(M(2)+2*err),-l*cos(M(2)+2*err),'b','linewidth',1)
+    plot(l*sin(M(2)+err),-l*cos(M(2)+err),'b','linewidth',2)
+    plot(l*sin(M(2)),-l*cos(M(2)),'b.','markersize',20)
+  end
+catch
+end
+
+% Draw useful information
+% target location
+plot(0,l,'k+','MarkerSize',20);
+plot([xmin, xmax], [-height, -height],'k','linewidth',2)
+% joint
+plot(0,0,'k.','markersize',24)
+plot(0,0,'y.','markersize',14)
+% tip of pendulum
+plot(l*sin(theta),-l*cos(theta),'k.','markersize',24)
+plot(l*sin(theta),-l*cos(theta),'y.','markersize',14)
+plot(0,-2*l,'.w','markersize',0.005)
+% applied torque
+plot([0 torque/umax*xmax],[-0.5, -0.5],'g','linewidth',10);
+% immediate reward
+reward = 1-cost.fcn(cost,[0, theta]',zeros(2));
+plot([0 reward*xmax],[-0.7, -0.7],'y', 'linewidth',10);
+text(0,-0.5,'applied  torque')
+text(0,-0.7,'immediate reward')
+if exist('text1','var')  
+  text(0,-0.9, text1)
+end
+if exist('text2','var')  
+  text(0,-1.1, text2)
+end
+
+set(gca,'DataAspectRatio',[1 1 1],'XLim',[xmin xmax],'YLim',[-2*l 2*l]);
+axis off;
+drawnow;
+##### SOURCE END #####
+--></body></html>

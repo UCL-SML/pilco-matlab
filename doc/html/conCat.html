@@ -1,0 +1,244 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>concat.m</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="conCat.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>concat.m</h1><!--introduction--><p><b>Summary:</b> Compute a control signal <img src="conCat_eq35435.png" alt="$u$"> from a state distribution <img src="conCat_eq10310.png" alt="$x\sim\mathcal N(x|m,s)$">. Here, the predicted control distribution and its derivatives are computed by concatenating a controller "con" with a saturation function "sat", such as gSat.m.</p><pre>function [M, S, C, dMdm, dSdm, dCdm, dMds, dSds, dCds, dMdp, dSdp, dCdp] ...
+         = conCat(con, sat, policy, m, s)</pre><pre>Example call: conCat(@congp, @gSat, policy, m, s)</pre><p><b>Input arguments:</b></p><pre class="language-matlab">con       <span class="string">function</span> <span class="string">handle</span> <span class="string">(controller)</span>
+sat       <span class="string">function</span> <span class="string">handle</span> <span class="string">(squashing function)</span>
+policy    <span class="string">policy</span> <span class="string">structure</span>
+  .maxU   maximum <span class="string">amplitude</span> <span class="string">of</span> <span class="string">control</span> <span class="string">signal</span> <span class="string">(after squashing)</span>
+m         <span class="string">mean</span> <span class="string">of</span> <span class="string">input</span> <span class="string">distribution</span>                             <span class="string">[D x 1]</span>
+s         <span class="string">covariance</span> <span class="string">of</span> <span class="string">input</span> <span class="string">distribution</span>                       <span class="string">[D x D]</span>
+</pre><p><b>Output arguments:</b></p><pre class="language-matlab">M         <span class="string">control</span> <span class="string">mean</span>                                           <span class="string">[E   x   1]</span>
+S         <span class="string">control</span> <span class="string">covariance</span>                                     <span class="string">[E   x   E]</span>
+C         <span class="string">inv(s)*cov(x,u)</span>                                        <span class="string">[D   x   E]</span>
+dMdm      <span class="string">deriv.</span> <span class="string">of</span> <span class="string">expected</span> <span class="string">control</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">mean</span>              <span class="string">[E   x   D]</span>
+dSdm      <span class="string">deriv.</span> <span class="string">of</span> <span class="string">control</span> <span class="string">covariance</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">mean</span>            <span class="string">[E*E x   D]</span>
+dCdm      <span class="string">deriv.</span> <span class="string">of</span> <span class="string">C</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">mean</span>                             <span class="string">[D*E x   D]</span>
+dMds      <span class="string">deriv.</span> <span class="string">of</span> <span class="string">expected</span> <span class="string">control</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">covariance</span>        <span class="string">[E   x D*D]</span>
+dSds      <span class="string">deriv.</span> <span class="string">of</span> <span class="string">control</span> <span class="string">covariance</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">covariance</span>      <span class="string">[E*E x D*D]</span>
+dCds      <span class="string">deriv.</span> <span class="string">of</span> <span class="string">C</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">covariance</span>                       <span class="string">[D*E x D*D]</span>
+dMdp      <span class="string">deriv.</span> <span class="string">of</span> <span class="string">expected</span> <span class="string">control</span> <span class="string">wrt</span> <span class="string">policy</span> <span class="string">parameters</span>       <span class="string">[E   x   P]</span>
+dSdp      <span class="string">deriv.</span> <span class="string">of</span> <span class="string">control</span> <span class="string">covariance</span> <span class="string">wrt</span> <span class="string">policy</span> <span class="string">parameters</span>     <span class="string">[E*E x   P]</span>
+dCdp      <span class="string">deriv.</span> <span class="string">of</span> <span class="string">C</span> <span class="string">wrt</span> <span class="string">policy</span> <span class="string">parameters</span>                      <span class="string">[D*E x   P]</span>
+</pre><pre class="language-matlab">where <span class="string">P</span> <span class="string">is</span> <span class="string">the</span> <span class="string">total</span> <span class="string">number</span> <span class="string">of</span> <span class="string">policy</span> <span class="string">parameters</span>
+</pre><p>Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</p><p>Last modified: 2012-07-03</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">High-Level Steps</a></li><li><a href="#2">Code</a></li></ul></div><h2>High-Level Steps<a name="1"></a></h2><div><ol><li>Compute unsquashed control signal</li><li>Compute squashed control signal</li></ol></div><pre class="codeinput"><span class="keyword">function</span> [M, S, C, dMdm, dSdm, dCdm, dMds, dSds, dCds,  dMdp, dSdp, dCdp] <span class="keyword">...</span>
+  = conCat(con, sat, policy, m, s)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput">maxU=policy.maxU; <span class="comment">% amplitude limit of control signal</span>
+E=length(maxU);   <span class="comment">% dimension of control signal</span>
+D=length(m);      <span class="comment">% dimension of input</span>
+
+<span class="comment">% pre-compute some indices</span>
+F=D+E; j=D+1:F; i=1:D;
+<span class="comment">% initialize M and S</span>
+M = zeros(F,1); M(i) = m; S = zeros(F); S(i,i) = s;
+
+<span class="keyword">if</span> nargout &lt; 4   <span class="comment">% without derivatives</span>
+  [M(j), S(j,j), Q] = con(policy, m, s);  <span class="comment">% compute unsquashed control signal v</span>
+  q = S(i,i)*Q; S(i,j) = q; S(j,i) = q';  <span class="comment">% compute joint covariance S=cov(x,v)</span>
+  [M, S, R] = sat(M, S, j, maxU);         <span class="comment">% compute squashed control signal u</span>
+  C = [eye(D) Q]*R;                       <span class="comment">% inv(s)*cov(x,u)</span>
+<span class="keyword">else</span>             <span class="comment">% with derivatives</span>
+  Mdm = zeros(F,D); Sdm = zeros(F*F,D); Mdm(1:D,1:D) = eye(D);
+  Mds = zeros(F,D*D); Sds = kron(Mdm,Mdm);
+
+  X = reshape(1:F*F,[F F]); XT = X';                  <span class="comment">% vectorized indices</span>
+  I=0*X;I(j,j)=1; jj=X(I==1)'; I=0*X;I(i,j)=1;ij=X(I==1)'; ji=XT(I==1)';
+
+  <span class="comment">% 1. Unsquashed controller --------------------------------------------------</span>
+  [M(j), S(j,j), Q, Mdm(j,:), Sdm(jj,:), dQdm, Mds(j,:), <span class="keyword">...</span>
+    Sds(jj,:), dQds, Mdp, Sdp, dQdp] = con(policy, m, s);
+  q = S(i,i)*Q; S(i,j) = q; S(j,i) = q';  <span class="comment">% compute joint covariance S=cov(x,v)</span>
+
+  <span class="comment">% update the derivatives</span>
+  SS = kron(eye(E),S(i,i)); QQ = kron(Q',eye(D));
+  Sdm(ij,:) = SS*dQdm;      Sdm(ji,:) = Sdm(ij,:);
+  Sds(ij,:) = SS*dQds + QQ; Sds(ji,:) = Sds(ij,:);
+
+  <span class="comment">% 2. Apply Saturation -------------------------------------------------------</span>
+  [M, S, R, MdM, SdM, RdM, MdS, SdS, RdS] = sat(M, S, j, maxU);
+
+  <span class="comment">% apply chain-rule to compute derivatives after concatenation</span>
+  dMdm = MdM*Mdm + MdS*Sdm; dMds = MdM*Mds + MdS*Sds;
+  dSdm = SdM*Mdm + SdS*Sdm; dSds = SdM*Mds + SdS*Sds;
+  dRdm = RdM*Mdm + RdS*Sdm; dRds = RdM*Mds + RdS*Sds;
+
+  dMdp = MdM(:,j)*Mdp + MdS(:,jj)*Sdp;
+  dSdp = SdM(:,j)*Mdp + SdS(:,jj)*Sdp;
+  dRdp = RdM(:,j)*Mdp + RdS(:,jj)*Sdp;
+
+  C = [eye(D) Q]*R; <span class="comment">% inv(s)*cov(x,u)</span>
+  <span class="comment">% update the derivatives</span>
+  RR = kron(R(j,:)',eye(D)); QQ = kron(eye(E),[eye(D) Q]);
+  dCdm = QQ*dRdm + RR*dQdm;
+  dCds = QQ*dRds + RR*dQds;
+  dCdp = QQ*dRdp + RR*dQdp;
+<span class="keyword">end</span>
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% concat.m
+% *Summary:* Compute a control signal $u$ from a state distribution
+% $x\sim\mathcal N(x|m,s)$. Here, the predicted control distribution
+% and its derivatives are computed by concatenating a controller "con" with
+% a saturation function "sat", such as gSat.m.
+%
+%  function [M, S, C, dMdm, dSdm, dCdm, dMds, dSds, dCds, dMdp, dSdp, dCdp] ...
+%           = conCat(con, sat, policy, m, s)
+%
+%  Example call: conCat(@congp, @gSat, policy, m, s)
+%
+% *Input arguments:*
+%
+%   con       function handle (controller)
+%   sat       function handle (squashing function)
+%   policy    policy structure
+%     .maxU   maximum amplitude of control signal (after squashing)
+%   m         mean of input distribution                             [D x 1]
+%   s         covariance of input distribution                       [D x D]
+%
+% *Output arguments:*
+%
+%   M         control mean                                           [E   x   1]
+%   S         control covariance                                     [E   x   E]
+%   C         inv(s)*cov(x,u)                                        [D   x   E]
+%   dMdm      deriv. of expected control wrt input mean              [E   x   D]
+%   dSdm      deriv. of control covariance wrt input mean            [E*E x   D]
+%   dCdm      deriv. of C wrt input mean                             [D*E x   D]
+%   dMds      deriv. of expected control wrt input covariance        [E   x D*D]
+%   dSds      deriv. of control covariance wrt input covariance      [E*E x D*D]
+%   dCds      deriv. of C wrt input covariance                       [D*E x D*D]
+%   dMdp      deriv. of expected control wrt policy parameters       [E   x   P]
+%   dSdp      deriv. of control covariance wrt policy parameters     [E*E x   P]
+%   dCdp      deriv. of C wrt policy parameters                      [D*E x   P]
+%
+%   where P is the total number of policy parameters
+%
+%
+% Copyright (C) 2008-2013 by
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modified: 2012-07-03
+%
+%% High-Level Steps
+% # Compute unsquashed control signal
+% # Compute squashed control signal
+
+function [M, S, C, dMdm, dSdm, dCdm, dMds, dSds, dCds,  dMdp, dSdp, dCdp] ...
+  = conCat(con, sat, policy, m, s)
+%% Code
+
+maxU=policy.maxU; % amplitude limit of control signal
+E=length(maxU);   % dimension of control signal
+D=length(m);      % dimension of input
+
+% pre-compute some indices
+F=D+E; j=D+1:F; i=1:D;
+% initialize M and S
+M = zeros(F,1); M(i) = m; S = zeros(F); S(i,i) = s;
+
+if nargout < 4   % without derivatives
+  [M(j), S(j,j), Q] = con(policy, m, s);  % compute unsquashed control signal v
+  q = S(i,i)*Q; S(i,j) = q; S(j,i) = q';  % compute joint covariance S=cov(x,v)
+  [M, S, R] = sat(M, S, j, maxU);         % compute squashed control signal u
+  C = [eye(D) Q]*R;                       % inv(s)*cov(x,u)
+else             % with derivatives
+  Mdm = zeros(F,D); Sdm = zeros(F*F,D); Mdm(1:D,1:D) = eye(D);
+  Mds = zeros(F,D*D); Sds = kron(Mdm,Mdm);
+  
+  X = reshape(1:F*F,[F F]); XT = X';                  % vectorized indices
+  I=0*X;I(j,j)=1; jj=X(I==1)'; I=0*X;I(i,j)=1;ij=X(I==1)'; ji=XT(I==1)';
+  
+  % 1. Unsquashed controller REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH
+  [M(j), S(j,j), Q, Mdm(j,:), Sdm(jj,:), dQdm, Mds(j,:), ...
+    Sds(jj,:), dQds, Mdp, Sdp, dQdp] = con(policy, m, s);
+  q = S(i,i)*Q; S(i,j) = q; S(j,i) = q';  % compute joint covariance S=cov(x,v)
+  
+  % update the derivatives
+  SS = kron(eye(E),S(i,i)); QQ = kron(Q',eye(D));
+  Sdm(ij,:) = SS*dQdm;      Sdm(ji,:) = Sdm(ij,:);
+  Sds(ij,:) = SS*dQds + QQ; Sds(ji,:) = Sds(ij,:);
+  
+  % 2. Apply Saturation REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH-
+  [M, S, R, MdM, SdM, RdM, MdS, SdS, RdS] = sat(M, S, j, maxU);
+  
+  % apply chain-rule to compute derivatives after concatenation
+  dMdm = MdM*Mdm + MdS*Sdm; dMds = MdM*Mds + MdS*Sds;
+  dSdm = SdM*Mdm + SdS*Sdm; dSds = SdM*Mds + SdS*Sds;
+  dRdm = RdM*Mdm + RdS*Sdm; dRds = RdM*Mds + RdS*Sds;
+  
+  dMdp = MdM(:,j)*Mdp + MdS(:,jj)*Sdp;
+  dSdp = SdM(:,j)*Mdp + SdS(:,jj)*Sdp;
+  dRdp = RdM(:,j)*Mdp + RdS(:,jj)*Sdp;
+  
+  C = [eye(D) Q]*R; % inv(s)*cov(x,u)
+  % update the derivatives
+  RR = kron(R(j,:)',eye(D)); QQ = kron(eye(E),[eye(D) Q]);
+  dCdm = QQ*dRdm + RR*dQdm;
+  dCds = QQ*dRds + RR*dQds;
+  dCdp = QQ*dRdp + RR*dQdp;
+end
+##### SOURCE END #####
+--></body></html>

@@ -1,0 +1,248 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>rollout.m</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="rollout.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>rollout.m</h1><!--introduction--><p><b>Summary:</b> Generate a state trajectory using an ODE solver (and any additional dynamics) from a particular initial state by applying either a particular policy or random actions.</p><pre class="language-matlab"><span class="keyword">function</span> [x y L latent] = rollout(start, policy, H, plant, cost)
+</pre><p><b>Input arguments:</b></p><pre class="language-matlab">start       <span class="string">vector</span> <span class="string">containing</span> <span class="string">initial</span> <span class="string">states</span> <span class="string">(without controls)</span>   <span class="string">[nX  x  1]</span>
+policy      <span class="string">policy</span> <span class="string">structure</span>
+  .fcn        policy <span class="string">function</span>
+  .p          parameter <span class="string">structure</span> <span class="string">(if empty: use random actions)</span>
+  .maxU       vector <span class="string">of</span> <span class="string">control</span> <span class="string">input</span> <span class="string">saturation</span> <span class="string">values</span>           <span class="string">[nU  x  1]</span>
+H           <span class="string">rollout</span> <span class="string">horizon</span> <span class="string">in</span> <span class="string">steps</span>
+plant       <span class="string">the</span> <span class="string">dynamical</span> <span class="string">system</span> <span class="string">structure</span>
+  .subplant   (opt) additional <span class="string">discrete-time</span> <span class="string">dynamics</span>
+  .augment    (opt) augment <span class="string">state</span> <span class="string">using</span> <span class="string">a</span> <span class="string">known</span> <span class="string">mapping</span>
+  .constraint (opt) stop <span class="string">rollout</span> <span class="string">if</span> <span class="string">violated</span>
+  .poli       indices <span class="string">for</span> <span class="string">states</span> <span class="string">passed</span> <span class="string">to</span> <span class="string">the</span> <span class="string">policy</span>
+  .dyno       indices <span class="string">for</span> <span class="string">states</span> <span class="string">passed</span> <span class="string">to</span> <span class="string">cost</span>
+  .odei       indices <span class="string">for</span> <span class="string">states</span> <span class="string">passed</span> <span class="string">to</span> <span class="string">the</span> <span class="string">ode</span> <span class="string">solver</span>
+  .subi       (opt) indices <span class="string">for</span> <span class="string">states</span> <span class="string">passed</span> <span class="string">to</span> <span class="string">subplant</span> <span class="string">function</span>
+  .augi       (opt) indices <span class="string">for</span> <span class="string">states</span> <span class="string">passed</span> <span class="string">to</span> <span class="string">augment</span> <span class="string">function</span>
+cost    <span class="string">cost</span> <span class="string">structure</span>
+</pre><p><b>Output arguments:</b></p><pre class="language-matlab">x          <span class="string">matrix</span> <span class="string">of</span> <span class="string">observed</span> <span class="string">states</span>                           <span class="string">[H   x nX+nU]</span>
+y          <span class="string">matrix</span> <span class="string">of</span> <span class="string">corresponding</span> <span class="string">observed</span> <span class="string">successor</span> <span class="string">states</span>   <span class="string">[H   x   nX ]</span>
+L          <span class="string">cost</span> <span class="string">incurred</span> <span class="string">at</span> <span class="string">each</span> <span class="string">time</span> <span class="string">step</span>                     <span class="string">[ 1  x    H ]</span>
+latent     <span class="string">matrix</span> <span class="string">of</span> <span class="string">latent</span> <span class="string">states</span>                             <span class="string">[H+1 x   nX ]</span>
+</pre><p>Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</p><p>Last modification: 2013-05-21</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">High-Level Steps</a></li><li><a href="#2">Code</a></li></ul></div><h2>High-Level Steps<a name="1"></a></h2><div><ol><li>Compute control signal <img src="rollout_eq35435.png" alt="$u$"> from state <img src="rollout_eq43551.png" alt="$x$">: either apply policy or random actions</li><li>Simulate the true dynamics for one time step using the current pair <img src="rollout_eq25411.png" alt="$(x,u)$"></li><li>Check whether any constraints are violated (stop if true)</li><li>Apply random noise to the successor state</li><li>Compute cost (optional)</li><li>Repeat until end of horizon</li></ol></div><pre class="codeinput"><span class="keyword">function</span> [x y L latent] = rollout(start, policy, H, plant, cost)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput"><span class="keyword">if</span> isfield(plant,<span class="string">'augment'</span>), augi = plant.augi;             <span class="comment">% sort out indices!</span>
+<span class="keyword">else</span> plant.augment = inline(<span class="string">'[]'</span>); augi = []; <span class="keyword">end</span>
+<span class="keyword">if</span> isfield(plant,<span class="string">'subplant'</span>), subi = plant.subi;
+<span class="keyword">else</span> plant.subplant = inline(<span class="string">'[]'</span>,1); subi = []; <span class="keyword">end</span>
+odei = plant.odei; poli = plant.poli; dyno = plant.dyno; angi = plant.angi;
+simi = sort([odei subi]);
+nX = length(simi)+length(augi); nU = length(policy.maxU); nA = length(angi);
+
+state(simi) = start; state(augi) = plant.augment(state);      <span class="comment">% initializations</span>
+x = zeros(H+1, nX+2*nA);
+x(1,simi) = start' + randn(size(simi))*chol(plant.noise);
+x(1,augi) = plant.augment(x(1,:));
+u = zeros(H, nU); latent = zeros(H+1, size(state,2)+nU);
+y = zeros(H, nX); L = zeros(1, H); next = zeros(1,length(simi));
+
+<span class="keyword">for</span> i = 1:H <span class="comment">% --------------------------------------------- generate trajectory</span>
+  s = x(i,dyno)'; sa = gTrig(s, zeros(length(s)), angi); s = [s; sa];
+  x(i,end-2*nA+1:end) = s(end-2*nA+1:end);
+
+  <span class="comment">% 1. Apply policy ... or random actions --------------------------------------</span>
+  <span class="keyword">if</span> isfield(policy, <span class="string">'fcn'</span>)
+    u(i,:) = policy.fcn(policy,s(poli),zeros(length(poli)));
+  <span class="keyword">else</span>
+    u(i,:) = policy.maxU.*(2*rand(1,nU)-1);
+  <span class="keyword">end</span>
+  latent(i,:) = [state u(i,:)];                                  <span class="comment">% latent state</span>
+
+  <span class="comment">% 2. Simulate dynamics -------------------------------------------------------</span>
+  next(odei) = simulate(state(odei), u(i,:), plant);
+  next(subi) = plant.subplant(state, u(i,:));
+
+  <span class="comment">% 3. Stop rollout if constraints violated ------------------------------------</span>
+  <span class="keyword">if</span> isfield(plant,<span class="string">'constraint'</span>) &amp;&amp; plant.constraint(next(odei))
+    H = i-1;
+    fprintf(<span class="string">'state constraints violated...\n'</span>);
+    <span class="keyword">break</span>;
+  <span class="keyword">end</span>
+
+  <span class="comment">% 4. Augment state and randomize ---------------------------------------------</span>
+  state(simi) = next(simi); state(augi) = plant.augment(state);
+  x(i+1,simi) = state(simi) + randn(size(simi))*chol(plant.noise);
+  x(i+1,augi) = plant.augment(x(i+1,:));
+
+  <span class="comment">% 5. Compute Cost ------------------------------------------------------------</span>
+  <span class="keyword">if</span> nargout &gt; 2
+    L(i) = cost.fcn(cost,state(dyno)',zeros(length(dyno)));
+  <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+y = x(2:H+1,1:nX); x = [x(1:H,:) u(1:H,:)];
+latent(H+1, 1:nX) = state; latent = latent(1:H+1,:); L = L(1,1:H);
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% rollout.m
+% *Summary:* Generate a state trajectory using an ODE solver (and any additional 
+% dynamics) from a particular initial state by applying either a particular 
+% policy or random actions.
+%
+%   function [x y L latent] = rollout(start, policy, H, plant, cost)
+%
+% *Input arguments:*
+%   
+%   start       vector containing initial states (without controls)   [nX  x  1]
+%   policy      policy structure
+%     .fcn        policy function
+%     .p          parameter structure (if empty: use random actions)
+%     .maxU       vector of control input saturation values           [nU  x  1]
+%   H           rollout horizon in steps
+%   plant       the dynamical system structure
+%     .subplant   (opt) additional discrete-time dynamics
+%     .augment    (opt) augment state using a known mapping
+%     .constraint (opt) stop rollout if violated
+%     .poli       indices for states passed to the policy
+%     .dyno       indices for states passed to cost
+%     .odei       indices for states passed to the ode solver
+%     .subi       (opt) indices for states passed to subplant function
+%     .augi       (opt) indices for states passed to augment function
+%   cost    cost structure
+%
+% *Output arguments:*
+%
+%   x          matrix of observed states                           [H   x nX+nU]
+%   y          matrix of corresponding observed successor states   [H   x   nX ]
+%   L          cost incurred at each time step                     [ 1  x    H ]
+%   latent     matrix of latent states                             [H+1 x   nX ]
+%
+% Copyright (C) 2008-2013 by 
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modification: 2013-05-21
+%
+%% High-Level Steps
+%
+% # Compute control signal $u$ from state $x$:
+% either apply policy or random actions
+% # Simulate the true dynamics for one time step using the current pair $(x,u)$
+% # Check whether any constraints are violated (stop if true)
+% # Apply random noise to the successor state
+% # Compute cost (optional)
+% # Repeat until end of horizon
+
+
+
+function [x y L latent] = rollout(start, policy, H, plant, cost)
+%% Code
+
+if isfield(plant,'augment'), augi = plant.augi;             % sort out indices!
+else plant.augment = inline('[]'); augi = []; end
+if isfield(plant,'subplant'), subi = plant.subi;
+else plant.subplant = inline('[]',1); subi = []; end
+odei = plant.odei; poli = plant.poli; dyno = plant.dyno; angi = plant.angi;
+simi = sort([odei subi]);
+nX = length(simi)+length(augi); nU = length(policy.maxU); nA = length(angi);
+
+state(simi) = start; state(augi) = plant.augment(state);      % initializations
+x = zeros(H+1, nX+2*nA);
+x(1,simi) = start' + randn(size(simi))*chol(plant.noise);
+x(1,augi) = plant.augment(x(1,:));
+u = zeros(H, nU); latent = zeros(H+1, size(state,2)+nU);
+y = zeros(H, nX); L = zeros(1, H); next = zeros(1,length(simi));
+
+for i = 1:H % REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH- generate trajectory
+  s = x(i,dyno)'; sa = gTrig(s, zeros(length(s)), angi); s = [s; sa];
+  x(i,end-2*nA+1:end) = s(end-2*nA+1:end);
+  
+  % 1. Apply policy ... or random actions REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH
+  if isfield(policy, 'fcn')
+    u(i,:) = policy.fcn(policy,s(poli),zeros(length(poli)));
+  else
+    u(i,:) = policy.maxU.*(2*rand(1,nU)-1);
+  end
+  latent(i,:) = [state u(i,:)];                                  % latent state
+
+  % 2. Simulate dynamics REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH-
+  next(odei) = simulate(state(odei), u(i,:), plant);
+  next(subi) = plant.subplant(state, u(i,:));
+  
+  % 3. Stop rollout if constraints violated REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH
+  if isfield(plant,'constraint') && plant.constraint(next(odei))
+    H = i-1;
+    fprintf('state constraints violated...\n');
+    break;
+  end
+
+  % 4. Augment state and randomize REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH-
+  state(simi) = next(simi); state(augi) = plant.augment(state);
+  x(i+1,simi) = state(simi) + randn(size(simi))*chol(plant.noise);
+  x(i+1,augi) = plant.augment(x(i+1,:));
+  
+  % 5. Compute Cost REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH
+  if nargout > 2
+    L(i) = cost.fcn(cost,state(dyno)',zeros(length(dyno)));
+  end
+end
+
+y = x(2:H+1,1:nX); x = [x(1:H,:) u(1:H,:)]; 
+latent(H+1, 1:nX) = state; latent = latent(1:H+1,:); L = L(1,1:H);
+##### SOURCE END #####
+--></body></html>

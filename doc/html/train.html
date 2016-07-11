@@ -1,0 +1,230 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>train.m</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="train.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>train.m</h1><!--introduction--><p><b>Summary:</b> Train a GP model with SE covariance function (ARD). First, the hyper-parameters are trained using a full GP. Then, if gpmodel.induce exists, indicating sparse approximation, if enough training exmples are present, train the inducing inputs (hyper-parameters are taken from the full GP). If no inducing inputs are present, then initialize thme to be a random subset of the training inputs.</p><pre class="language-matlab"><span class="keyword">function</span> [gpmodel nlml] = train(gpmodel, dump, iter)
+</pre><p><b>Input arguments:</b></p><pre class="language-matlab">gpmodel                 <span class="string">GP</span> <span class="string">structure</span>
+  inputs                <span class="string">GP</span> <span class="string">training</span> <span class="string">inputs</span>                      <span class="string">[ N  x  D]</span>
+  targets               <span class="string">GP</span> <span class="string">training</span> <span class="string">targets</span>                     <span class="string">[ N  x  E]</span>
+  hyp (optional)        GP <span class="string">log-hyper-parameters</span>                 <span class="string">[D+2 x  E]</span>
+  induce (optional)     pseudo <span class="string">inputs</span> <span class="string">for</span> <span class="string">sparse</span> <span class="string">GP</span>
+dump                    <span class="string">not</span> <span class="string">needed</span> <span class="string">for</span> <span class="string">this</span> <span class="string">code</span>, but <span class="string">required</span>
+                        <span class="keyword">for</span> compatibility reasons
+iter                    <span class="string">optimization</span> <span class="string">iterations</span> <span class="string">for</span> <span class="string">training</span>    <span class="string">[1   x  2]</span>
+                        [full GP, sparse GP]
+</pre><p><b>Output arguments:</b></p><pre class="language-matlab">gpmodel                 <span class="string">updated</span> <span class="string">GP</span> <span class="string">structure</span>
+nlml                    <span class="string">negative</span> <span class="string">log-marginal</span> <span class="string">likelihood</span>
+</pre><p>Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</p><p>Last modified: 2013-05-16</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">High-Level Steps</a></li><li><a href="#2">Code</a></li></ul></div><h2>High-Level Steps<a name="1"></a></h2><div><ol><li>Initialization</li><li>Train full GP</li><li>If necessary: train sparse GP (FITC/SPGP)</li></ol></div><pre class="codeinput"><span class="keyword">function</span> [gpmodel nlml] = train(gpmodel, dump, iter)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput"><span class="comment">% 1) Initialization</span>
+<span class="keyword">if</span> nargin &lt; 3, iter = [-500 -1000]; <span class="keyword">end</span>           <span class="comment">% default training iterations</span>
+
+D = size(gpmodel.inputs,2); E = size(gpmodel.targets,2);   <span class="comment">% get variable sizes</span>
+covfunc = {<span class="string">'covSum'</span>, {<span class="string">'covSEard'</span>, <span class="string">'covNoise'</span>}};        <span class="comment">% specify ARD covariance</span>
+curb.snr = 1000; curb.ls = 100; curb.std = std(gpmodel.inputs);   <span class="comment">% set hyp curb</span>
+<span class="keyword">if</span> ~isfield(gpmodel,<span class="string">'hyp'</span>)  <span class="comment">% if we don't pass in hyper-parameters, define them</span>
+  gpmodel.hyp = zeros(D+2,E); nlml = zeros(1,E);
+  lh = repmat([log(std(gpmodel.inputs)) 0 -1]',1,E);   <span class="comment">% init hyp length scales</span>
+  lh(D+1,:) = log(std(gpmodel.targets));                      <span class="comment">%  signal std dev</span>
+  lh(D+2,:) = log(std(gpmodel.targets)/10);                     <span class="comment">% noise std dev</span>
+<span class="keyword">else</span>
+  lh = gpmodel.hyp;                                       <span class="comment">% GP hyper-parameters</span>
+<span class="keyword">end</span>
+
+<span class="comment">% 2a) Train full GP (always)</span>
+fprintf(<span class="string">'Train hyper-parameters of full GP ...\n'</span>);
+<span class="keyword">for</span> i = 1:E                                          <span class="comment">% train each GP separately</span>
+  fprintf(<span class="string">'GP %i/%i\n'</span>, i, E);
+  <span class="keyword">try</span>   <span class="comment">% BFGS training</span>
+    [gpmodel.hyp(:,i) v] = minimize(lh(:,i), @hypCurb, iter(1), covfunc, <span class="keyword">...</span>
+      gpmodel.inputs, gpmodel.targets(:,i), curb);
+  <span class="keyword">catch</span> <span class="comment">% conjugate gradients (BFGS can be quite aggressive)</span>
+    [gpmodel.hyp(:,i) v] = minimize(lh(:,i), @hypCurb, <span class="keyword">...</span>
+      struct(<span class="string">'length'</span>, iter(1), <span class="string">'method'</span>, <span class="string">'CG'</span>, <span class="string">'verbosity'</span>, 1), covfunc, <span class="keyword">...</span>
+      gpmodel.inputs, gpmodel.targets(:,i), curb);
+  <span class="keyword">end</span>
+  nlml(i) = v(end);
+<span class="keyword">end</span>
+
+<span class="comment">% 2b) If necessary: sparse training using FITC/SPGP (Snelson &amp; Ghahramani, 2006)</span>
+<span class="keyword">if</span> isfield(gpmodel,<span class="string">'induce'</span>)            <span class="comment">% are we using a sparse approximation?</span>
+  [N D] = size(gpmodel.inputs);
+  [M uD uE] = size(gpmodel.induce);
+  <span class="keyword">if</span> M &gt;= N; <span class="keyword">return</span>; <span class="keyword">end</span>     <span class="comment">% if too few training examples, we don't need FITC</span>
+  fprintf(<span class="string">'Train pseudo-inputs of sparse GP ...\n'</span>);
+
+  <span class="keyword">if</span> uD == 0                               <span class="comment">% we don't have inducing inputs yet?</span>
+    gpmodel.induce = zeros(M,D,uE);                            <span class="comment">% allocate space</span>
+    iter = 3*iter; <span class="comment">% train a lot for the first time (it's still cheap!)</span>
+    [cidx, ctrs] = kmeans(gpmodel.inputs, M); <span class="comment">% kmeans: initialize pseudo inputs</span>
+    <span class="keyword">for</span> i = 1:uE
+<span class="comment">%       j = randperm(N);</span>
+<span class="comment">%       gpmodel.induce(:,:,i) = gpmodel.inputs(j(1:M),:);       % random subset</span>
+      gpmodel.induce(:,:,i) = ctrs;
+    <span class="keyword">end</span>
+  <span class="keyword">end</span>
+  <span class="comment">% train sparse model</span>
+  [gpmodel.induce nlml2] = minimize(gpmodel.induce, <span class="string">'fitc'</span>, iter(end), gpmodel);
+  fprintf(<span class="string">'GP NLML, full: %e, sparse: %e, diff: %e\n'</span>, <span class="keyword">...</span>
+    sum(nlml), nlml2(end), nlml2(end)-sum(nlml));
+<span class="keyword">end</span>
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% train.m
+% *Summary:* Train a GP model with SE covariance function (ARD). First, the 
+% hyper-parameters are trained using a full GP. Then, if gpmodel.induce exists, 
+% indicating sparse approximation, if enough training exmples are present, 
+% train the inducing inputs (hyper-parameters are taken from the full GP). 
+% If no inducing inputs are present, then initialize thme to be a
+% random subset of the training inputs.
+%
+%   function [gpmodel nlml] = train(gpmodel, dump, iter)
+%
+% *Input arguments:*
+%
+%   gpmodel                 GP structure
+%     inputs                GP training inputs                      [ N  x  D]
+%     targets               GP training targets                     [ N  x  E]
+%     hyp (optional)        GP log-hyper-parameters                 [D+2 x  E]
+%     induce (optional)     pseudo inputs for sparse GP
+%   dump                    not needed for this code, but required
+%                           for compatibility reasons
+%   iter                    optimization iterations for training    [1   x  2]
+%                           [full GP, sparse GP]
+%
+% *Output arguments:*
+%
+%   gpmodel                 updated GP structure
+%   nlml                    negative log-marginal likelihood
+%
+%
+% Copyright (C) 2008-2013 by
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modified: 2013-05-16
+%
+%% High-Level Steps
+% # Initialization
+% # Train full GP
+% # If necessary: train sparse GP (FITC/SPGP)
+
+function [gpmodel nlml] = train(gpmodel, dump, iter)
+%% Code
+
+% 1) Initialization
+if nargin < 3, iter = [-500 -1000]; end           % default training iterations
+
+D = size(gpmodel.inputs,2); E = size(gpmodel.targets,2);   % get variable sizes
+covfunc = {'covSum', {'covSEard', 'covNoise'}};        % specify ARD covariance
+curb.snr = 1000; curb.ls = 100; curb.std = std(gpmodel.inputs);   % set hyp curb
+if ~isfield(gpmodel,'hyp')  % if we don't pass in hyper-parameters, define them
+  gpmodel.hyp = zeros(D+2,E); nlml = zeros(1,E);
+  lh = repmat([log(std(gpmodel.inputs)) 0 -1]',1,E);   % init hyp length scales
+  lh(D+1,:) = log(std(gpmodel.targets));                      %  signal std dev
+  lh(D+2,:) = log(std(gpmodel.targets)/10);                     % noise std dev
+else
+  lh = gpmodel.hyp;                                       % GP hyper-parameters
+end
+
+% 2a) Train full GP (always)
+fprintf('Train hyper-parameters of full GP ...\n');
+for i = 1:E                                          % train each GP separately
+  fprintf('GP %i/%i\n', i, E);
+  try   % BFGS training
+    [gpmodel.hyp(:,i) v] = minimize(lh(:,i), @hypCurb, iter(1), covfunc, ...
+      gpmodel.inputs, gpmodel.targets(:,i), curb);
+  catch % conjugate gradients (BFGS can be quite aggressive)
+    [gpmodel.hyp(:,i) v] = minimize(lh(:,i), @hypCurb, ...
+      struct('length', iter(1), 'method', 'CG', 'verbosity', 1), covfunc, ...
+      gpmodel.inputs, gpmodel.targets(:,i), curb);
+  end
+  nlml(i) = v(end);
+end
+
+% 2b) If necessary: sparse training using FITC/SPGP (Snelson & Ghahramani, 2006)
+if isfield(gpmodel,'induce')            % are we using a sparse approximation?
+  [N D] = size(gpmodel.inputs); 
+  [M uD uE] = size(gpmodel.induce);
+  if M >= N; return; end     % if too few training examples, we don't need FITC
+  fprintf('Train pseudo-inputs of sparse GP ...\n');
+
+  if uD == 0                               % we don't have inducing inputs yet?
+    gpmodel.induce = zeros(M,D,uE);                            % allocate space
+    iter = 3*iter; % train a lot for the first time (it's still cheap!)
+    [cidx, ctrs] = kmeans(gpmodel.inputs, M); % kmeans: initialize pseudo inputs
+    for i = 1:uE
+%       j = randperm(N);
+%       gpmodel.induce(:,:,i) = gpmodel.inputs(j(1:M),:);       % random subset
+      gpmodel.induce(:,:,i) = ctrs;
+    end
+  end
+  % train sparse model
+  [gpmodel.induce nlml2] = minimize(gpmodel.induce, 'fitc', iter(end), gpmodel);
+  fprintf('GP NLML, full: %e, sparse: %e, diff: %e\n', ...
+    sum(nlml), nlml2(end), nlml2(end)-sum(nlml));
+end
+
+##### SOURCE END #####
+--></body></html>

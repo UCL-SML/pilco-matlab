@@ -1,0 +1,282 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>draw_cdp</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="draw_cdp.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#1">draw_cdp.m</a></li><li><a href="#2">Code</a></li></ul></div><h2>draw_cdp.m<a name="1"></a></h2><p><b>Summary:</b> Draw the cart-double-pendulum system with reward, applied force, and predictive uncertainty of the tips of the pendulums</p><pre>  function draw_cdp(x, theta2, theta3, force, cost, M, S, text1, text2)</pre><p><b>Input arguments:</b></p><pre class="codeinput"><span class="comment">%		x          position of the cart</span>
+<span class="comment">%   theta2     angle of inner pendulum</span>
+<span class="comment">%   theta3     angle of outer pendulum</span>
+<span class="comment">%   force      force applied to cart</span>
+<span class="comment">%   cost       cost structure</span>
+<span class="comment">%     .fcn     function handle (it is assumed to use saturating cost)</span>
+<span class="comment">%     .&lt;&gt;      other fields that are passed to cost</span>
+<span class="comment">%   M          (optional) mean of state</span>
+<span class="comment">%   S          (optional) covariance of state</span>
+<span class="comment">%   text1      (optional) text field 1</span>
+<span class="comment">%   text2      (optional) text field 2</span>
+<span class="comment">%</span>
+<span class="comment">%</span>
+<span class="comment">% Copyright (C) 2008-2013 by</span>
+<span class="comment">% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</span>
+<span class="comment">%</span>
+<span class="comment">% Last modified: 2013-03-27</span>
+
+<span class="keyword">function</span> draw_cdp(x, theta2, theta3, force, cost, M, S, text1, text2)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput">scale = 1;
+
+l = 0.3*scale;
+xmin = -3*scale;
+xmax = 3*scale;
+height = 0.07*scale;
+width  = 0.25*scale;
+
+font_size = 12;
+
+<span class="comment">% Compute positions</span>
+cart = [ x + width,  height
+  x + width, -height
+  x - width, -height
+  x - width,  height
+  x + width,  height ];
+pend2 = [x, 0;
+  x-2*l*sin(theta2), cos(theta2)*2*l];
+pend3 = [x-2*l*sin(theta2), 2*l*cos(theta2);
+  x-2*l*sin(theta2)-2*l*sin(theta3), 2*l*cos(theta2)+2*l*cos(theta3)];
+
+
+<span class="comment">% plot cart double pendulum</span>
+clf
+hold <span class="string">on</span>
+
+plot(0,4*l,<span class="string">'k+'</span>,<span class="string">'MarkerSize'</span>,2*font_size,<span class="string">'linewidth'</span>,2);
+plot([xmin, xmax], [-height-0.03*scale, -height-0.03*scale], <span class="keyword">...</span>
+  <span class="string">'Color'</span>,<span class="string">'b'</span>,<span class="string">'LineWidth'</span>,3);
+plot([0 force/20*xmax],[-0.3, -0.3].*scale, <span class="string">'Color'</span>, <span class="string">'g'</span>, <span class="string">'LineWidth'</span>, font_size);
+
+<span class="comment">% Plot reward</span>
+reward = 1-cost.fcn(cost, [x, 0, 0, 0, theta2, theta3]',zeros(6));
+plot([0 reward*xmax],[-0.5, -0.5].*scale, <span class="string">'Color'</span>, <span class="string">'y'</span>, <span class="string">'LineWidth'</span>, font_size);
+
+<span class="comment">% Draw Cart</span>
+plot(cart(:,1), cart(:,2),<span class="string">'Color'</span>,<span class="string">'k'</span>,<span class="string">'LineWidth'</span>,3);
+fill(cart(:,1), cart(:,2),<span class="string">'k'</span>);
+<span class="comment">% Draw Pendulum2</span>
+plot(pend2(:,1), pend2(:,2),<span class="string">'Color'</span>,<span class="string">'r'</span>,<span class="string">'LineWidth'</span>, round(font_size/2));
+ <span class="comment">% Draw Pendulum3</span>
+plot(pend3(:,1), pend3(:,2),<span class="string">'Color'</span>,<span class="string">'r'</span>,<span class="string">'LineWidth'</span>, round(font_size/2));
+<span class="comment">% joint at cart</span>
+plot(x,0,<span class="string">'o'</span>,<span class="string">'MarkerSize'</span>, round((font_size+4)/2),<span class="string">'Color'</span>,<span class="string">'y'</span>,<span class="string">'markerface'</span>,<span class="string">'y'</span>);
+<span class="comment">% 2nd joint</span>
+plot(pend3(1,1),pend3(1,2),<span class="string">'o'</span>,<span class="string">'MarkerSize'</span>, <span class="keyword">...</span>
+  round((font_size+4)/2),<span class="string">'Color'</span>,<span class="string">'y'</span>,<span class="string">'markerface'</span>,<span class="string">'y'</span>);
+<span class="comment">% tip of 2nd joint</span>
+plot(pend3(2,1),pend3(2,2),<span class="string">'o'</span>,<span class="string">'MarkerSize'</span>, <span class="keyword">...</span>
+  round((font_size+4)/2),<span class="string">'Color'</span>,<span class="string">'y'</span>,<span class="string">'markerface'</span>,<span class="string">'y'</span>);
+
+
+<span class="comment">% plot ellipses around tip of pendulum (if M, S exist)</span>
+<span class="keyword">try</span>
+  <span class="keyword">if</span> max(max(S))&gt;0
+    [M1 S1 M2 S2] = getPlotDistr_cdp(M, S, 2*l, 2*l);
+    error_ellipse(S1,M1,<span class="string">'style'</span>,<span class="string">'b'</span>); <span class="comment">% inner pendulum</span>
+    error_ellipse(S2,M2,<span class="string">'style'</span>,<span class="string">'r'</span>); <span class="comment">% outer pendulum</span>
+  <span class="keyword">end</span>
+<span class="keyword">catch</span>
+
+<span class="keyword">end</span>
+
+
+text(0,-0.3*scale,<span class="string">'applied  force'</span>,<span class="string">'fontsize'</span>, font_size)
+text(0,-0.5*scale,<span class="string">'immediate reward'</span>,<span class="string">'fontsize'</span>, font_size)
+
+<span class="keyword">if</span> exist(<span class="string">'text1'</span>,<span class="string">'var'</span>)
+  text(0,-0.7*scale, text1,<span class="string">'fontsize'</span>, font_size);
+  <span class="keyword">if</span> exist(<span class="string">'text2'</span>,<span class="string">'var'</span>)
+    text(0,-0.9*scale, text2,<span class="string">'fontsize'</span>, font_size)
+  <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+
+set(gca,<span class="string">'DataAspectRatio'</span>,[1 1 1],<span class="string">'XLim'</span>,[xmin xmax],<span class="string">'YLim'</span>,[-1.4 1.4].*scale);
+
+axis <span class="string">off</span>
+
+drawnow;
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% draw_cdp.m
+% *Summary:* Draw the cart-double-pendulum system with reward, applied force, 
+% and predictive uncertainty of the tips of the pendulums
+%
+%    function draw_cdp(x, theta2, theta3, force, cost, M, S, text1, text2)
+%
+%
+% *Input arguments:*
+%
+%		x          position of the cart
+%   theta2     angle of inner pendulum
+%   theta3     angle of outer pendulum
+%   force      force applied to cart
+%   cost       cost structure
+%     .fcn     function handle (it is assumed to use saturating cost)
+%     .<>      other fields that are passed to cost
+%   M          (optional) mean of state
+%   S          (optional) covariance of state
+%   text1      (optional) text field 1
+%   text2      (optional) text field 2
+%
+%
+% Copyright (C) 2008-2013 by
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modified: 2013-03-27
+
+function draw_cdp(x, theta2, theta3, force, cost, M, S, text1, text2)
+%% Code
+
+scale = 1;
+
+l = 0.3*scale;
+xmin = -3*scale;
+xmax = 3*scale;
+height = 0.07*scale;
+width  = 0.25*scale;
+
+font_size = 12;
+
+% Compute positions
+cart = [ x + width,  height
+  x + width, -height
+  x - width, -height
+  x - width,  height
+  x + width,  height ];
+pend2 = [x, 0;
+  x-2*l*sin(theta2), cos(theta2)*2*l];
+pend3 = [x-2*l*sin(theta2), 2*l*cos(theta2);
+  x-2*l*sin(theta2)-2*l*sin(theta3), 2*l*cos(theta2)+2*l*cos(theta3)];
+
+
+% plot cart double pendulum
+clf
+hold on
+
+plot(0,4*l,'k+','MarkerSize',2*font_size,'linewidth',2);
+plot([xmin, xmax], [-height-0.03*scale, -height-0.03*scale], ...
+  'Color','b','LineWidth',3);
+plot([0 force/20*xmax],[-0.3, -0.3].*scale, 'Color', 'g', 'LineWidth', font_size);
+
+% Plot reward
+reward = 1-cost.fcn(cost, [x, 0, 0, 0, theta2, theta3]',zeros(6));
+plot([0 reward*xmax],[-0.5, -0.5].*scale, 'Color', 'y', 'LineWidth', font_size);
+
+% Draw Cart
+plot(cart(:,1), cart(:,2),'Color','k','LineWidth',3);           
+fill(cart(:,1), cart(:,2),'k');
+% Draw Pendulum2
+plot(pend2(:,1), pend2(:,2),'Color','r','LineWidth', round(font_size/2)); 
+ % Draw Pendulum3
+plot(pend3(:,1), pend3(:,2),'Color','r','LineWidth', round(font_size/2));
+% joint at cart
+plot(x,0,'o','MarkerSize', round((font_size+4)/2),'Color','y','markerface','y'); 
+% 2nd joint
+plot(pend3(1,1),pend3(1,2),'o','MarkerSize', ...
+  round((font_size+4)/2),'Color','y','markerface','y');
+% tip of 2nd joint
+plot(pend3(2,1),pend3(2,2),'o','MarkerSize', ...
+  round((font_size+4)/2),'Color','y','markerface','y'); 
+
+
+% plot ellipses around tip of pendulum (if M, S exist)
+try
+  if max(max(S))>0
+    [M1 S1 M2 S2] = getPlotDistr_cdp(M, S, 2*l, 2*l);
+    error_ellipse(S1,M1,'style','b'); % inner pendulum
+    error_ellipse(S2,M2,'style','r'); % outer pendulum
+  end
+catch
+  
+end
+
+
+text(0,-0.3*scale,'applied  force','fontsize', font_size)
+text(0,-0.5*scale,'immediate reward','fontsize', font_size)
+
+if exist('text1','var')
+  text(0,-0.7*scale, text1,'fontsize', font_size);
+  if exist('text2','var')
+    text(0,-0.9*scale, text2,'fontsize', font_size)
+  end
+end
+
+
+set(gca,'DataAspectRatio',[1 1 1],'XLim',[xmin xmax],'YLim',[-1.4 1.4].*scale);
+
+axis off
+
+drawnow;
+
+
+##### SOURCE END #####
+--></body></html>

@@ -1,0 +1,194 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>conlin.m</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="conlin.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>conlin.m</h1><!--introduction--><p><b>Summary:</b> Affine controller <img src="conlin_eq95465.png" alt="$u = Wx + b$"> with input dimension D and control dimension E. Compute mean and covariance of the control distribution <img src="conlin_eq42328.png" alt="$p(u)$"> from a Gaussian distributed input <img src="conlin_eq10310.png" alt="$x\sim\mathcal N(x|m,s)$">. Moreover, the <img src="conlin_eq81653.png" alt="$s^{-1}cov(x,u)$"> is computed.</p><pre class="language-matlab"><span class="keyword">function</span> [M, S, V, dMdm, dSdm, dVdm, dMds, dSds, dVds, dMdp, dSdp, dVdp] <span class="keyword">...</span>
+          = conlin(policy, m, s)
+</pre><p><b>Input arguments:</b></p><pre class="language-matlab">policy    <span class="string">policy</span> <span class="string">structure</span>
+  .p      parameters <span class="string">that</span> <span class="string">are</span> <span class="string">modified</span> <span class="string">during</span> <span class="string">training</span>
+    .w    linear <span class="string">weights</span>                                         <span class="string">[ E  x  D ]</span>
+    .b    biases/offset                                          [ E       ]
+m         <span class="string">mean</span> <span class="string">of</span> <span class="string">state</span> <span class="string">distribution</span>                             <span class="string">[ D       ]</span>
+s         <span class="string">covariance</span> <span class="string">matrix</span> <span class="string">of</span> <span class="string">state</span> <span class="string">distribution</span>                <span class="string">[ D  x  D ]</span>
+</pre><p><b>Output arguments:</b></p><pre class="language-matlab">M         <span class="string">mean</span> <span class="string">of</span> <span class="string">predicted</span> <span class="string">control</span>                              <span class="string">[ E       ]</span>
+S         <span class="string">variance</span> <span class="string">of</span> <span class="string">predicted</span> <span class="string">control</span>                          <span class="string">[ E  x  E ]</span>
+C         <span class="string">inv(s)</span> <span class="string">times</span> <span class="string">input-output</span> <span class="string">covariance</span>                   <span class="string">[ D  x  E ]</span>
+dMdm      <span class="string">deriv.</span> <span class="string">of</span> <span class="string">mean</span> <span class="string">control</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">mean</span>                  <span class="string">[ E  x  D ]</span>
+dSdm      <span class="string">deriv.</span> <span class="string">of</span> <span class="string">control</span> <span class="string">covariance</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">mean</span>            <span class="string">[E*E x  D ]</span>
+dCdm      <span class="string">deriv.</span> <span class="string">of</span> <span class="string">C</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">mean</span>                             <span class="string">[D*E x  D ]</span>
+dMds      <span class="string">deriv.</span> <span class="string">of</span> <span class="string">mean</span> <span class="string">control</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">covariance</span>            <span class="string">[ E  x D*D]</span>
+dSds      <span class="string">deriv.</span> <span class="string">of</span> <span class="string">control</span> <span class="string">covariance</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">covariance</span>      <span class="string">[E*E x D*D]</span>
+dCds      <span class="string">deriv.</span> <span class="string">of</span> <span class="string">C</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">covariance</span>                       <span class="string">[D*E x D*D]</span>
+dMdp      <span class="string">deriv.</span> <span class="string">of</span> <span class="string">mean</span> <span class="string">control</span> <span class="string">wrt</span> <span class="string">policy</span> <span class="string">parameters</span>           <span class="string">[ E  x  P ]</span>
+dSdp      <span class="string">deriv.</span> <span class="string">of</span> <span class="string">control</span> <span class="string">covariance</span> <span class="string">wrt</span> <span class="string">policy</span> <span class="string">parameters</span>     <span class="string">[E*E x  P ]</span>
+dCdp      <span class="string">deriv.</span> <span class="string">of</span> <span class="string">C</span> <span class="string">wrt</span> <span class="string">policy</span> <span class="string">parameters</span>                      <span class="string">[D*E x  P ]</span>
+</pre><p>where P = (D+1)*E is the total number of policy parameters</p><p>Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</p><p>Last modified: 2012-07-03</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">High-Level Steps</a></li><li><a href="#2">Code</a></li></ul></div><h2>High-Level Steps<a name="1"></a></h2><div><ol><li>Extract policy parameters from policy structure</li><li>Predict control signal</li><li>Compute derivatives if required</li></ol></div><pre class="codeinput"><span class="keyword">function</span> [M, S, V, dMdm, dSdm, dVdm, dMds, dSds, dVds, dMdp, dSdp, dVdp] <span class="keyword">...</span>
+  = conlin(policy, m, s)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput"><span class="comment">% 1. Extract policy parameters from policy structure</span>
+w = policy.p.w;                                 <span class="comment">% weight matrix</span>
+b = policy.p.b;                                 <span class="comment">% bias/offset</span>
+[E D] = size(w);                                <span class="comment">% dim of control and state</span>
+
+<span class="comment">% 2. Predict control signal</span>
+M = w*m + b;                                                        <span class="comment">% mean</span>
+S = w*s*w'; S = (S+S')/2;                                     <span class="comment">% covariance</span>
+V = w';                                   <span class="comment">% inv(s)*input-output covariance</span>
+
+<span class="comment">% 3. Compute derivatives if required</span>
+<span class="keyword">if</span> nargout &gt; 3
+  dMdm = w;            dSdm = zeros(E*E,D); dVdm = zeros(D*E,D);
+  dMds = zeros(E,D*D); dSds = kron(w,w);    dVds = zeros(D*E,D*D);
+
+  X=reshape(1:D*D,[D D]); XT=X'; dSds=(dSds+dSds(:,XT(:)))/2; <span class="comment">% symmetrize</span>
+  X=reshape(1:E*E,[E E]); XT=X'; dSds=(dSds+dSds(XT(:),:))/2;
+
+  wTdw =reshape(permute(reshape(eye(E*D),[E D E D]),[2 1 3 4]),[E*D E*D]);
+  dMdp = [eye(E) kron(m',eye(E))];
+  dSdp = [zeros(E*E,E) kron(eye(E),w*s)*wTdw + kron(w*s,eye(E))];
+  dSdp = (dSdp + dSdp(XT(:),:))/2;                            <span class="comment">% symmetrize</span>
+  dVdp = [zeros(D*E,E) wTdw];
+<span class="keyword">end</span>
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% conlin.m
+% *Summary:* Affine controller $u = Wx + b$ with input dimension D and
+% control dimension E.
+% Compute mean and covariance of the control distribution $p(u)$ from a
+% Gaussian distributed input $x\sim\mathcal N(x|m,s)$.
+% Moreover, the $s^{-1}cov(x,u)$ is computed.
+%
+%
+%   function [M, S, V, dMdm, dSdm, dVdm, dMds, dSds, dVds, dMdp, dSdp, dVdp] ...
+%             = conlin(policy, m, s)
+%
+%
+% *Input arguments:*
+%
+%   policy    policy structure
+%     .p      parameters that are modified during training
+%       .w    linear weights                                         [ E  x  D ]
+%       .b    biases/offset                                          [ E       ]
+%   m         mean of state distribution                             [ D       ]
+%   s         covariance matrix of state distribution                [ D  x  D ]
+%
+% *Output arguments:*
+%
+%   M         mean of predicted control                              [ E       ]
+%   S         variance of predicted control                          [ E  x  E ]
+%   C         inv(s) times input-output covariance                   [ D  x  E ]
+%   dMdm      deriv. of mean control wrt input mean                  [ E  x  D ]
+%   dSdm      deriv. of control covariance wrt input mean            [E*E x  D ]
+%   dCdm      deriv. of C wrt input mean                             [D*E x  D ]
+%   dMds      deriv. of mean control wrt input covariance            [ E  x D*D]
+%   dSds      deriv. of control covariance wrt input covariance      [E*E x D*D]
+%   dCds      deriv. of C wrt input covariance                       [D*E x D*D]
+%   dMdp      deriv. of mean control wrt policy parameters           [ E  x  P ]
+%   dSdp      deriv. of control covariance wrt policy parameters     [E*E x  P ]
+%   dCdp      deriv. of C wrt policy parameters                      [D*E x  P ]
+%
+% where P = (D+1)*E is the total number of policy parameters
+%
+% Copyright (C) 2008-2013 by
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modified: 2012-07-03
+%
+%% High-Level Steps
+% # Extract policy parameters from policy structure
+% # Predict control signal
+% # Compute derivatives if required
+%
+
+function [M, S, V, dMdm, dSdm, dVdm, dMds, dSds, dVds, dMdp, dSdp, dVdp] ...
+  = conlin(policy, m, s)
+%% Code
+
+% 1. Extract policy parameters from policy structure
+w = policy.p.w;                                 % weight matrix
+b = policy.p.b;                                 % bias/offset
+[E D] = size(w);                                % dim of control and state
+
+% 2. Predict control signal
+M = w*m + b;                                                        % mean
+S = w*s*w'; S = (S+S')/2;                                     % covariance
+V = w';                                   % inv(s)*input-output covariance
+
+% 3. Compute derivatives if required
+if nargout > 3
+  dMdm = w;            dSdm = zeros(E*E,D); dVdm = zeros(D*E,D);
+  dMds = zeros(E,D*D); dSds = kron(w,w);    dVds = zeros(D*E,D*D);
+  
+  X=reshape(1:D*D,[D D]); XT=X'; dSds=(dSds+dSds(:,XT(:)))/2; % symmetrize
+  X=reshape(1:E*E,[E E]); XT=X'; dSds=(dSds+dSds(XT(:),:))/2;
+  
+  wTdw =reshape(permute(reshape(eye(E*D),[E D E D]),[2 1 3 4]),[E*D E*D]);
+  dMdp = [eye(E) kron(m',eye(E))];
+  dSdp = [zeros(E*E,E) kron(eye(E),w*s)*wTdw + kron(w*s,eye(E))];
+  dSdp = (dSdp + dSdp(XT(:),:))/2;                            % symmetrize
+  dVdp = [zeros(D*E,E) wTdw];
+end
+##### SOURCE END #####
+--></body></html>

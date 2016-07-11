@@ -1,0 +1,146 @@
+\documentclass{article}
+\renewcommand{\rmdefault}{psbx}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{textcomp}
+\usepackage{eulervm}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\setlength{\textwidth}{160mm}
+\setlength{\oddsidemargin}{0mm}
+\setlength{\parindent}{0 mm}
+
+\newcommand{\bfm}{{\vec m}}
+\newcommand{\bfs}{{\mat s}}
+\newcommand{\bfz}{{\vec z}}
+\newcommand{\E}{{\mathbb E}}
+\newcommand{\V}{{\mathbb V}}
+\newcommand{\T}{^{\top}}
+\renewcommand{\vec}[1]{\boldsymbol{#1}}
+\newcommand{\mat}[1]{\boldsymbol{#1}}
+\newcommand{\inv}{^{-1}}
+
+\title{Robotic Unicycle Loss Function}
+\author{Marc Peter Deisenroth, Philipp Hennig and Carl Edward Rasmussen}
+\date{October 31st, 2011}
+
+\begin{document}
+
+\maketitle
+The state of the system is given as
+\begin{equation*}
+\vec x = 
+\begin{bmatrix}
+\dot\theta & \dot\phi &\dot\psi_w & \dot\psi_f & \dot\psi_t & \theta &
+\phi & \psi_w & \psi_f & \psi_t
+\end{bmatrix}\T\,,
+\end{equation*}
+%
+where $\theta$ is the roll angle, $\phi$ is yaw, $\psi_w$ wheel angle,
+$\psi_f$ pitch angle and $\psi_t$ the disc angle. The \emph{reward}
+$R$ and \emph{loss} $L$ of being in state $\vec x$ is
+\[
+R(\vec x)\;=\;\exp\big(-\frac{a}{2}d(\vec x)^2-\frac{\phi^2}{2(4\pi)^2}\big),
+\qquad\text{and}\qquad L(\vec x)\;=\;1-R(\vec x),
+\]
+where $a$ is a (positive) constant, and $d^2$ is the the squared
+distance between the tip of the unicycle and its ideal location when
+upright in the centre of the coordinate system.
+\begin{equation*}
+  \begin{aligned}
+d(\vec x)^2&= d_x ^2 + d_y ^2 + d_z ^2 \qquad \text{with}\\
+d_x&= x_c -r \sin \psi_f\\
+d_y&= y_c -(r+r_w)\sin\theta\\
+d_z&=\big(r_w+r-r_w\cos\theta-r\cos\theta\cos\psi_f\big)^2\\
+&=\big(r_w+r-r_w\cos\theta-\tfrac{r}{2}\cos(\theta-\psi_f)
+-\tfrac{r}{2}\cos(\theta+\psi_f)\big)^2    
+  \end{aligned}
+\end{equation*}
+Here, $r_w$ is the radius of the wheel and $r$ is the length of the
+fork; $x_c$ and $y_c$ are coordinates of the laboratory origin in the
+self-centred coordinate system. Apart from those two latter
+coordinates, the relevant parts of the state $\vec x$ are the sine and
+cosine of $\theta$, the sine of $\psi_f$, and the difference/sum of
+the angles $\theta$ and $\psi_f$. Therefore, we define $\alpha :=
+\theta-\psi_f$ and $\beta := \theta + \psi_f$. We assume that the
+joint distribution of these three variables is approximately Gaussian
+\begin{equation*}
+\vec z = 
+\begin{bmatrix}
+x_c \\
+\sin\psi_f\\
+\hline
+y_c \\
+\sin\theta\\
+\hline
+\cos\theta\\
+\cos\alpha\\
+\cos\beta\\
+\hline
+\phi
+\end{bmatrix}
+\quad
+\text{and}
+\quad
+{\cal N}(\bfm, S)\,.
+\end{equation*}
+The \emph{expected reward} is
+\[
+\E[R]\;=\;\langle R(\vec x)\rangle_\bfz\;=\;\big\langle
+\exp\big(-\tfrac{1}{2}(\bfz-\bfz_0)^\top
+T^{-1}(\bfz-\bfz_0)\big)\big\rangle_\bfz \,,
+\]
+where we defined
+\begin{equation*}
+\vec z_0 := 
+\begin{bmatrix}
+0 & 0 & 0 & 0 & 1 & 1 & 1 & 0
+\end{bmatrix}\T
+\end{equation*}
+and
+\begin{equation*}
+\begin{aligned}
+\mat T\inv &=
+a\operatorname{diag}\left\{
+  \begin{bmatrix}
+    1 & -r \\ -r & r^2
+  \end{bmatrix}
+\;,\;
+\begin{bmatrix}
+  1 & -(r+r_w) \\ -(r+r_w) & (r+r_w)^2
+\end{bmatrix}
+\;,\;
+\begin{bmatrix}
+r_w^2 & \frac{r_wr}{2} & \frac{r_wr}{2}\\
+\frac{r_wr}{2} & \frac{r^2}{4} &  \frac{r^2}{4}\\
+ \frac{r_wr}{2} & \frac{r^2}{4} &  \frac{r^2}{4}
+\end{bmatrix}
+\;,\;
+\begin{bmatrix}
+\frac{1}{16\pi^2}
+\end{bmatrix}
+\right\}\\
+&= a \operatorname{diag}(\mat C_x \mat C_x \T \;,\; \mat C_y \mat C_y \T \;,\; \mat
+C_z \mat C_z \T )
+\end{aligned}
+\end{equation*}
+with
+\begin{equation*}
+\mat C_x =
+\begin{bmatrix}
+  1 \\ -r  
+\end{bmatrix}
+\qquad
+\mat C_y = 
+\begin{bmatrix}
+1 \\ - (r + r_w)  
+\end{bmatrix}
+\qquad\mat C_z = 
+\begin{bmatrix}
+r_w \\ r/2 \\ r/2
+\end{bmatrix}
+\end{equation*}
+
+
+\end{document} 

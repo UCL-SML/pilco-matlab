@@ -1,0 +1,186 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>augment_unicycle</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="augment_unicycle.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#1">augment_unicycle.m</a></li><li><a href="#2">Code</a></li></ul></div><h2>augment_unicycle.m<a name="1"></a></h2><p><b>Summary:</b> The function computes the <img src="augment_unicycle_eq57428.png" alt="$(x,y)$"> velocities of the contact point in both absolute and unicycle coordinates as well as the the unicycle coordinates of the contact point themselves.</p><pre>     function r = augment(s)</pre><p><b>Input arguments:</b></p><pre class="codeinput"><span class="comment">%		s     state of the unicycle (including the torques).             [1 x 18]</span>
+<span class="comment">%         The state is assumed to be given as follows:</span>
+<span class="comment">%         dx      empty (to be filled by this function)</span>
+<span class="comment">%         dy      empty (to be filled by this function)</span>
+<span class="comment">%         dxc     empty (to be filled by this function)</span>
+<span class="comment">%         dyc     empty (to be filled by this function)</span>
+<span class="comment">%         dtheta  roll angular velocity</span>
+<span class="comment">%         dphi    yaw angular velocity</span>
+<span class="comment">%         dpsiw   wheel angular velocity</span>
+<span class="comment">%         dpsif   pitch angular velocity</span>
+<span class="comment">%         dpsit   turn table angular velocity</span>
+<span class="comment">%         x       x position</span>
+<span class="comment">%         y       y position</span>
+<span class="comment">%         xc      empty (to be filled by this function)</span>
+<span class="comment">%         yc      empty (to be filled by this function)</span>
+<span class="comment">%         theta   roll angle</span>
+<span class="comment">%         phi     yaw angle</span>
+<span class="comment">%         psiw    wheel angle</span>
+<span class="comment">%         psif    pitch angle</span>
+<span class="comment">%         psit    turn table angle</span>
+<span class="comment">%</span>
+<span class="comment">% *Output arguments:*</span>
+<span class="comment">%</span>
+<span class="comment">%   r     additional variables that are computed based on s:          [1 x 6]</span>
+<span class="comment">%         dx    x velocity of contact point (global coordinates)</span>
+<span class="comment">%         dy    y velocity of contact point (global coordinates)</span>
+<span class="comment">%         dxc   x velocity of contact point (unicycle coordinates)</span>
+<span class="comment">%         dyc   y velocity of contact point (unicycle coordinates)</span>
+<span class="comment">%         xc    x position of contact point (unicycle coordinates)</span>
+<span class="comment">%         yc    y position of contact point (unicycle coordinates)</span>
+<span class="comment">%</span>
+<span class="comment">%</span>
+<span class="comment">% Copyright (C) 2008-2013 by</span>
+<span class="comment">% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</span>
+<span class="comment">%</span>
+<span class="comment">% Last modified: 2013-03-27</span>
+
+
+<span class="keyword">function</span> r = augment_unicycle(s)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput">rw = 0.225;                               <span class="comment">% wheel radius in meters</span>
+
+<span class="comment">% x velocity of contact point (global coordinates)</span>
+r(1) = rw*cos(s(15))*s(7);
+<span class="comment">% y velocity of contact point (global coordinates)</span>
+r(2) = rw*sin(s(15))*s(7);
+<span class="comment">% (x,y) velocities of contact point (unicycle coordinates)</span>
+A = -[cos(s(15)) sin(s(15)); -sin(s(15)) cos(s(15))];
+dA = -s(6)*[-sin(s(15)) cos(s(15)); -cos(s(15)) -sin(s(15))];
+r(3:4) = A*r(1:2)' + dA*s(10:11)';
+<span class="comment">% (x,y) coordinates of contact point (unicycle coordinates)</span>
+r(5:6) = A*s(10:11)';
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% augment_unicycle.m
+% *Summary:* The function computes the $(x,y)$ velocities of the contact point 
+% in both absolute and unicycle coordinates as well as the the unicycle 
+% coordinates of the contact point themselves.
+%
+%       function r = augment(s)
+%
+% *Input arguments:*
+%
+%		s     state of the unicycle (including the torques).             [1 x 18]
+%         The state is assumed to be given as follows:
+%         dx      empty (to be filled by this function)
+%         dy      empty (to be filled by this function)    
+%         dxc     empty (to be filled by this function)
+%         dyc     empty (to be filled by this function)
+%         dtheta  roll angular velocity
+%         dphi    yaw angular velocity
+%         dpsiw   wheel angular velocity
+%         dpsif   pitch angular velocity
+%         dpsit   turn table angular velocity
+%         x       x position
+%         y       y position
+%         xc      empty (to be filled by this function)
+%         yc      empty (to be filled by this function)
+%         theta   roll angle
+%         phi     yaw angle
+%         psiw    wheel angle
+%         psif    pitch angle
+%         psit    turn table angle
+%
+% *Output arguments:*
+%
+%   r     additional variables that are computed based on s:          [1 x 6]
+%         dx    x velocity of contact point (global coordinates)
+%         dy    y velocity of contact point (global coordinates)
+%         dxc   x velocity of contact point (unicycle coordinates)
+%         dyc   y velocity of contact point (unicycle coordinates)
+%         xc    x position of contact point (unicycle coordinates)
+%         yc    y position of contact point (unicycle coordinates)
+%
+%
+% Copyright (C) 2008-2013 by
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modified: 2013-03-27
+
+
+function r = augment_unicycle(s)
+%% Code
+
+rw = 0.225;                               % wheel radius in meters
+
+% x velocity of contact point (global coordinates)
+r(1) = rw*cos(s(15))*s(7); 
+% y velocity of contact point (global coordinates)
+r(2) = rw*sin(s(15))*s(7);
+% (x,y) velocities of contact point (unicycle coordinates)
+A = -[cos(s(15)) sin(s(15)); -sin(s(15)) cos(s(15))];
+dA = -s(6)*[-sin(s(15)) cos(s(15)); -cos(s(15)) -sin(s(15))];
+r(3:4) = A*r(1:2)' + dA*s(10:11)'; 
+% (x,y) coordinates of contact point (unicycle coordinates)
+r(5:6) = A*s(10:11)';
+
+
+##### SOURCE END #####
+--></body></html>

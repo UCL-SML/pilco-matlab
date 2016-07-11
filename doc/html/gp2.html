@@ -1,0 +1,253 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>gp2.m</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="gp2.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>gp2.m</h1><!--introduction--><p><b>Summary:</b> Compute joint predictions and derivatives for multiple GPs with uncertain inputs. Does not consider the uncertainty about the underlying function (in prediction), hence, only the GP mean function is considered. Therefore, this representation is equivalent to a regularized RBF network. If gpmodel.nigp exists, individial noise contributions are added.</p><pre class="language-matlab"><span class="keyword">function</span> [M, S, V] = gp2(gpmodel, m, s)
+</pre><p><b>Input arguments:</b></p><pre class="language-matlab">gpmodel    <span class="string">GP</span> <span class="string">model</span> <span class="string">struct</span>
+  hyp      <span class="string">log-hyper-parameters</span>                                  <span class="string">[D+2 x  E ]</span>
+  inputs   <span class="string">training</span> <span class="string">inputs</span>                                       <span class="string">[ n  x  D ]</span>
+  targets  <span class="string">training</span> <span class="string">targets</span>                                      <span class="string">[ n  x  E ]</span>
+  nigp     (optional) individual <span class="string">noise</span> <span class="string">variance</span> <span class="string">terms</span>            <span class="string">[ n  x  E ]</span>
+m          <span class="string">mean</span> <span class="string">of</span> <span class="string">the</span> <span class="string">test</span> <span class="string">distribution</span>                         <span class="string">[ D  x  1 ]</span>
+s          <span class="string">covariance</span> <span class="string">matrix</span> <span class="string">of</span> <span class="string">the</span> <span class="string">test</span> <span class="string">distribution</span>            <span class="string">[ D  x  D ]</span>
+</pre><p><b>Output arguments:</b></p><pre class="language-matlab">M          <span class="string">mean</span> <span class="string">of</span> <span class="string">pred.</span> <span class="string">distribution</span>                            <span class="string">[ E  x  1 ]</span>
+S          <span class="string">covariance</span> <span class="string">of</span> <span class="string">the</span> <span class="string">pred.</span> <span class="string">distribution</span>                  <span class="string">[ E  x  E ]</span>
+V          <span class="string">inv(s)</span> <span class="string">times</span> <span class="string">covariance</span> <span class="string">between</span> <span class="string">input</span> <span class="string">and</span> <span class="string">output</span>      <span class="string">[ D  x  E ]</span>
+</pre><p>Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</p><p>Last modified: 2013-03-05</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">High-Level Steps</a></li><li><a href="#2">Code</a></li></ul></div><h2>High-Level Steps<a name="1"></a></h2><div><ol><li>If necessary, re-compute cached variables</li><li>Compute predicted mean and inv(s) times input-output covariance</li><li>Compute predictive covariance matrix, non-central moments</li><li>Centralize moments</li></ol></div><pre class="codeinput"><span class="keyword">function</span> [M, S, V] = gp2(gpmodel, m, s)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput"><span class="keyword">persistent</span> iK oldX oldIn oldOut beta oldn;
+D = size(gpmodel.inputs,2);    <span class="comment">% number of examples and dimension of inputs</span>
+[n, E] = size(gpmodel.targets);      <span class="comment">% number of examples and number of outputs</span>
+
+input = gpmodel.inputs;  target = gpmodel.targets; X = gpmodel.hyp;
+
+<span class="comment">% 1) if necessary: re-compute cached variables</span>
+<span class="keyword">if</span> numel(X) ~= numel(oldX) || isempty(iK) ||  n ~= oldn || <span class="keyword">...</span>
+    sum(any(X ~= oldX)) || sum(any(oldIn ~= input)) || <span class="keyword">...</span>
+    sum(any(oldOut ~= target))
+  oldX = X; oldIn = input; oldOut = target; oldn = n;
+  K = zeros(n,n,E); iK = K; beta = zeros(n,E);
+
+  <span class="keyword">for</span> i=1:E                                              <span class="comment">% compute K and inv(K)</span>
+    inp = bsxfun(@rdivide,gpmodel.inputs,exp(X(1:D,i)'));
+    K(:,:,i) = exp(2*X(D+1,i)-maha(inp,inp)/2);
+    <span class="keyword">if</span> isfield(gpmodel,<span class="string">'nigp'</span>)
+      L = chol(K(:,:,i) + exp(2*X(D+2,i))*eye(n) + diag(gpmodel.nigp(:,i)))';
+    <span class="keyword">else</span>
+      L = chol(K(:,:,i) + exp(2*X(D+2,i))*eye(n))';
+    <span class="keyword">end</span>
+    iK(:,:,i) = L'\(L\eye(n));
+    beta(:,i) = L'\(L\gpmodel.targets(:,i));
+  <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+k = zeros(n,E); M = zeros(E,1); V = zeros(D,E); S = zeros(E);
+
+inp = bsxfun(@minus,gpmodel.inputs,m');                    <span class="comment">% centralize inputs</span>
+
+<span class="comment">% 2) Compute predicted mean and inv(s) times input-output covariance</span>
+<span class="keyword">for</span> i=1:E
+  iL = diag(exp(-X(1:D,i))); <span class="comment">% inverse length-scales</span>
+  in = inp*iL;
+  B = iL*s*iL+eye(D);
+
+  t = in/B;
+  l = exp(-sum(in.*t,2)/2); lb = l.*beta(:,i);
+  tL = t*iL;
+  c = exp(2*X(D+1,i))/sqrt(det(B));
+
+  M(i) = sum(lb)*c;                                            <span class="comment">% predicted mean</span>
+  V(:,i) = tL'*lb*c;                   <span class="comment">% inv(s) times input-output covariance</span>
+  k(:,i) = 2*X(D+1,i)-sum(in.*in,2)/2;
+<span class="keyword">end</span>
+
+<span class="comment">% 3) Compute predictive covariance, non-central moments</span>
+<span class="keyword">for</span> i=1:E
+  ii = bsxfun(@rdivide,inp,exp(2*X(1:D,i)'));
+
+  <span class="keyword">for</span> j=1:i
+    R = s*diag(exp(-2*X(1:D,i))+exp(-2*X(1:D,j)))+eye(D);
+    t = 1/sqrt(det(R));
+    ij = bsxfun(@rdivide,inp,exp(2*X(1:D,j)'));
+    L = exp(bsxfun(@plus,k(:,i),k(:,j)')+maha(ii,-ij,R\s/2));
+    S(i,j) = t*beta(:,i)'*L*beta(:,j); S(j,i) = S(i,j);
+  <span class="keyword">end</span>
+
+  S(i,i) = S(i,i) + 1e-6;          <span class="comment">% add small jitter for numerical reasons</span>
+
+<span class="keyword">end</span>
+
+<span class="comment">% 4) Centralize moments</span>
+S = S - M*M';
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% gp2.m
+% *Summary:* Compute joint predictions and derivatives for multiple GPs
+% with uncertain inputs. Does not consider the uncertainty about the underlying
+% function (in prediction), hence, only the GP mean function is considered.
+% Therefore, this representation is equivalent to a regularized RBF
+% network.
+% If gpmodel.nigp exists, individial noise contributions are added.
+%
+%
+%   function [M, S, V] = gp2(gpmodel, m, s)
+%
+% *Input arguments:*
+%
+%   gpmodel    GP model struct
+%     hyp      log-hyper-parameters                                  [D+2 x  E ]
+%     inputs   training inputs                                       [ n  x  D ]
+%     targets  training targets                                      [ n  x  E ]
+%     nigp     (optional) individual noise variance terms            [ n  x  E ]
+%   m          mean of the test distribution                         [ D  x  1 ]
+%   s          covariance matrix of the test distribution            [ D  x  D ]
+%
+% *Output arguments:*
+%
+%   M          mean of pred. distribution                            [ E  x  1 ]
+%   S          covariance of the pred. distribution                  [ E  x  E ]
+%   V          inv(s) times covariance between input and output      [ D  x  E ]
+%
+%
+% Copyright (C) 2008-2013 by
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modified: 2013-03-05
+%
+%% High-Level Steps
+% # If necessary, re-compute cached variables
+% # Compute predicted mean and inv(s) times input-output covariance
+% # Compute predictive covariance matrix, non-central moments
+% # Centralize moments
+
+function [M, S, V] = gp2(gpmodel, m, s)
+%% Code
+persistent iK oldX oldIn oldOut beta oldn;
+D = size(gpmodel.inputs,2);    % number of examples and dimension of inputs
+[n, E] = size(gpmodel.targets);      % number of examples and number of outputs
+
+input = gpmodel.inputs;  target = gpmodel.targets; X = gpmodel.hyp;
+
+% 1) if necessary: re-compute cached variables
+if numel(X) ~= numel(oldX) || isempty(iK) ||  n ~= oldn || ...
+    sum(any(X ~= oldX)) || sum(any(oldIn ~= input)) || ...
+    sum(any(oldOut ~= target))
+  oldX = X; oldIn = input; oldOut = target; oldn = n;
+  K = zeros(n,n,E); iK = K; beta = zeros(n,E);
+  
+  for i=1:E                                              % compute K and inv(K)
+    inp = bsxfun(@rdivide,gpmodel.inputs,exp(X(1:D,i)'));
+    K(:,:,i) = exp(2*X(D+1,i)-maha(inp,inp)/2);
+    if isfield(gpmodel,'nigp')
+      L = chol(K(:,:,i) + exp(2*X(D+2,i))*eye(n) + diag(gpmodel.nigp(:,i)))';
+    else
+      L = chol(K(:,:,i) + exp(2*X(D+2,i))*eye(n))';
+    end
+    iK(:,:,i) = L'\(L\eye(n));
+    beta(:,i) = L'\(L\gpmodel.targets(:,i));
+  end
+end
+
+k = zeros(n,E); M = zeros(E,1); V = zeros(D,E); S = zeros(E);
+
+inp = bsxfun(@minus,gpmodel.inputs,m');                    % centralize inputs
+
+% 2) Compute predicted mean and inv(s) times input-output covariance
+for i=1:E
+  iL = diag(exp(-X(1:D,i))); % inverse length-scales
+  in = inp*iL;
+  B = iL*s*iL+eye(D);
+  
+  t = in/B;
+  l = exp(-sum(in.*t,2)/2); lb = l.*beta(:,i);
+  tL = t*iL;
+  c = exp(2*X(D+1,i))/sqrt(det(B));
+  
+  M(i) = sum(lb)*c;                                            % predicted mean
+  V(:,i) = tL'*lb*c;                   % inv(s) times input-output covariance
+  k(:,i) = 2*X(D+1,i)-sum(in.*in,2)/2;
+end
+
+% 3) Compute predictive covariance, non-central moments
+for i=1:E
+  ii = bsxfun(@rdivide,inp,exp(2*X(1:D,i)'));
+  
+  for j=1:i
+    R = s*diag(exp(-2*X(1:D,i))+exp(-2*X(1:D,j)))+eye(D);
+    t = 1/sqrt(det(R));
+    ij = bsxfun(@rdivide,inp,exp(2*X(1:D,j)'));
+    L = exp(bsxfun(@plus,k(:,i),k(:,j)')+maha(ii,-ij,R\s/2));
+    S(i,j) = t*beta(:,i)'*L*beta(:,j); S(j,i) = S(i,j);
+  end
+  
+  S(i,i) = S(i,i) + 1e-6;          % add small jitter for numerical reasons
+  
+end
+
+% 4) Centralize moments
+S = S - M*M';
+
+##### SOURCE END #####
+--></body></html>

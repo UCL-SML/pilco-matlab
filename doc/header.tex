@@ -1,0 +1,120 @@
+\usepackage[top=4cm, bottom=3cm, left=2cm, right=2cm]{geometry}
+\usepackage{dsfont}
+\usepackage{mathtools}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{color}
+\usepackage[table]{xcolor}
+\usepackage{textcomp}
+\usepackage{units}
+\usepackage{url}
+\usepackage{subfigure}
+\usepackage{wrapfig}
+\usepackage{hyperref}
+
+\hypersetup{
+    bookmarks=true,         % show bookmarks bar?
+    unicode=false,          % non-Latin characters in Acrobat’s bookmarks
+    pdftoolbar=true,        % show Acrobat’s toolbar?
+    pdfmenubar=true,        % show Acrobat’s menu?
+    pdffitwindow=false,     % window fit to page when opened
+    pdfstartview={FitH},    % fits the width of the page to the window
+    pdftitle={PILCO Software Package},    % title
+    pdfauthor={Marc Deisenroth},     % author
+    pdfkeywords={PILCO} {key2} {key3}, % list of keywords
+    pdfnewwindow=true,      % links in new window
+    colorlinks=true,       % false: boxed links; true: colored links
+    linkcolor=black,          % color of internal links (change box color with linkbordercolor)
+    citecolor=black,        % color of links to bibliography
+    filecolor=black,      % color of file links
+    urlcolor=blue           % color of external links
+}
+
+
+\usepackage{listings}
+
+\definecolor{listinggray}{gray}{0.9}
+\definecolor{lbcolor}{rgb}{0.9,0.9,0.9}
+\lstset{
+backgroundcolor=\color{lbcolor},
+tabsize=2,
+	rulecolor=,
+	language=matlab,
+        basicstyle=\footnotesize,
+        upquote=true,
+        aboveskip={1.5\baselineskip},
+        columns=fixed,
+        showstringspaces=false,
+        extendedchars=true,
+        breaklines=true,
+        prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
+        frame=single,
+        showtabs=false,
+        showspaces=false,
+        showstringspaces=false,
+        identifierstyle=\ttfamily,
+        keywordstyle=\color[rgb]{0,0,1},
+        commentstyle=\color[rgb]{0.133,0.545,0.133},
+        stringstyle=\color[rgb]{0.627,0.126,0.941},
+	numbers=left
+}
+
+
+\sloppy
+\definecolor{lightgray}{gray}{0.5}
+\setlength{\parindent}{0pt}
+
+\usepackage{pifont}% http://ctan.org/pkg/pifont
+\newcommand{\cmark}{{\color{green!50!black}\ding{51}}}%
+\newcommand{\xmark}{{\color{red}\ding{55}}}%
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,backgrounds}
+\usetikzlibrary{3d}
+\usepackage{3dplot}
+
+\renewcommand{\vec}[1]{\boldsymbol{#1}}  % vector
+\newcommand{\mat}[1]{\boldsymbol{#1}}    % matrix
+\newcommand{\inv}{^{-1}}
+\newcommand{\T}{^{\top}}
+\newcommand{\E}{\mathds{E}}
+\newcommand{\var}{\mathds{V}}
+\newcommand{\cov}{\mathrm{cov}}
+\newcommand{\R}{\mathds{R}}
+\newcommand{\Z}{\mathds{Z}}
+\newcommand{\polpar}{\theta}
+\definecolor{orange}{RGB}{255,127,0}
+\renewcommand{\path}{\texttt{<pilco\_root>/}}
+\newcommand{\gauss}[2]{\mathcal N(#1,#2)}
+\newcommand{\gaussx}[3]{\mathcal{N}\big(#1\,\vert \,#2,#3\big)}
+
+\newcommand{\te}[1]{\text{#1}}
+\newcommand{\dpp}{\mathrm{\partial}}
+\newcommand{\pdiff}[2]{\frac{\dpp #1}{\dpp #2}}
+
+\setcounter{secnumdepth}{3}
+
+\title{\bf PILCO Code Documentation v0.9} 
+
+\author{Marc Peter Deisenroth\\
+Imperial College London, UK\\
+\url{m.deisenroth@imperial.ac.uk}
+ \and 
+Andrew McHutchon\\
+University of Cambridge, UK \\
+\url{ajm257@cam.ac.uk}
+\and 
+Joe Hall\\
+University of Cambridge, UK\\
+\url{jah215@cam.ac.uk}
+\and
+ Carl Edward Rasmussen\\
+University of Cambridge, UK\\
+\url{cer54@cam.ac.uk}
+}
+
+\date{\today}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "doc"
+%%% End: 

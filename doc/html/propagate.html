@@ -1,0 +1,222 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>propagate.m</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="propagate.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>propagate.m</h1><!--introduction--><p><b>Summary:</b> Propagate the state distribution one time step forward.</p><pre>[Mnext, Snext] = propagate(m, s, plant, dynmodel, policy)</pre><p><b>Input arguments:</b></p><pre class="language-matlab">m                 <span class="string">mean</span> <span class="string">of</span> <span class="string">the</span> <span class="string">state</span> <span class="string">distribution</span> <span class="string">at</span> <span class="string">time</span> <span class="string">t</span>           <span class="string">[D x 1]</span>
+s                 <span class="string">covariance</span> <span class="string">of</span> <span class="string">the</span> <span class="string">state</span> <span class="string">distribution</span> <span class="string">at</span> <span class="string">time</span> <span class="string">t</span>     <span class="string">[D x D]</span>
+plant             <span class="string">plant</span> <span class="string">structure</span>
+dynmodel          <span class="string">dynamics</span> <span class="string">model</span> <span class="string">structure</span>
+policy            <span class="string">policy</span> <span class="string">structure</span>
+</pre><p><b>Output arguments:</b></p><pre class="language-matlab">Mnext             <span class="string">mean</span> <span class="string">of</span> <span class="string">the</span> <span class="string">successor</span> <span class="string">state</span> <span class="string">at</span> <span class="string">time</span> <span class="string">t+1</span>            <span class="string">[E x 1]</span>
+Snext             <span class="string">covariance</span> <span class="string">of</span> <span class="string">the</span> <span class="string">successor</span> <span class="string">state</span> <span class="string">at</span> <span class="string">time</span> <span class="string">t+1</span>      <span class="string">[E x E]</span>
+</pre><p>Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, Henrik Ohlsson, and Carl Edward Rasmussen.</p><p>Last modified: 2013-01-23</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">High-Level Steps</a></li><li><a href="#2">Code</a></li></ul></div><h2>High-Level Steps<a name="1"></a></h2><div><ol><li>Augment state distribution with trigonometric functions</li><li>Compute distribution of the control signal</li><li>Compute dynamics-GP prediction</li><li>Compute distribution of the next state</li></ol></div><pre class="codeinput"><span class="keyword">function</span> [Mnext, Snext] = propagate(m, s, plant, dynmodel, policy)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput"><span class="comment">% extract important indices from structures</span>
+angi = plant.angi;  <span class="comment">% angular indices</span>
+poli = plant.poli;  <span class="comment">% policy indices</span>
+dyni = plant.dyni;  <span class="comment">% dynamics-model indices</span>
+difi = plant.difi;  <span class="comment">% state indices where the model was trained on differences</span>
+
+D0 = length(m);                                        <span class="comment">% size of the input mean</span>
+D1 = D0 + 2*length(angi);          <span class="comment">% length after mapping all angles to sin/cos</span>
+D2 = D1 + length(policy.maxU);          <span class="comment">% length after computing control signal</span>
+D3 = D2 + D0;                                         <span class="comment">% length after predicting</span>
+M = zeros(D3,1); M(1:D0) = m; S = zeros(D3); S(1:D0,1:D0) = s;   <span class="comment">% init M and S</span>
+
+<span class="comment">% 1) Augment state distribution with trigonometric functions ------------------</span>
+i = 1:D0; j = 1:D0; k = D0+1:D1;
+[M(k), S(k,k) C] = gTrig(M(i), S(i,i), angi);
+q = S(j,i)*C; S(j,k) = q; S(k,j) = q';
+
+mm=zeros(D1,1); mm(i)=M(i); ss(i,i)=S(i,i)+diag(exp(2*dynmodel.hyp(end,:))/2);
+[mm(k), ss(k,k) C] = gTrig(mm(i), ss(i,i), angi);     <span class="comment">% noisy state measurement</span>
+q = ss(j,i)*C; ss(j,k) = q; ss(k,j) = q';
+
+<span class="comment">% 2) Compute distribution of the control signal -------------------------------</span>
+i = poli; j = 1:D1; k = D1+1:D2;
+[M(k) S(k,k) C] = policy.fcn(policy, mm(i), ss(i,i));
+q = S(j,i)*C; S(j,k) = q; S(k,j) = q';
+
+<span class="comment">% 3) Compute dynamics-GP prediction              ------------------------------</span>
+ii = [dyni D1+1:D2]; j = 1:D2;
+<span class="keyword">if</span> isfield(dynmodel,<span class="string">'sub'</span>), Nf = length(dynmodel.sub); <span class="keyword">else</span> Nf = 1; <span class="keyword">end</span>
+<span class="keyword">for</span> n=1:Nf                               <span class="comment">% potentially multiple dynamics models</span>
+  [dyn i k] = sliceModel(dynmodel,n,ii,D1,D2,D3); j = setdiff(j,k);
+  [M(k), S(k,k), C] = dyn.fcn(dyn, M(i), S(i,i));
+  q = S(j,i)*C; S(j,k) = q; S(k,j) = q';
+
+  j = [j k];                                   <span class="comment">% update 'previous' state vector</span>
+<span class="keyword">end</span>
+
+<span class="comment">% 4) Compute distribution of the next state -----------------------------------</span>
+P = [zeros(D0,D2) eye(D0)]; P(difi,difi) = eye(length(difi));
+Mnext = P*M; Snext = P*S*P'; Snext = (Snext+Snext')/2;
+</pre><pre class="codeinput"><span class="keyword">function</span> [dyn i k] = sliceModel(dynmodel,n,ii,D1,D2,D3) <span class="comment">% separate sub-dynamics</span>
+<span class="comment">% A1) Separate multiple dynamics models ---------------------------------------</span>
+<span class="keyword">if</span> isfield(dynmodel,<span class="string">'sub'</span>)
+  dyn = dynmodel.sub{n}; do = dyn.dyno; D = length(ii)+D1-D2;
+  <span class="keyword">if</span> isfield(dyn,<span class="string">'dyni'</span>), di=dyn.dyni; <span class="keyword">else</span> di=[]; <span class="keyword">end</span>
+  <span class="keyword">if</span> isfield(dyn,<span class="string">'dynu'</span>), du=dyn.dynu; <span class="keyword">else</span> du=[]; <span class="keyword">end</span>
+  <span class="keyword">if</span> isfield(dyn,<span class="string">'dynj'</span>), dj=dyn.dynj; <span class="keyword">else</span> dj=[]; <span class="keyword">end</span>
+  i = [ii(di) D1+du D2+dj]; k = D2+do;
+  dyn.inputs = [dynmodel.inputs(:,[di D+du]) dynmodel.target(:,dj)];   <span class="comment">% inputs</span>
+  dyn.target = dynmodel.target(:,do);                                 <span class="comment">% targets</span>
+<span class="keyword">else</span>
+  dyn = dynmodel; k = D2+1:D3; i = ii;
+<span class="keyword">end</span>
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% propagate.m
+% *Summary:* Propagate the state distribution one time step forward.
+%
+%  [Mnext, Snext] = propagate(m, s, plant, dynmodel, policy)
+%
+% *Input arguments:*
+%
+%   m                 mean of the state distribution at time t           [D x 1]
+%   s                 covariance of the state distribution at time t     [D x D]
+%   plant             plant structure
+%   dynmodel          dynamics model structure
+%   policy            policy structure
+%
+% *Output arguments:*
+%
+%   Mnext             mean of the successor state at time t+1            [E x 1]
+%   Snext             covariance of the successor state at time t+1      [E x E]
+%
+%
+% Copyright (C) 2008-2013 by 
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, Henrik Ohlsson,
+% and Carl Edward Rasmussen. 
+%
+% Last modified: 2013-01-23
+%
+%% High-Level Steps
+% # Augment state distribution with trigonometric functions
+% # Compute distribution of the control signal
+% # Compute dynamics-GP prediction
+% # Compute distribution of the next state
+%
+
+function [Mnext, Snext] = propagate(m, s, plant, dynmodel, policy)
+%% Code
+
+% extract important indices from structures
+angi = plant.angi;  % angular indices
+poli = plant.poli;  % policy indices
+dyni = plant.dyni;  % dynamics-model indices
+difi = plant.difi;  % state indices where the model was trained on differences
+
+D0 = length(m);                                        % size of the input mean
+D1 = D0 + 2*length(angi);          % length after mapping all angles to sin/cos
+D2 = D1 + length(policy.maxU);          % length after computing control signal
+D3 = D2 + D0;                                         % length after predicting
+M = zeros(D3,1); M(1:D0) = m; S = zeros(D3); S(1:D0,1:D0) = s;   % init M and S
+
+% 1) Augment state distribution with trigonometric functions REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH
+i = 1:D0; j = 1:D0; k = D0+1:D1;
+[M(k), S(k,k) C] = gTrig(M(i), S(i,i), angi);
+q = S(j,i)*C; S(j,k) = q; S(k,j) = q';
+
+mm=zeros(D1,1); mm(i)=M(i); ss(i,i)=S(i,i)+diag(exp(2*dynmodel.hyp(end,:))/2);
+[mm(k), ss(k,k) C] = gTrig(mm(i), ss(i,i), angi);     % noisy state measurement
+q = ss(j,i)*C; ss(j,k) = q; ss(k,j) = q';
+
+% 2) Compute distribution of the control signal REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH-
+i = poli; j = 1:D1; k = D1+1:D2;
+[M(k) S(k,k) C] = policy.fcn(policy, mm(i), ss(i,i));
+q = S(j,i)*C; S(j,k) = q; S(k,j) = q';
+
+% 3) Compute dynamics-GP prediction              REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH
+ii = [dyni D1+1:D2]; j = 1:D2;
+if isfield(dynmodel,'sub'), Nf = length(dynmodel.sub); else Nf = 1; end
+for n=1:Nf                               % potentially multiple dynamics models
+  [dyn i k] = sliceModel(dynmodel,n,ii,D1,D2,D3); j = setdiff(j,k);
+  [M(k), S(k,k), C] = dyn.fcn(dyn, M(i), S(i,i));
+  q = S(j,i)*C; S(j,k) = q; S(k,j) = q';
+  
+  j = [j k];                                   % update 'previous' state vector
+end
+
+% 4) Compute distribution of the next state REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH-
+P = [zeros(D0,D2) eye(D0)]; P(difi,difi) = eye(length(difi));
+Mnext = P*M; Snext = P*S*P'; Snext = (Snext+Snext')/2;
+
+
+function [dyn i k] = sliceModel(dynmodel,n,ii,D1,D2,D3) % separate sub-dynamics
+% A1) Separate multiple dynamics models REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH-
+if isfield(dynmodel,'sub')
+  dyn = dynmodel.sub{n}; do = dyn.dyno; D = length(ii)+D1-D2;
+  if isfield(dyn,'dyni'), di=dyn.dyni; else di=[]; end
+  if isfield(dyn,'dynu'), du=dyn.dynu; else du=[]; end
+  if isfield(dyn,'dynj'), dj=dyn.dynj; else dj=[]; end
+  i = [ii(di) D1+du D2+dj]; k = D2+do;
+  dyn.inputs = [dynmodel.inputs(:,[di D+du]) dynmodel.target(:,dj)];   % inputs
+  dyn.target = dynmodel.target(:,do);                                 % targets
+else
+  dyn = dynmodel; k = D2+1:D3; i = ii;
+end
+##### SOURCE END #####
+--></body></html>

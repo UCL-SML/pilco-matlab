@@ -1,0 +1,241 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>lossHinge.m</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="lossHinge.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>lossHinge.m</h1><!--introduction--><p><b>Summary:</b> Function to compute the moments and derivatives of the loss of a Gaussian distributed point under a double hinge loss function. The loss function has slope -/+a and corners b1 and b2. The function also calculates derivatives of the loss w.r.t. the state distribution.</p><p>Graph:          \                   /           \                 /            \               /             \_____________/             b1           b2</p><p>To use a single hinge b1 or b2 can be set to -Inf or +Inf respectively.</p><p>Note, this function is only analytic for 1D inputs. To apply this loss function to multiple variables, use the lossAdd function.</p><pre class="language-matlab"><span class="keyword">function</span> [L dLdm dLds S dSdm dSds C dCdm dCds dLdb] = lossHinge(cost, m, s)
+</pre><p><b>Input arguments:</b></p><pre class="language-matlab">cost
+  .fcn      @lossHinge - called to get here
+  .a        slope <span class="string">of</span> <span class="string">loss</span> <span class="string">function</span>
+  .b        corner <span class="string">points</span> <span class="string">of</span> <span class="string">loss</span> <span class="string">function</span>                     <span class="string">[1   x    2 ]</span>
+m             <span class="string">input</span> <span class="string">mean</span>                                       <span class="string">[D   x    1 ]</span>
+S             <span class="string">input</span> <span class="string">covariance</span> <span class="string">matrix</span>                          <span class="string">[D   x    D ]</span>
+</pre><p><b>Output arguments:</b></p><pre class="language-matlab">L               <span class="string">expected</span> <span class="string">loss</span>                                  <span class="string">[1   x    1 ]</span>
+dLdm            <span class="string">derivative</span> <span class="string">of</span> <span class="string">L</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">mean</span>                 <span class="string">[1   x    D ]</span>
+dLds            <span class="string">derivative</span> <span class="string">of</span> <span class="string">L</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">covariance</span>           <span class="string">[1   x   D^2]</span>
+S               <span class="string">variance</span> <span class="string">of</span> <span class="string">loss</span>                               <span class="string">[1   x    1 ]</span>
+dSdm            <span class="string">derivative</span> <span class="string">of</span> <span class="string">S</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">mean</span>                 <span class="string">[1   x    D ]</span>
+dSds            <span class="string">derivative</span> <span class="string">of</span> <span class="string">S</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">covariance</span>           <span class="string">[1   x   D^2]</span>
+C               <span class="string">inv(S)</span> <span class="string">times</span> <span class="string">input-output</span> <span class="string">covariance</span>           <span class="string">[D   x    1 ]</span>
+dCdm            <span class="string">derivative</span> <span class="string">of</span> <span class="string">C</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">mean</span>                 <span class="string">[D   x    D ]</span>
+dCds            <span class="string">derivative</span> <span class="string">of</span> <span class="string">C</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">covariance</span>           <span class="string">[D   x   D^2]</span>
+</pre><p>Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</p><p>Last modified: 2013-03-06</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">High-Level Steps</a></li><li><a href="#2">Code</a></li></ul></div><h2>High-Level Steps<a name="1"></a></h2><div><ol><li>Expected cost</li><li>Variance of cost</li><li>inv(s)* cov(x,L)</li></ol></div><pre class="codeinput"><span class="keyword">function</span> [L dLdm dLds S dSdm dSds C dCdm dCds dLdb] = lossHinge(cost, m, s)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput">D = length(m);
+<span class="keyword">if</span> D &gt; 1;
+    error([<span class="string">'lossHinge only defined for 1D inputs, use lossAdd to '</span><span class="keyword">...</span>
+                                     <span class="string">'concatenate multiple 1D loss functions'</span>]);
+<span class="keyword">end</span>
+
+a = cost.a;
+b = cost.b(:)' - m(:)'; I = ~isinf(b); <span class="comment">% centralize</span>
+eb = exp(-b.^2/2/s); erfb = erf(b/sqrt(2*s));
+c = sqrt(s/pi/2);
+
+<span class="comment">% 1. Expected Loss</span>
+<span class="comment">% int_{-inf}^{b1-m} -a*(x-b1+m)*N(0,S)  +  int_{b2-m}^inf a*(x-b2+m)*N(0,S)</span>
+L = a*(b/2.*erfb + c*eb + b.*[1,-1]/2);
+L = sum(L(I));
+
+<span class="keyword">if</span> nargout &gt; 1
+    <span class="comment">% Derivative w.r.t. m</span>
+    dLdb = a/2*(erfb + [1,-1]);
+    dLdm = sum(dLdb(I)*-1);
+
+    <span class="comment">% Derivative w.r.t. S</span>
+    dc = 1/(2*sqrt(2*pi*s));
+    dLds = a*sum(eb)*dc;
+<span class="keyword">end</span>
+
+<span class="comment">% 2. Variance of Loss</span>
+<span class="keyword">if</span> nargout &gt; 3
+    S = a^2*((b.^2+s).*(1+[1,-1].*erfb)/2 + [1,-1].*b*c.*eb);
+    S = sum(S(I)) - L^2;
+
+    erfbdm = -sqrt(2/pi/s)*eb; erfbds = -b.*eb/sqrt(2*pi*s^3);
+    dSdm = a^2*(-b.*(1+[1,-1].*erfb) + (b.^2+s).*[1,-1].*erfbdm/2 + <span class="keyword">...</span>
+                                                    [1,-1]*c.*eb.*(-1+b.^2/s));
+    dSdm = sum(dSdm(I)) - 2*L*dLdm;
+    dSds = a^2/2*((1+[1,-1].*erfb) + (b.^2+s).*[1,-1].*erfbds + <span class="keyword">...</span>
+                                   [2,-2].*b*dc.*eb + [1,-1].*b.^3/s^2*c.*eb);
+    dSds = sum(dSds(I)) - 2*L*dLds;
+<span class="keyword">end</span>
+
+<span class="comment">% 3. inv(s)* covariance between input and cost</span>
+<span class="keyword">if</span> nargout &gt; 6
+   C = a*([-1 1] - erfb)/2;
+   C = sum(C);
+
+   dCdm = -a/2*sum(erfbdm);
+   dCds = -a/2*sum(erfbds(I));
+<span class="keyword">end</span>
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% lossHinge.m
+% *Summary:* Function to compute the moments and derivatives of the loss of a 
+% Gaussian distributed point under a double hinge loss function. The loss 
+% function has slope -/+a and corners b1 and b2. The function also calculates 
+% derivatives of the loss w.r.t. the state distribution.
+%
+% Graph:
+%          \                   /
+%           \                 /
+%            \               /
+%             \_____________/
+%             b1           b2
+%
+% To use a single hinge b1 or b2 can be set to -Inf or +Inf respectively.
+%
+% Note, this function is only analytic for 1D inputs. To apply this loss
+% function to multiple variables, use the lossAdd function.
+%
+%
+%   function [L dLdm dLds S dSdm dSds C dCdm dCds dLdb] = lossHinge(cost, m, s)
+%
+%
+% *Input arguments:*
+%
+%   cost
+%     .fcn      @lossHinge - called to get here
+%     .a        slope of loss function
+%     .b        corner points of loss function                     [1   x    2 ]
+%   m             input mean                                       [D   x    1 ]
+%   S             input covariance matrix                          [D   x    D ]
+%
+% *Output arguments:*
+%
+%   L               expected loss                                  [1   x    1 ]
+%   dLdm            derivative of L wrt input mean                 [1   x    D ]
+%   dLds            derivative of L wrt input covariance           [1   x   D^2] 
+%   S               variance of loss                               [1   x    1 ]
+%   dSdm            derivative of S wrt input mean                 [1   x    D ]
+%   dSds            derivative of S wrt input covariance           [1   x   D^2]    
+%   C               inv(S) times input-output covariance           [D   x    1 ]   
+%   dCdm            derivative of C wrt input mean                 [D   x    D ]  
+%   dCds            derivative of C wrt input covariance           [D   x   D^2]  
+%
+% Copyright (C) 2008-2013 by
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modified: 2013-03-06
+%
+%% High-Level Steps
+% # Expected cost
+% # Variance of cost
+% # inv(s)* cov(x,L)
+
+function [L dLdm dLds S dSdm dSds C dCdm dCds dLdb] = lossHinge(cost, m, s)
+%% Code
+D = length(m); 
+if D > 1; 
+    error(['lossHinge only defined for 1D inputs, use lossAdd to '...
+                                     'concatenate multiple 1D loss functions']);
+end
+
+a = cost.a; 
+b = cost.b(:)' - m(:)'; I = ~isinf(b); % centralize
+eb = exp(-b.^2/2/s); erfb = erf(b/sqrt(2*s));
+c = sqrt(s/pi/2);
+
+% 1. Expected Loss
+% int_{-inf}^{b1-m} -a*(x-b1+m)*N(0,S)  +  int_{b2-m}^inf a*(x-b2+m)*N(0,S)
+L = a*(b/2.*erfb + c*eb + b.*[1,-1]/2);
+L = sum(L(I));
+
+if nargout > 1
+    % Derivative w.r.t. m
+    dLdb = a/2*(erfb + [1,-1]); 
+    dLdm = sum(dLdb(I)*-1);
+
+    % Derivative w.r.t. S
+    dc = 1/(2*sqrt(2*pi*s));
+    dLds = a*sum(eb)*dc;
+end
+    
+% 2. Variance of Loss
+if nargout > 3
+    S = a^2*((b.^2+s).*(1+[1,-1].*erfb)/2 + [1,-1].*b*c.*eb);
+    S = sum(S(I)) - L^2;
+
+    erfbdm = -sqrt(2/pi/s)*eb; erfbds = -b.*eb/sqrt(2*pi*s^3);
+    dSdm = a^2*(-b.*(1+[1,-1].*erfb) + (b.^2+s).*[1,-1].*erfbdm/2 + ...
+                                                    [1,-1]*c.*eb.*(-1+b.^2/s)); 
+    dSdm = sum(dSdm(I)) - 2*L*dLdm;
+    dSds = a^2/2*((1+[1,-1].*erfb) + (b.^2+s).*[1,-1].*erfbds + ...
+                                   [2,-2].*b*dc.*eb + [1,-1].*b.^3/s^2*c.*eb);
+    dSds = sum(dSds(I)) - 2*L*dLds;
+end
+
+% 3. inv(s)* covariance between input and cost
+if nargout > 6
+   C = a*([-1 1] - erfb)/2;
+   C = sum(C);
+   
+   dCdm = -a/2*sum(erfbdm);
+   dCds = -a/2*sum(erfbds(I));
+end
+
+
+##### SOURCE END #####
+--></body></html>

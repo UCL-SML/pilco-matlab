@@ -1,0 +1,351 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>gSinSatT</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="gSinSatT.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#1">gSinSatT.m</a></li><li><a href="#2">Code</a></li></ul></div><h2>gSinSatT.m<a name="1"></a></h2><p><b>Summary:</b> Test the gSin and gSat functions. Check the predictions using Monte Carlo and the derivatives by finite differences.</p><pre class="language-matlab"><span class="keyword">function</span> gSinSatT(fcn, m, v, i, e)
+</pre><p><b>Input arguments:</b></p><pre class="language-matlab">fcn      <span class="string">'gSin'</span> <span class="string">or</span> <span class="string">'gSat'</span>
+m         <span class="string">mean</span> <span class="string">of</span> <span class="string">input</span> <span class="string">distribution</span>                         <span class="string">[D x 1]</span>
+v         <span class="string">covariance</span> <span class="string">matrix</span> <span class="string">of</span> <span class="string">input</span> <span class="string">distribution</span>            <span class="string">[D x D]</span>
+i         vector <span class="string">of</span> <span class="string">indices</span> <span class="string">of</span> <span class="string">elements</span> <span class="string">to</span> <span class="string">augment</span>           <span class="string">[I x 1]</span>
+e         (optional) scaling <span class="string">vector</span>; default: 1              [I x 1]
+</pre><p>Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</p><p>Last modified: 2013-03-21</p><pre class="codeinput"><span class="keyword">function</span> gSinSatT(fcn, m, v, i, e)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput"><span class="keyword">if</span> nargin &lt; 2
+  D = 4;
+  m = randn(D,1);
+  v = randn(D); v = v*v'+eye(D);
+  i = [1;2; 4]; I = length(i);
+  e = exp(randn(size(i)));
+<span class="keyword">else</span>
+  D = length(m);
+<span class="keyword">end</span>
+
+n = 1e6;               <span class="comment">% monte Carlo sample size</span>
+delta = 1e-4;          <span class="comment">% for finite difference approx</span>
+
+x = bsxfun(@plus, m, chol(v)'*randn(D,n));
+<span class="keyword">switch</span> func2str(fcn)
+  <span class="keyword">case</span> <span class="string">'gSin'</span>, y = bsxfun(@times, e, sin(x(i,:)));
+  <span class="keyword">case</span> <span class="string">'gSat'</span>, y = bsxfun(@times, e, 9*sin(x(i,:))/8+sin(3*x(i,:))/8);
+  <span class="keyword">otherwise</span>, error(<span class="string">'Can only handle gSin and gSat'</span>)
+<span class="keyword">end</span>
+
+[M, V, C] = fcn(m, v, i, e);
+Q = cov([x' y']); Qv = Q(D+1:end,D+1:end); Qc  = v\Q(1:D,D+1:end);
+
+disp([<span class="string">'mean: '</span>, func2str(fcn), <span class="string">'  Monte Carlo'</span>])
+disp([M mean(y,2)]); disp([<span class="string">' '</span>]);
+
+disp([<span class="string">'var:  '</span>, func2str(fcn), <span class="string">'  Monte Carlo'</span>])
+disp([V(:) Qv(:)]); disp([<span class="string">' '</span>]);
+
+disp([<span class="string">'cov:  '</span>, func2str(fcn), <span class="string">'  Monte Carlo'</span>])
+disp([C(:) Qc(:)]); disp(<span class="string">' '</span>);
+
+disp(<span class="string">'dMdm'</span>)
+<span class="keyword">for</span> j = 1:I
+  d = checkgrad(@gSinT0, m, delta, v, i, e, j, fcn);
+  disp([<span class="string">'this was element # '</span> num2str(j) <span class="string">'/'</span> num2str(I)]);
+  <span class="keyword">if</span> d &gt; 1e-6; keyboard; <span class="keyword">end</span>
+<span class="keyword">end</span>
+disp(<span class="string">' '</span>);
+
+disp(<span class="string">'dVdm'</span>)
+<span class="keyword">for</span> j = 1:I*I
+  d = checkgrad(@gSinT1, m, delta, v, i, e, j, fcn);
+  disp([<span class="string">'this was element # '</span> num2str(j) <span class="string">'/'</span> num2str(I*I)]);
+  <span class="keyword">if</span> d &gt; 1e-6; keyboard; <span class="keyword">end</span>
+<span class="keyword">end</span>
+disp(<span class="string">' '</span>);
+
+disp(<span class="string">'dCdm'</span>)
+<span class="keyword">for</span> j = 1:I*D
+  d= checkgrad(@gSinT2, m, delta, v, i, e, j, fcn);
+  disp([<span class="string">'this was element # '</span> num2str(j) <span class="string">'/'</span> num2str(I*D)]);
+  <span class="keyword">if</span> d &gt; 1e-6; keyboard; <span class="keyword">end</span>
+<span class="keyword">end</span>
+disp(<span class="string">' '</span>);
+
+disp(<span class="string">'dMdv'</span>)
+<span class="keyword">for</span> j = 1:I
+  d = checkgrad(@gSinT3, v(tril(ones(length(v)))==1), delta, m, i, e, j, fcn);
+  disp([<span class="string">'this was element # '</span> num2str(j) <span class="string">'/'</span> num2str(I)]);
+  <span class="keyword">if</span> d &gt; 1e-6; keyboard; <span class="keyword">end</span>
+<span class="keyword">end</span>
+disp(<span class="string">' '</span>);
+
+disp(<span class="string">'dVdv'</span>)
+<span class="keyword">for</span> j = 1:I*I
+  d = checkgrad(@gSinT4, v(tril(ones(length(v)))==1), delta, m, i, e, j, fcn);
+  disp([<span class="string">'this was element # '</span> num2str(j) <span class="string">'/'</span> num2str(I*I)]);
+  <span class="keyword">if</span> d &gt; 1e-6; keyboard; <span class="keyword">end</span>
+<span class="keyword">end</span>
+disp(<span class="string">' '</span>);
+
+disp(<span class="string">'dCdv'</span>)
+<span class="keyword">for</span> j = 1:I*D
+  d = checkgrad(@gSinT5, v(tril(ones(length(v)))==1), delta, m, i, e, j, fcn);
+  disp([<span class="string">'this was element # '</span> num2str(j) <span class="string">'/'</span> num2str(I*D)]);
+  <span class="keyword">if</span> d &gt; 1e-6; keyboard; <span class="keyword">end</span>
+<span class="keyword">end</span>
+</pre><pre class="codeinput"><span class="keyword">function</span> [f, df] = gSinT0(m, v, i, e, j, fcn)
+[M, V, C, dMdm] = fcn(m, v, i, e);
+f = M(j); df = dMdm(j,:);
+
+<span class="keyword">function</span> [f, df] = gSinT1(m, v, i, e, j, fcn)
+[M, V, C, dMdm, dVdm] = fcn(m, v, i, e);
+dVdm = reshape(dVdm,[size(V) length(m)]);
+dd = length(M); p = fix((j+dd-1)/dd); q = j-(p-1)*dd;
+f = V(p,q); df = squeeze(dVdm(p,q,:));
+
+<span class="keyword">function</span> [f, df] = gSinT2(m, v, i, e, j, fcn)
+[M, V, C, dMdm, dVdm, dCdm] = fcn(m, v, i, e);
+dCdm = reshape(dCdm,[size(C) length(m)]);
+dd = length(M); p = fix((j+dd-1)/dd); q = j-(p-1)*dd;
+f = C(p,q); df = squeeze(dCdm(p,q,:));
+
+<span class="keyword">function</span> [f, df] = gSinT3(v, m, i, e, j, fcn)
+d = length(m);
+vv(tril(ones(d))==1) = v; vv = reshape(vv,d,d);
+vv = vv + vv' - diag(diag(vv));
+[M, V, C, dMdm, dVdm, dCdm, dMdv] = fcn(m, vv, i, e);
+dMdv = reshape(dMdv,[length(M) size(vv)]);
+f = M(j); df = squeeze(dMdv(j,:,:));
+df = df+df'-diag(diag(df)); df = df(tril(ones(d))==1);
+
+<span class="keyword">function</span> [f, df] = gSinT4(v, m, i, e, j, fcn)
+d = length(m);
+vv(tril(ones(d))==1) = v; vv = reshape(vv,d,d);
+vv = vv + vv' - diag(diag(vv));
+[M, V, C, dMdm, dVdm, dCdm, dMdv, dVdv] = fcn(m, vv, i, e);
+dVdv = reshape(dVdv,[size(V) size(vv)]);
+dd = length(M); p = fix((j+dd-1)/dd); q = j-(p-1)*dd;
+f = V(p,q); df = squeeze(dVdv(p,q,:,:));
+df = df+df'-diag(diag(df)); df = df(tril(ones(d))==1);
+
+<span class="keyword">function</span> [f, df] = gSinT5(v, m, i, e, j, fcn)
+d = length(m);
+vv(tril(ones(d))==1) = v; vv = reshape(vv,d,d);
+vv = vv + vv' - diag(diag(vv));
+[M, V, C, dMdm, dVdm, dCdm, dMdv, dVdv, dCdv] = fcn(m, vv, i, e);
+dCdv = reshape(dCdv,[size(C) size(vv)]);
+dd = length(M); p = fix((j+dd-1)/dd); q = j-(p-1)*dd;
+f = C(p,q); df = squeeze(dCdv(p,q,:,:));
+df = df+df'-diag(diag(df)); df = df(tril(ones(d))==1);
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% gSinSatT.m
+% *Summary:* Test the gSin and gSat functions. 
+% Check the predictions using Monte Carlo and the derivatives by 
+% finite differences. 
+%
+%
+%   function gSinSatT(fcn, m, v, i, e)
+%
+%
+% *Input arguments:*
+%
+%   fcn      'gSin' or 'gSat'
+%   m         mean of input distribution                         [D x 1]
+%   v         covariance matrix of input distribution            [D x D]
+%   i         vector of indices of elements to augment           [I x 1]
+%   e         (optional) scaling vector; default: 1              [I x 1]
+%
+%
+% Copyright (C) 2008-2013 by 
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modified: 2013-03-21
+
+function gSinSatT(fcn, m, v, i, e)
+%% Code
+
+if nargin < 2
+  D = 4;
+  m = randn(D,1);
+  v = randn(D); v = v*v'+eye(D);
+  i = [1;2; 4]; I = length(i);
+  e = exp(randn(size(i)));
+else
+  D = length(m);
+end
+
+n = 1e6;               % monte Carlo sample size
+delta = 1e-4;          % for finite difference approx
+
+x = bsxfun(@plus, m, chol(v)'*randn(D,n));
+switch func2str(fcn)
+  case 'gSin', y = bsxfun(@times, e, sin(x(i,:)));
+  case 'gSat', y = bsxfun(@times, e, 9*sin(x(i,:))/8+sin(3*x(i,:))/8);
+  otherwise, error('Can only handle gSin and gSat')
+end
+
+[M, V, C] = fcn(m, v, i, e);
+Q = cov([x' y']); Qv = Q(D+1:end,D+1:end); Qc  = v\Q(1:D,D+1:end);
+
+disp(['mean: ', func2str(fcn), '  Monte Carlo'])
+disp([M mean(y,2)]); disp([' ']);
+
+disp(['var:  ', func2str(fcn), '  Monte Carlo'])
+disp([V(:) Qv(:)]); disp([' ']);
+
+disp(['cov:  ', func2str(fcn), '  Monte Carlo'])
+disp([C(:) Qc(:)]); disp(' ');
+
+disp('dMdm')
+for j = 1:I
+  d = checkgrad(@gSinT0, m, delta, v, i, e, j, fcn);
+  disp(['this was element # ' num2str(j) '/' num2str(I)]);
+  if d > 1e-6; keyboard; end
+end
+disp(' ');
+
+disp('dVdm')
+for j = 1:I*I
+  d = checkgrad(@gSinT1, m, delta, v, i, e, j, fcn);
+  disp(['this was element # ' num2str(j) '/' num2str(I*I)]);
+  if d > 1e-6; keyboard; end
+end
+disp(' ');
+
+disp('dCdm')
+for j = 1:I*D
+  d= checkgrad(@gSinT2, m, delta, v, i, e, j, fcn);
+  disp(['this was element # ' num2str(j) '/' num2str(I*D)]);
+  if d > 1e-6; keyboard; end
+end
+disp(' ');
+
+disp('dMdv')
+for j = 1:I
+  d = checkgrad(@gSinT3, v(tril(ones(length(v)))==1), delta, m, i, e, j, fcn);
+  disp(['this was element # ' num2str(j) '/' num2str(I)]);
+  if d > 1e-6; keyboard; end
+end
+disp(' ');
+
+disp('dVdv')
+for j = 1:I*I
+  d = checkgrad(@gSinT4, v(tril(ones(length(v)))==1), delta, m, i, e, j, fcn);
+  disp(['this was element # ' num2str(j) '/' num2str(I*I)]);
+  if d > 1e-6; keyboard; end
+end
+disp(' ');
+
+disp('dCdv')
+for j = 1:I*D
+  d = checkgrad(@gSinT5, v(tril(ones(length(v)))==1), delta, m, i, e, j, fcn);
+  disp(['this was element # ' num2str(j) '/' num2str(I*D)]);
+  if d > 1e-6; keyboard; end
+end
+
+
+function [f, df] = gSinT0(m, v, i, e, j, fcn)
+[M, V, C, dMdm] = fcn(m, v, i, e);
+f = M(j); df = dMdm(j,:);
+
+function [f, df] = gSinT1(m, v, i, e, j, fcn)
+[M, V, C, dMdm, dVdm] = fcn(m, v, i, e);
+dVdm = reshape(dVdm,[size(V) length(m)]);
+dd = length(M); p = fix((j+dd-1)/dd); q = j-(p-1)*dd;
+f = V(p,q); df = squeeze(dVdm(p,q,:));
+
+function [f, df] = gSinT2(m, v, i, e, j, fcn)
+[M, V, C, dMdm, dVdm, dCdm] = fcn(m, v, i, e);
+dCdm = reshape(dCdm,[size(C) length(m)]);
+dd = length(M); p = fix((j+dd-1)/dd); q = j-(p-1)*dd;
+f = C(p,q); df = squeeze(dCdm(p,q,:));
+
+function [f, df] = gSinT3(v, m, i, e, j, fcn)
+d = length(m);
+vv(tril(ones(d))==1) = v; vv = reshape(vv,d,d);
+vv = vv + vv' - diag(diag(vv));
+[M, V, C, dMdm, dVdm, dCdm, dMdv] = fcn(m, vv, i, e);
+dMdv = reshape(dMdv,[length(M) size(vv)]);
+f = M(j); df = squeeze(dMdv(j,:,:));
+df = df+df'-diag(diag(df)); df = df(tril(ones(d))==1);
+
+function [f, df] = gSinT4(v, m, i, e, j, fcn)
+d = length(m);
+vv(tril(ones(d))==1) = v; vv = reshape(vv,d,d);
+vv = vv + vv' - diag(diag(vv));
+[M, V, C, dMdm, dVdm, dCdm, dMdv, dVdv] = fcn(m, vv, i, e);
+dVdv = reshape(dVdv,[size(V) size(vv)]);
+dd = length(M); p = fix((j+dd-1)/dd); q = j-(p-1)*dd;
+f = V(p,q); df = squeeze(dVdv(p,q,:,:));
+df = df+df'-diag(diag(df)); df = df(tril(ones(d))==1);
+
+function [f, df] = gSinT5(v, m, i, e, j, fcn)
+d = length(m);
+vv(tril(ones(d))==1) = v; vv = reshape(vv,d,d);
+vv = vv + vv' - diag(diag(vv));
+[M, V, C, dMdm, dVdm, dCdm, dMdv, dVdv, dCdv] = fcn(m, vv, i, e);
+dCdv = reshape(dCdv,[size(C) size(vv)]);
+dd = length(M); p = fix((j+dd-1)/dd); q = j-(p-1)*dd;
+f = C(p,q); df = squeeze(dCdv(p,q,:,:));
+df = df+df'-diag(diag(df)); df = df(tril(ones(d))==1);
+
+##### SOURCE END #####
+--></body></html>

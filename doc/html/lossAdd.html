@@ -1,0 +1,232 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>lossAdd</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="lossAdd.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#1">lossAdd.m</a></li><li><a href="#2">Code</a></li></ul></div><h2>lossAdd.m<a name="1"></a></h2><p><b>Summary:</b> Utility function to add a number of loss functions together, each of which can be using a different loss function and operating on a different part of the state.</p><pre>     function [L, dLdm, dLds, S, dSdm, dSds, C, dCdm, dCds] = lossAdd(cost, m, s)</pre><p><b>Input arguments:</b></p><pre class="language-matlab">cost            <span class="string">cost</span> <span class="string">struct</span>
+   .fcn         @lossAdd - called to arrive here
+   .sub{n}      cell <span class="string">array</span> <span class="string">of</span> <span class="string">sub-loss</span> <span class="string">functions</span> <span class="string">to</span> <span class="string">add</span> <span class="string">together</span>
+      .fcn      handle <span class="string">to</span> <span class="string">sub</span> <span class="string">function</span>
+      .losi     indices <span class="string">of</span> <span class="string">variables</span> <span class="string">to</span> <span class="string">be</span> <span class="string">passed</span> <span class="string">to</span> <span class="string">loss</span> <span class="string">function</span>
+      .&lt; &gt;      all fields <span class="string">in</span> <span class="string">sub</span> <span class="string">will</span> <span class="string">be</span> <span class="string">passed</span> <span class="string">onto</span> <span class="string">the</span> <span class="string">sub</span> <span class="string">function</span>
+   .expl        (optional) <span class="keyword">if</span> present cost.expl*sqrt(S) is <span class="string">added</span> <span class="string">to</span> <span class="string">the</span> <span class="string">loss</span>
+</pre><pre>  m         mean of input distribution                              [D x 1]
+  s         covariance matrix of input distribution                 [D x D]</pre><p><b>Output arguments:</b></p><pre class="language-matlab">L               <span class="string">expected</span> <span class="string">loss</span>                                  <span class="string">[1   x   1]</span>
+dLdm            <span class="string">derivative</span> <span class="string">of</span> <span class="string">L</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">mean</span>                 <span class="string">[1   x   D]</span>
+dLds            <span class="string">derivative</span> <span class="string">of</span> <span class="string">L</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">covariance</span>           <span class="string">[1   x   D^2]</span>
+S               <span class="string">variance</span> <span class="string">of</span> <span class="string">loss</span>                               <span class="string">[1   x   1]</span>
+dSdm            <span class="string">derivative</span> <span class="string">of</span> <span class="string">S</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">mean</span>                 <span class="string">[1   x   D]</span>
+dSds            <span class="string">derivative</span> <span class="string">of</span> <span class="string">S</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">covariance</span>           <span class="string">[1   x   D^2]</span>
+C               <span class="string">inv(S)</span> <span class="string">times</span> <span class="string">input-output</span> <span class="string">covariance</span>           <span class="string">[D   x   1]</span>
+dCdm            <span class="string">derivative</span> <span class="string">of</span> <span class="string">C</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">mean</span>                 <span class="string">[D   x   D]</span>
+dCds            <span class="string">derivative</span> <span class="string">of</span> <span class="string">C</span> <span class="string">wrt</span> <span class="string">input</span> <span class="string">covariance</span>           <span class="string">[D   x   D^2]</span>
+</pre><p>Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</p><p>Last modified: 2013-03-05</p><pre class="codeinput"><span class="keyword">function</span> [L, dLdm, dLds, S, dSdm, dSds, C, dCdm, dCds] = lossAdd(cost, m, s)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput"><span class="comment">% Dimensions and Initializations</span>
+Nlos = length(cost.sub); D = length(m);
+L = 0; S = 0; C = zeros(D,1); dLdm = zeros(1,D); dSdm = zeros(1,D);
+dLds = zeros(D); dSds = zeros(D); dCdm = zeros(D); dCds = zeros(D,D^2);
+
+<span class="keyword">for</span> n = 1:Nlos                            <span class="comment">% Loop over each of the sub-functions</span>
+  costi = cost.sub{n}; i = costi.losi;    <span class="comment">% slice</span>
+
+  <span class="comment">% Call the sub loss function</span>
+  <span class="keyword">if</span> nargout &lt; 4                      <span class="comment">% Just the expected loss &amp; derivs</span>
+    [Li, Ldm, Lds] = costi.fcn(costi, m(i), s(i,i));
+
+    L = L + Li;
+    dLdm(i) = dLdm(i) + Ldm; dLds(i,i) = dLds(i,i) + Lds;
+
+  <span class="keyword">else</span>                                <span class="comment">% Also loss variance and IO covariance</span>
+    [Li, Ldm, Lds, Si, Sdm, Sds, Ci, Cdm, Cds] = costi.fcn(costi, m(i), s(i,i));
+
+    L = L + Li;
+    S = S + Si + Ci'*s(i,:)*C + C'*s(:,i)*Ci; <span class="comment">% V(a+b) = V(a)+V(b)+C(a,b)+C(b,a)</span>
+
+    <span class="keyword">if</span> nargout &gt; 4    <span class="comment">% derivatives</span>
+      dLdm(i) = dLdm(i) + Ldm; dLds(i,i) = dLds(i,i) + Lds;
+
+      Cis = Ci'*(s(i,:) + s(:,i)'); Cs = C'*(s(:,i) + s(i,:)');
+
+      dSdm(i) = dSdm(i) + Sdm + Cs*Cdm; dSdm = dSdm + Cis*dCdm;
+      dSds(i,i) = dSds(i,i) + Sds + reshape(Cs*Cds,length(i),length(i));
+      dSds = dSds + reshape(Cis*dCds,D,D);
+      dSds(i,:) = dSds(i,:)  + Ci*C'; dSds(:,i) = dSds(:,i) + C*Ci';
+    <span class="keyword">end</span>
+
+    <span class="comment">% Input - Output covariance update</span>
+    C(i) = C(i) + Ci;                  <span class="comment">% must be after S and its derivatives</span>
+
+    ii = sub2ind2(D,i,i);
+    dCdm(i,i) = dCdm(i,i) + Cdm;             <span class="comment">% must be after dSdm &amp; dSds</span>
+    dCds(i,ii) = dCds(i,ii) + Cds;
+  <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+<span class="comment">% Exploration if required</span>
+<span class="keyword">if</span> isfield(cost,<span class="string">'expl'</span>) &amp;&amp; nargout &gt; 3 &amp;&amp; cost.expl ~= 0
+  L = L + cost.expl*sqrt(S);
+  dLdm = dLdm + cost.expl*0.5/sqrt(S)*dSdm;
+  dLds = dLds + cost.expl*0.5/sqrt(S)*dSds;
+<span class="keyword">end</span>
+</pre><pre class="codeinput"><span class="keyword">function</span> idx = sub2ind2(D,i,j)
+<span class="comment">% D = #rows, i = row subscript, j = column subscript</span>
+i = i(:); j = j(:)';
+idx =  reshape(bsxfun(@plus,D*(j-1),i),1,[]);
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% lossAdd.m
+% *Summary:* Utility function to add a number of loss functions together, each of which
+% can be using a different loss function and operating on a different part of
+% the state.
+%
+%       function [L, dLdm, dLds, S, dSdm, dSds, C, dCdm, dCds] = lossAdd(cost, m, s)
+%
+% *Input arguments:*
+%
+%   cost            cost struct
+%      .fcn         @lossAdd - called to arrive here
+%      .sub{n}      cell array of sub-loss functions to add together
+%         .fcn      handle to sub function
+%         .losi     indices of variables to be passed to loss function
+%         .< >      all fields in sub will be passed onto the sub function
+%      .expl        (optional) if present cost.expl*sqrt(S) is added to the loss
+%
+%    m         mean of input distribution                              [D x 1]
+%    s         covariance matrix of input distribution                 [D x D]
+%
+% *Output arguments:*
+%
+%   L               expected loss                                  [1   x   1]
+%   dLdm            derivative of L wrt input mean                 [1   x   D]
+%   dLds            derivative of L wrt input covariance           [1   x   D^2] 
+%   S               variance of loss                               [1   x   1]
+%   dSdm            derivative of S wrt input mean                 [1   x   D]
+%   dSds            derivative of S wrt input covariance           [1   x   D^2]    
+%   C               inv(S) times input-output covariance           [D   x   1]   
+%   dCdm            derivative of C wrt input mean                 [D   x   D]  
+%   dCds            derivative of C wrt input covariance           [D   x   D^2]  
+%
+% Copyright (C) 2008-2013 by
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modified: 2013-03-05
+
+function [L, dLdm, dLds, S, dSdm, dSds, C, dCdm, dCds] = lossAdd(cost, m, s)
+%% Code
+
+% Dimensions and Initializations
+Nlos = length(cost.sub); D = length(m);
+L = 0; S = 0; C = zeros(D,1); dLdm = zeros(1,D); dSdm = zeros(1,D);
+dLds = zeros(D); dSds = zeros(D); dCdm = zeros(D); dCds = zeros(D,D^2);
+
+for n = 1:Nlos                            % Loop over each of the sub-functions
+  costi = cost.sub{n}; i = costi.losi;    % slice
+  
+  % Call the sub loss function
+  if nargout < 4                      % Just the expected loss & derivs
+    [Li, Ldm, Lds] = costi.fcn(costi, m(i), s(i,i));
+    
+    L = L + Li;
+    dLdm(i) = dLdm(i) + Ldm; dLds(i,i) = dLds(i,i) + Lds;
+    
+  else                                % Also loss variance and IO covariance
+    [Li, Ldm, Lds, Si, Sdm, Sds, Ci, Cdm, Cds] = costi.fcn(costi, m(i), s(i,i));
+    
+    L = L + Li;
+    S = S + Si + Ci'*s(i,:)*C + C'*s(:,i)*Ci; % V(a+b) = V(a)+V(b)+C(a,b)+C(b,a)
+    
+    if nargout > 4    % derivatives
+      dLdm(i) = dLdm(i) + Ldm; dLds(i,i) = dLds(i,i) + Lds;
+      
+      Cis = Ci'*(s(i,:) + s(:,i)'); Cs = C'*(s(:,i) + s(i,:)');
+      
+      dSdm(i) = dSdm(i) + Sdm + Cs*Cdm; dSdm = dSdm + Cis*dCdm;
+      dSds(i,i) = dSds(i,i) + Sds + reshape(Cs*Cds,length(i),length(i));
+      dSds = dSds + reshape(Cis*dCds,D,D);
+      dSds(i,:) = dSds(i,:)  + Ci*C'; dSds(:,i) = dSds(:,i) + C*Ci';
+    end
+    
+    % Input - Output covariance update
+    C(i) = C(i) + Ci;                  % must be after S and its derivatives
+    
+    ii = sub2ind2(D,i,i);
+    dCdm(i,i) = dCdm(i,i) + Cdm;             % must be after dSdm & dSds
+    dCds(i,ii) = dCds(i,ii) + Cds;
+  end
+end
+
+% Exploration if required
+if isfield(cost,'expl') && nargout > 3 && cost.expl ~= 0
+  L = L + cost.expl*sqrt(S);
+  dLdm = dLdm + cost.expl*0.5/sqrt(S)*dSdm;
+  dLds = dLds + cost.expl*0.5/sqrt(S)*dSds;
+end
+
+function idx = sub2ind2(D,i,j)
+% D = #rows, i = row subscript, j = column subscript
+i = i(:); j = j(:)';
+idx =  reshape(bsxfun(@plus,D*(j-1),i),1,[]);
+##### SOURCE END #####
+--></body></html>

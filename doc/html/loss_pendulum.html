@@ -1,0 +1,262 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>loss_pendulum.m</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="loss_pendulum.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>loss_pendulum.m</h1><!--introduction--><p><b>Summary:</b> Pendulum loss function; the loss is <img src="loss_pendulum_eq30075.png" alt="$1-\exp(-0.5*d^2*a)$">,  where <img src="loss_pendulum_eq39223.png" alt="$a&gt;0$"> and  <img src="loss_pendulum_eq26389.png" alt="$d^2$"> is the squared difference between the actual and desired position of the tip of the pendulum. The mean and the variance of the loss are computed by averaging over the Gaussian distribution of the state <img src="loss_pendulum_eq32292.png" alt="$p(x) = \mathcal N(m,s)$"> with mean <img src="loss_pendulum_eq81831.png" alt="$m$"> and covariance matrix <img src="loss_pendulum_eq72999.png" alt="$s$">. Derivatives of these quantities are computed when desired.</p><pre class="language-matlab"><span class="keyword">function</span> [L, dLdm, dLds, S2] = loss_pendulum(cost, m, s)
+</pre><p><b>Input arguments:</b></p><pre class="language-matlab">cost            <span class="string">cost</span> <span class="string">structure</span>
+  .p            lengths <span class="string">of</span> <span class="string">the</span> <span class="string">pendulum</span>                         <span class="string">[1 x  1 ]</span>
+  .width        array <span class="string">of</span> <span class="string">widths</span> <span class="string">of</span> <span class="string">the</span> <span class="string">cost</span> <span class="string">(summed together)</span>
+  .expl         (optional) exploration <span class="string">parameter</span>
+  .angle        (optional) array <span class="string">of</span> <span class="string">angle</span> <span class="string">indices</span>
+  .target       target <span class="string">state</span>                                    <span class="string">[D x  1 ]</span>
+m               <span class="string">mean</span> <span class="string">of</span> <span class="string">state</span> <span class="string">distribution</span>                      <span class="string">[D x  1 ]</span>
+s               <span class="string">covariance</span> <span class="string">matrix</span> <span class="string">for</span> <span class="string">the</span> <span class="string">state</span> <span class="string">distribution</span>    <span class="string">[D x  D ]</span>
+</pre><p><b>Output arguments:</b></p><pre class="language-matlab">L     <span class="string">expected</span> <span class="string">cost</span>                                             <span class="string">[1 x  1 ]</span>
+dLdm  <span class="string">derivative</span> <span class="string">of</span> <span class="string">expected</span> <span class="string">cost</span> <span class="string">wrt.</span> <span class="string">state</span> <span class="string">mean</span> <span class="string">vector</span>        <span class="string">[1 x  D ]</span>
+dLds  <span class="string">derivative</span> <span class="string">of</span> <span class="string">expected</span> <span class="string">cost</span> <span class="string">wrt.</span> <span class="string">state</span> <span class="string">covariance</span> <span class="string">matrix</span>  <span class="string">[1 x D^2]</span>
+S2    <span class="string">variance</span> <span class="string">of</span> <span class="string">cost</span>                                          <span class="string">[1 x  1 ]</span>
+</pre><p>Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</p><p>Last modified: 2013-05-17</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">High-Level Steps</a></li><li><a href="#2">Code</a></li></ul></div><h2>High-Level Steps<a name="1"></a></h2><div><ol><li>Precomputations</li><li>Define static penalty as distance from target setpoint</li><li>Trigonometric augmentation</li><li>Calculate loss</li></ol></div><pre class="codeinput"><span class="keyword">function</span> [L, dLdm, dLds, S2] = loss_pendulum(cost, m, s)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput"><span class="keyword">if</span> isfield(cost,<span class="string">'width'</span>); cw = cost.width; <span class="keyword">else</span> cw = 1; <span class="keyword">end</span>
+<span class="keyword">if</span> ~isfield(cost,<span class="string">'expl'</span>) || isempty(cost.expl); b = 0; <span class="keyword">else</span> b =  cost.expl; <span class="keyword">end</span>
+
+
+<span class="comment">% 1. Some precomputations</span>
+D0 = size(s,2);                           <span class="comment">% state dimension</span>
+D1 = D0 + 2*length(cost.angle);           <span class="comment">% state dimension (with sin/cos)</span>
+
+M = zeros(D1,1); M(1:D0) = m; S = zeros(D1); S(1:D0,1:D0) = s;
+Mdm = [eye(D0); zeros(D1-D0,D0)]; Sdm = zeros(D1*D1,D0);
+Mds = zeros(D1,D0*D0); Sds = kron(Mdm,Mdm);
+
+<span class="comment">% 2. Define static penalty as distance from target setpoint</span>
+ell = cost.p;
+Q = zeros(D1); Q(D+1:D+2,D+1:D+2) = eye(2)*ell^2;
+
+<span class="comment">% 3. Trigonometric augmentation</span>
+<span class="keyword">if</span> D1-D0 &gt; 0
+  target = [cost.target(:); <span class="keyword">...</span>
+    gTrig(cost.target(:), zeros(numel(cost.target)), cost.angle)];
+
+  i = 1:D0; k = D0+1:D1;
+  [M(k), S(k,k), C, mdm, sdm, Cdm, mds, sds, Cds] = <span class="keyword">...</span>
+    gTrig(M(i),S(i,i),cost.angle);
+  [S, Mdm, Mds, Sdm, Sds] = <span class="keyword">...</span>
+    fillIn(S,C,mdm,sdm,Cdm,mds,sds,Cds,Mdm,Sdm,Mds,Sds,i,k,D1);
+<span class="keyword">end</span>
+
+<span class="comment">% 4. Calculate loss</span>
+L = 0; dLdm = zeros(1,D0); dLds = zeros(1,D0*D0); S2 = 0;
+<span class="keyword">for</span> i = 1:length(cw)                    <span class="comment">% scale mixture of immediate costs</span>
+  cost.z = target; cost.W = Q/cw(i)^2;
+  [r, rdM, rdS, s2, s2dM, s2dS] = lossSat(cost, M, S);
+
+  L = L + r; S2 = S2 + s2;
+  dLdm = dLdm + rdM(:)'*Mdm + rdS(:)'*Sdm;
+  dLds = dLds + rdM(:)'*Mds + rdS(:)'*Sds;
+
+  <span class="keyword">if</span> (b~=0 || ~isempty(b)) &amp;&amp; abs(s2)&gt;1e-12
+    L = L + b*sqrt(s2);
+    dLdm = dLdm + b/sqrt(s2) * ( s2dM(:)'*Mdm + s2dS(:)'*Sdm )/2;
+    dLds = dLds + b/sqrt(s2) * ( s2dM(:)'*Mds + s2dS(:)'*Sds )/2;
+  <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+<span class="comment">% normalize</span>
+n = length(cw); L = L/n; dLdm = dLdm/n; dLds = dLds/n; S2 = S2/n;
+
+<span class="comment">% Fill in covariance matrix...and derivatives ----------------------------</span>
+</pre><pre class="codeinput"><span class="keyword">function</span> [S, Mdm, Mds, Sdm, Sds] = <span class="keyword">...</span>
+  fillIn(S,C,mdm,sdm,Cdm,mds,sds,Cds,Mdm,Sdm,Mds,Sds,i,k,D)
+X = reshape(1:D*D,[D D]); XT = X';                    <span class="comment">% vectorised indices</span>
+I=0*X; I(i,i)=1; ii=X(I==1)'; I=0*X; I(k,k)=1; kk=X(I==1)';
+I=0*X; I(i,k)=1; ik=X(I==1)'; ki=XT(I==1)';
+
+Mdm(k,:)  = mdm*Mdm(i,:) + mds*Sdm(ii,:);                      <span class="comment">% chainrule</span>
+Mds(k,:)  = mdm*Mds(i,:) + mds*Sds(ii,:);
+Sdm(kk,:) = sdm*Mdm(i,:) + sds*Sdm(ii,:);
+Sds(kk,:) = sdm*Mds(i,:) + sds*Sds(ii,:);
+dCdm      = Cdm*Mdm(i,:) + Cds*Sdm(ii,:);
+dCds      = Cdm*Mds(i,:) + Cds*Sds(ii,:);
+
+S(i,k) = S(i,i)*C; S(k,i) = S(i,k)';                        <span class="comment">% off-diagonal</span>
+SS = kron(eye(length(k)),S(i,i)); CC = kron(C',eye(length(i)));
+Sdm(ik,:) = SS*dCdm + CC*Sdm(ii,:); Sdm(ki,:) = Sdm(ik,:);
+Sds(ik,:) = SS*dCds + CC*Sds(ii,:); Sds(ki,:) = Sds(ik,:);
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% loss_pendulum.m
+% *Summary:* Pendulum loss function; the loss is
+% $1-\exp(-0.5*d^2*a)$,  where $a>0$ and  $d^2$ is the squared difference
+% between the actual and desired position of the tip of the pendulum.
+% The mean and the variance of the loss are computed by averaging over the
+% Gaussian distribution of the state $p(x) = \mathcal N(m,s)$ with mean $m$
+% and covariance matrix $s$.
+% Derivatives of these quantities are computed when desired.
+%
+%
+%   function [L, dLdm, dLds, S2] = loss_pendulum(cost, m, s)
+%
+%
+% *Input arguments:*
+%
+%   cost            cost structure
+%     .p            lengths of the pendulum                         [1 x  1 ]
+%     .width        array of widths of the cost (summed together)
+%     .expl         (optional) exploration parameter
+%     .angle        (optional) array of angle indices
+%     .target       target state                                    [D x  1 ]
+%   m               mean of state distribution                      [D x  1 ]
+%   s               covariance matrix for the state distribution    [D x  D ]
+%
+% *Output arguments:*
+%
+%   L     expected cost                                             [1 x  1 ]
+%   dLdm  derivative of expected cost wrt. state mean vector        [1 x  D ]
+%   dLds  derivative of expected cost wrt. state covariance matrix  [1 x D^2]
+%   S2    variance of cost                                          [1 x  1 ]
+%
+% Copyright (C) 2008-2013 by
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modified: 2013-05-17
+%
+%% High-Level Steps
+% # Precomputations
+% # Define static penalty as distance from target setpoint
+% # Trigonometric augmentation
+% # Calculate loss
+
+function [L, dLdm, dLds, S2] = loss_pendulum(cost, m, s)
+%% Code
+if isfield(cost,'width'); cw = cost.width; else cw = 1; end
+if ~isfield(cost,'expl') || isempty(cost.expl); b = 0; else b =  cost.expl; end
+
+
+% 1. Some precomputations
+D0 = size(s,2);                           % state dimension
+D1 = D0 + 2*length(cost.angle);           % state dimension (with sin/cos)
+
+M = zeros(D1,1); M(1:D0) = m; S = zeros(D1); S(1:D0,1:D0) = s;
+Mdm = [eye(D0); zeros(D1-D0,D0)]; Sdm = zeros(D1*D1,D0);
+Mds = zeros(D1,D0*D0); Sds = kron(Mdm,Mdm);
+
+% 2. Define static penalty as distance from target setpoint
+ell = cost.p;
+Q = zeros(D1); Q(D+1:D+2,D+1:D+2) = eye(2)*ell^2;
+
+% 3. Trigonometric augmentation
+if D1-D0 > 0
+  target = [cost.target(:); ...
+    gTrig(cost.target(:), zeros(numel(cost.target)), cost.angle)];
+  
+  i = 1:D0; k = D0+1:D1;
+  [M(k), S(k,k), C, mdm, sdm, Cdm, mds, sds, Cds] = ...
+    gTrig(M(i),S(i,i),cost.angle);
+  [S, Mdm, Mds, Sdm, Sds] = ...
+    fillIn(S,C,mdm,sdm,Cdm,mds,sds,Cds,Mdm,Sdm,Mds,Sds,i,k,D1);
+end
+
+% 4. Calculate loss
+L = 0; dLdm = zeros(1,D0); dLds = zeros(1,D0*D0); S2 = 0;
+for i = 1:length(cw)                    % scale mixture of immediate costs
+  cost.z = target; cost.W = Q/cw(i)^2;
+  [r, rdM, rdS, s2, s2dM, s2dS] = lossSat(cost, M, S);
+  
+  L = L + r; S2 = S2 + s2;
+  dLdm = dLdm + rdM(:)'*Mdm + rdS(:)'*Sdm;
+  dLds = dLds + rdM(:)'*Mds + rdS(:)'*Sds;
+  
+  if (b~=0 || ~isempty(b)) && abs(s2)>1e-12
+    L = L + b*sqrt(s2);
+    dLdm = dLdm + b/sqrt(s2) * ( s2dM(:)'*Mdm + s2dS(:)'*Sdm )/2;
+    dLds = dLds + b/sqrt(s2) * ( s2dM(:)'*Mds + s2dS(:)'*Sds )/2;
+  end
+end
+
+% normalize
+n = length(cw); L = L/n; dLdm = dLdm/n; dLds = dLds/n; S2 = S2/n;
+
+% Fill in covariance matrix...and derivatives REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH
+function [S, Mdm, Mds, Sdm, Sds] = ...
+  fillIn(S,C,mdm,sdm,Cdm,mds,sds,Cds,Mdm,Sdm,Mds,Sds,i,k,D)
+X = reshape(1:D*D,[D D]); XT = X';                    % vectorised indices
+I=0*X; I(i,i)=1; ii=X(I==1)'; I=0*X; I(k,k)=1; kk=X(I==1)';
+I=0*X; I(i,k)=1; ik=X(I==1)'; ki=XT(I==1)';
+
+Mdm(k,:)  = mdm*Mdm(i,:) + mds*Sdm(ii,:);                      % chainrule
+Mds(k,:)  = mdm*Mds(i,:) + mds*Sds(ii,:);
+Sdm(kk,:) = sdm*Mdm(i,:) + sds*Sdm(ii,:);
+Sds(kk,:) = sdm*Mds(i,:) + sds*Sds(ii,:);
+dCdm      = Cdm*Mdm(i,:) + Cds*Sdm(ii,:);
+dCds      = Cdm*Mds(i,:) + Cds*Sds(ii,:);
+
+S(i,k) = S(i,i)*C; S(k,i) = S(i,k)';                        % off-diagonal
+SS = kron(eye(length(k)),S(i,i)); CC = kron(C',eye(length(i)));
+Sdm(ik,:) = SS*dCdm + CC*Sdm(ii,:); Sdm(ki,:) = Sdm(ik,:);
+Sds(ik,:) = SS*dCds + CC*Sds(ii,:); Sds(ki,:) = Sds(ik,:);
+
+##### SOURCE END #####
+--></body></html>

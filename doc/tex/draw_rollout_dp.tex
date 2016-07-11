@@ -1,0 +1,54 @@
+
+% This LaTeX was auto-generated from an M-file by MATLAB.
+% To make changes, update the M-file and republish this document.
+
+
+
+    
+    
+      \subsection{draw\_rollout\_dp.m}
+
+\begin{par}
+\textbf{Summary:} Script to draw a trajectory of theobserved double-pendulum system and the predicted uncertainties around the tips of the pendulums
+\end{par} \vspace{1em}
+\begin{par}
+Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+\end{par} \vspace{1em}
+\begin{par}
+Last modified: 2013-03-27
+\end{par} \vspace{1em}
+
+
+\subsection*{High-Level Steps} 
+
+\begin{enumerate}
+\setlength{\itemsep}{-1ex}
+   \item For each time step, plot the observed trajectory and the predicted means and covariances of the Cartesian coordinates of the tips of both pendulums
+\end{enumerate}
+
+
+\subsection*{Code} 
+
+\begin{par}
+Loop over states in trajectory
+\end{par} \vspace{1em}
+
+\begin{lstlisting}
+for r = 1:size(xx,1)
+  cost.t = r;
+  if exist('j','var') && ~isempty(M{j})
+    draw_dp(latent{j}(r,3), latent{j}(r,4), latent{j}(r,end-1), ...
+      latent{j}(r,end), cost,  ...
+      ['trial # ' num2str(j+J) ', T=' num2str(H*dt) ' sec'], ...
+      ['total experience (after this trial): ' num2str(dt*size(x,1)) ...
+      ' sec'], M{j}(:,r), Sigma{j}(:,:,r));
+  else
+    draw_dp(latent{jj}(r,3), latent{jj}(r,4), latent{jj}(r,end-1), ...
+      latent{jj}(r,end), cost,  ...
+      ['(random) trial # ' num2str(1) ', T=' num2str(H*dt) ' sec'], ...
+      ['total experience (after this trial): ' num2str(dt*size(x,1)) ...
+      ' sec'])
+  end
+  pause(dt);
+end
+\end{lstlisting}

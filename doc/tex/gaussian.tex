@@ -1,0 +1,46 @@
+
+% This LaTeX was auto-generated from an M-file by MATLAB.
+% To make changes, update the M-file and republish this document.
+
+
+
+    
+    
+
+\subsection*{gaussian.m} 
+
+\begin{par}
+\textbf{Summary:} Generate n samples from a Gaussian \$p(x)=\ensuremath{\backslash}mathcal N(m,S). Sampling is based on the Cholesky factorization of the covariance matrix S
+\end{par} \vspace{1em}
+
+\begin{verbatim}  function x = gaussian(m, S, n)\end{verbatim}
+    \begin{par}
+\textbf{Input arguments:}
+\end{par} \vspace{1em}
+\begin{verbatim}m      mean of Gaussian                                         [D x 1]
+S      covariance matrix of Gaussian                            [D x D]
+n      (optional) number of samples; default: n=1\end{verbatim}
+\begin{par}
+\textbf{Output arguments:}
+\end{par} \vspace{1em}
+\begin{verbatim}x      matrix of samples from Gaussian                          [D x n]\end{verbatim}
+\begin{par}
+Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+\end{par} \vspace{1em}
+\begin{par}
+Last modified: 2013-03-21
+\end{par} \vspace{1em}
+
+\begin{lstlisting}
+function x = gaussian(m, S, n)
+\end{lstlisting}
+
+
+\subsection*{Code} 
+
+
+\begin{lstlisting}
+if nargin < 3; n = 1; end
+
+x = bsxfun(@plus, m(:), chol(S)'*randn(size(S,2),n));
+\end{lstlisting}

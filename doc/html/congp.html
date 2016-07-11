@@ -1,0 +1,206 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>congp.m</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="congp.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>congp.m</h1><!--introduction--><p><b>Summary:</b> Implements the mean-of-GP policy (equivalent to a regularized RBF network. Compute mean, variance and input-output covariance of the control <img src="congp_eq35435.png" alt="$u$"> using a mean-of-GP policy function, when the input <img src="congp_eq43551.png" alt="$x$"> is Gaussian. The GP is parameterized using a pseudo training set size N. Optionally, compute partial derivatives wrt the input parameters.</p><p>This version sets the signal variance to 1, the noise to 0.01 and their respective lengthscales to zero. This results in only the lengthscales, inputs, and outputs being trained.</p><pre class="language-matlab"><span class="keyword">function</span> [M, S, C, dMdm, dSdm, dCdm, dMds, dSds, dCds, dMdp, dSdp, dCdp] <span class="keyword">...</span>
+         = congp(policy, m, s)
+</pre><p><b>Input arguments:</b></p><pre class="language-matlab">policy        <span class="string">policy</span> <span class="string">(struct)</span>
+  .p          parameters <span class="string">that</span> <span class="string">are</span> <span class="string">modified</span> <span class="string">during</span> <span class="string">training</span>
+    .hyp      GP-log hyperparameters (Ph = (d+2)*D)              [ Ph      ]
+    .inputs   policy <span class="string">pseudo</span> <span class="string">inputs</span>                               <span class="string">[ N  x  d ]</span>
+    .targets  policy <span class="string">pseudo</span> <span class="string">targets</span>                              <span class="string">[ N  x  D ]</span>
+m             <span class="string">mean</span> <span class="string">of</span> <span class="string">state</span> <span class="string">distribution</span>                         <span class="string">[ d  x  1 ]</span>
+s             <span class="string">covariance</span> <span class="string">matrix</span> <span class="string">of</span> <span class="string">state</span> <span class="string">distribution</span>            <span class="string">[ d  x  d ]</span>
+</pre><p><b>Output arguments:</b></p><pre class="language-matlab">M             <span class="string">mean</span> <span class="string">of</span> <span class="string">the</span> <span class="string">predicted</span> <span class="string">control</span>                      <span class="string">[ D  x  1 ]</span>
+S             <span class="string">covariance</span> <span class="string">of</span> <span class="string">predicted</span> <span class="string">control</span>                    <span class="string">[ D  x  D ]</span>
+C             <span class="string">inv(s)*covariance</span> <span class="string">between</span> <span class="string">input</span> <span class="string">and</span> <span class="string">control</span>        <span class="string">[ d  x  D ]</span>
+dMdm          <span class="string">deriv.</span> <span class="string">of</span> <span class="string">mean</span> <span class="string">control</span> <span class="string">wrt</span> <span class="string">mean</span> <span class="string">of</span> <span class="string">state</span>           <span class="string">[ D  x  d ]</span>
+dSdm          <span class="string">deriv.</span> <span class="string">of</span> <span class="string">control</span> <span class="string">variance</span> <span class="string">wrt</span> <span class="string">mean</span> <span class="string">of</span> <span class="string">state</span>       <span class="string">[D*D x  d ]</span>
+dCdm          <span class="string">deriv.</span> <span class="string">of</span> <span class="string">covariance</span> <span class="string">wrt</span> <span class="string">mean</span> <span class="string">of</span> <span class="string">state</span>             <span class="string">[d*D x  d ]</span>
+dMds          <span class="string">deriv.</span> <span class="string">of</span> <span class="string">mean</span> <span class="string">control</span> <span class="string">wrt</span> <span class="string">variance</span>                <span class="string">[ D  x d*d]</span>
+dSds          <span class="string">deriv.</span> <span class="string">of</span> <span class="string">control</span> <span class="string">variance</span> <span class="string">wrt</span> <span class="string">variance</span>            <span class="string">[D*D x d*d]</span>
+dCds          <span class="string">deriv.</span> <span class="string">of</span> <span class="string">covariance</span> <span class="string">wrt</span> <span class="string">variance</span>                  <span class="string">[d*D x d*d]</span>
+dMdp          <span class="string">deriv.</span> <span class="string">of</span> <span class="string">mean</span> <span class="string">control</span> <span class="string">wrt</span> <span class="string">GP</span> <span class="string">hyper-parameters</span>     <span class="string">[ D  x  P ]</span>
+dSdp          <span class="string">deriv.</span> <span class="string">of</span> <span class="string">control</span> <span class="string">variance</span> <span class="string">wrt</span> <span class="string">GP</span> <span class="string">hyper-parameters</span> <span class="string">[D*D x  P ]</span>
+dCdp          <span class="string">deriv.</span> <span class="string">of</span> <span class="string">covariance</span> <span class="string">wrt</span> <span class="string">GP</span> <span class="string">hyper-parameters</span>       <span class="string">[d*D x  P ]</span>
+</pre><p>where P = (d+2)*D + n*(d+D) is the total number of policy parameters.</p><p>Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</p><p>Last modified: 2013-01-24</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">High-Level Steps</a></li><li><a href="#2">Code</a></li></ul></div><h2>High-Level Steps<a name="1"></a></h2><div><ol><li>Extract policy parameters from policy structure</li><li>Compute predicted control u inv(s)*covariance between input and control</li><li>Set derivatives of non-free parameters to zero</li><li>Merge derivatives</li></ol></div><pre class="codeinput"><span class="keyword">function</span> [M, S, C, dMdm, dSdm, dCdm, dMds, dSds, dCds, dMdp, dSdp, dCdp] <span class="keyword">...</span>
+  = congp(policy, m, s)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput"><span class="comment">% 1. Extract policy parameters</span>
+policy.hyp = policy.p.hyp;
+policy.inputs = policy.p.inputs;
+policy.targets = policy.p.targets;
+
+<span class="comment">% fix policy signal and the noise variance</span>
+<span class="comment">% (avoids some potential numerical problems)</span>
+policy.hyp(end-1,:) = log(1);                  <span class="comment">% set signal variance to 1</span>
+policy.hyp(end,:) = log(0.01);                 <span class="comment">% set noise standard dev to 0.01</span>
+
+<span class="comment">% 2. Compute predicted control u inv(s)*covariance between input and control</span>
+<span class="keyword">if</span> nargout &lt; 4                                 <span class="comment">% if no derivatives are required</span>
+  [M, S, C] = gp2(policy, m, s);
+<span class="keyword">else</span>                                             <span class="comment">% else compute derivatives too</span>
+  [M, S, C, dMdm, dSdm, dCdm, dMds, dSds, dCds, dMdi, dSdi, dCdi, dMdt, <span class="keyword">...</span>
+    dSdt, dCdt, dMdh, dSdh, dCdh] = gp2d(policy, m, s);
+
+  <span class="comment">% 3. Set derivatives of non-free parameters to zero: signal and noise variance</span>
+  d = size(policy.inputs,2);
+  d2 = size(policy.hyp,1); dimU = size(policy.targets,2);
+  sidx = bsxfun(@plus,(d+1:d2)',(0:dimU-1)*d2);
+  dMdh(:,sidx(:)) = 0; dSdh(:,sidx(:)) = 0; dCdh(:,sidx(:)) = 0;
+
+  <span class="comment">% 4. Merge derivatives</span>
+  dMdp = [dMdh dMdi dMdt]; dSdp = [dSdh dSdi dSdt]; dCdp = [dCdh dCdi dCdt];
+<span class="keyword">end</span>
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% congp.m
+% *Summary:* Implements the mean-of-GP policy (equivalent to a regularized RBF
+% network. Compute mean, variance and input-output covariance of
+% the control $u$ using a mean-of-GP policy function, when the input $x$ is
+% Gaussian. The GP is parameterized using a pseudo training set size N.
+% Optionally, compute partial derivatives wrt the input parameters.
+%
+% This version sets the signal variance to 1, the noise to 0.01 and their
+% respective lengthscales to zero. This results in only the lengthscales,
+% inputs, and outputs being trained.
+%
+%
+%   function [M, S, C, dMdm, dSdm, dCdm, dMds, dSds, dCds, dMdp, dSdp, dCdp] ...
+%            = congp(policy, m, s)
+%
+%
+% *Input arguments:*
+%
+%   policy        policy (struct)
+%     .p          parameters that are modified during training
+%       .hyp      GP-log hyperparameters (Ph = (d+2)*D)              [ Ph      ]
+%       .inputs   policy pseudo inputs                               [ N  x  d ]
+%       .targets  policy pseudo targets                              [ N  x  D ]
+%   m             mean of state distribution                         [ d  x  1 ]
+%   s             covariance matrix of state distribution            [ d  x  d ]
+%
+%
+% *Output arguments:*
+%
+%   M             mean of the predicted control                      [ D  x  1 ]
+%   S             covariance of predicted control                    [ D  x  D ]
+%   C             inv(s)*covariance between input and control        [ d  x  D ]
+%   dMdm          deriv. of mean control wrt mean of state           [ D  x  d ]
+%   dSdm          deriv. of control variance wrt mean of state       [D*D x  d ]
+%   dCdm          deriv. of covariance wrt mean of state             [d*D x  d ]
+%   dMds          deriv. of mean control wrt variance                [ D  x d*d]
+%   dSds          deriv. of control variance wrt variance            [D*D x d*d]
+%   dCds          deriv. of covariance wrt variance                  [d*D x d*d]
+%   dMdp          deriv. of mean control wrt GP hyper-parameters     [ D  x  P ]
+%   dSdp          deriv. of control variance wrt GP hyper-parameters [D*D x  P ]
+%   dCdp          deriv. of covariance wrt GP hyper-parameters       [d*D x  P ]
+%
+% where P = (d+2)*D + n*(d+D) is the total number of policy parameters.
+%
+% Copyright (C) 2008-2013 by 
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modified: 2013-01-24
+%
+%% High-Level Steps
+% # Extract policy parameters from policy structure
+% # Compute predicted control u inv(s)*covariance between input and control
+% # Set derivatives of non-free parameters to zero
+% # Merge derivatives
+
+function [M, S, C, dMdm, dSdm, dCdm, dMds, dSds, dCds, dMdp, dSdp, dCdp] ...
+  = congp(policy, m, s)
+%% Code
+
+% 1. Extract policy parameters
+policy.hyp = policy.p.hyp;
+policy.inputs = policy.p.inputs;
+policy.targets = policy.p.targets;
+
+% fix policy signal and the noise variance 
+% (avoids some potential numerical problems)
+policy.hyp(end-1,:) = log(1);                  % set signal variance to 1
+policy.hyp(end,:) = log(0.01);                 % set noise standard dev to 0.01
+
+% 2. Compute predicted control u inv(s)*covariance between input and control
+if nargout < 4                                 % if no derivatives are required
+  [M, S, C] = gp2(policy, m, s);
+else                                             % else compute derivatives too
+  [M, S, C, dMdm, dSdm, dCdm, dMds, dSds, dCds, dMdi, dSdi, dCdi, dMdt, ...
+    dSdt, dCdt, dMdh, dSdh, dCdh] = gp2d(policy, m, s);
+  
+  % 3. Set derivatives of non-free parameters to zero: signal and noise variance
+  d = size(policy.inputs,2);            
+  d2 = size(policy.hyp,1); dimU = size(policy.targets,2);
+  sidx = bsxfun(@plus,(d+1:d2)',(0:dimU-1)*d2);
+  dMdh(:,sidx(:)) = 0; dSdh(:,sidx(:)) = 0; dCdh(:,sidx(:)) = 0;
+  
+  % 4. Merge derivatives
+  dMdp = [dMdh dMdi dMdt]; dSdp = [dSdh dSdi dSdt]; dCdp = [dCdh dCdi dCdt];
+end
+
+##### SOURCE END #####
+--></body></html>

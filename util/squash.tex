@@ -1,0 +1,87 @@
+\documentclass[11pt, a4paper]{article}
+\renewcommand{\rmdefault}{psbx}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{textcomp}
+\usepackage{eulervm}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{wrapfig}
+
+\setlength{\textwidth}{160mm}
+\setlength{\oddsidemargin}{0mm}
+\setlength{\parindent}{0 mm}
+
+\renewcommand{\vec}{\boldsymbol}
+\newcommand{\mat}{\boldsymbol}
+\newcommand{\E}{{\mathbb E}}
+\newcommand{\V}{{\mathbb V}}
+
+\title{Policy Squashing}
+\author{Marc Peter Deisenroth}
+\date{\today}
+
+
+\begin{document}
+\maketitle
+
+
+We consider a third-order Fourier series expansion 
+%
+\begin{align*}
+s(x) =  a\sin(x) + b\sin(3x)
+\end{align*}
+%
+%
+% \begin{wrapfigure}{r}{0.5\hsize}
+% \vspace{-5mm}
+% \centering
+% \includegraphics[width = \hsize]{./figures/squashing_function}
+% \caption{Different squashing functions.}
+% \label{fig:squashing function}
+% \end{wrapfigure}
+% 
+of a trapezoidal wave with modified Fourier coefficients $a$ and $b$
+that satisfy the following constraints: First, when restricted to the
+interval $[-\tfrac{\pi}{2}, \tfrac{\pi}{2}]$, $s(x)$ is monotonically
+increasing, i.e., $s^\prime(x) \geq 0$ with $s^\prime(x)=0$ if and
+only if $x\in\{-\tfrac{\pi}{2}, \tfrac{\pi}{2}\}$. Second, at the
+boundaries $\pm\tfrac{\pi}{2}$, we require that $s(\tfrac{\pi}{2}) =
+1$ and $s(-\tfrac{\pi}{2}) = -1$.  To closely approximate a (normalized)
+trapezoidal wave, we additionally require that $s$ has stationary
+points at the boundaries $\pm\tfrac{\pi}{2}$, i.e.,
+$s^{\prime\prime}(\pm\tfrac{\pi}{2}) = 0$. The first and second
+derivatives of $s(x)$ are
+%
+\begin{align*}
+s^\prime(x) &= a\cos (x) + 3b\cos(3x)\,,\\
+s^{\prime\prime}(x) &= -a\sin(x) - 9b\sin(3x)\,.
+\end{align*}
+ %
+From $s^\prime(\pm\tfrac{\pi}{2})=0$, we obtain $a = 1+b$. For
+$b>\tfrac{1}{8}$, $s(x)$ is no longer monotonically increasing in
+$[-\tfrac{\pi}{2}, \tfrac{\pi}{2}]$: The first derivative
+$s^\prime(x)$ crosses 0 for $b=-\tfrac{\cos x}{\cos x +
+  3\cos(3x)}$. For $b>\tfrac{1}{8}$, $s(x)$ has a local optimum for
+$x\in(-\tfrac{\pi}{2},\tfrac{\pi}{2})$. Therefore,
+$b\in[0,\tfrac{1}{8}$ are valid choices.  Using now any of the
+stationary point constraints yields $s^{\prime\prime}(-\tfrac{\pi}{2})
+= 1+b - 9b = 0 \Leftrightarrow b = \tfrac{1}{8}$ and $a = 1+b =
+\tfrac{9}{8}$. Hence, our squashing function is
+%
+\begin{align*}
+s(x) = \tfrac{9}{8}\sin(x) + \tfrac{1}{8}\sin(3x)\,.
+\end{align*}
+%
+For $b=0$, the squashing function equals the
+sine wave (red), the black dashed curve is the squashing function for
+$b=\tfrac{1}{20}$. However, only for $b=\tfrac{1}{8}$, the squashing
+function possesses stationary points at the boundaries.
+
+
+\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 

@@ -1,0 +1,438 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>propagateT</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="propagateT.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#1">propagateT.m</a></li><li><a href="#2">Code</a></li></ul></div><h2>propagateT.m<a name="1"></a></h2><p><b>Summary:</b> Test derivatives of the propagate function, which computes the mean and the variance of the successor state distribution, assuming that the current state is Gaussian distributed with mean m and covariance matrix s.</p><pre class="language-matlab">[dd dy dh] = propagateT(deriv, plant, dynmodel, policy, m, s, delta)
+</pre><p><b>Input arguments:</b></p><pre class="language-matlab">deriv    <span class="string">desired</span> <span class="string">derivative.</span> <span class="string">options:</span>
+     (i)    <span class="string">'dMdm'</span> - derivative of <span class="string">the</span> <span class="string">mean</span> <span class="string">of</span> <span class="string">the</span> <span class="string">predicted</span> <span class="string">state</span>
+             wrt <span class="string">the</span> <span class="string">mean</span> <span class="string">of</span> <span class="string">the</span> <span class="string">input</span> <span class="string">distribution</span>
+     (ii)   <span class="string">'dMds'</span> - derivative of <span class="string">the</span> <span class="string">mean</span> <span class="string">of</span> <span class="string">the</span> <span class="string">predicted</span> <span class="string">state</span>
+             wrt <span class="string">the</span> <span class="string">variance</span> <span class="string">of</span> <span class="string">the</span> <span class="string">input</span> <span class="string">distribution</span>
+     (iii)  <span class="string">'dMdp'</span> - derivative of <span class="string">the</span> <span class="string">mean</span> <span class="string">of</span> <span class="string">the</span> <span class="string">predicted</span> <span class="string">state</span>
+             wrt <span class="string">the</span> <span class="string">controller</span> <span class="string">parameters</span>
+     (iv)   <span class="string">'dSdm'</span> - derivative of <span class="string">the</span> <span class="string">variance</span> <span class="string">of</span> <span class="string">the</span> <span class="string">predicted</span> <span class="string">state</span>
+             wrt <span class="string">the</span> <span class="string">mean</span> <span class="string">of</span> <span class="string">the</span> <span class="string">input</span> <span class="string">distribution</span>
+     (v)    <span class="string">'dSds'</span> - derivative of <span class="string">the</span> <span class="string">variance</span> <span class="string">of</span> <span class="string">the</span> <span class="string">predicted</span> <span class="string">state</span>
+             wrt <span class="string">the</span> <span class="string">variance</span> <span class="string">of</span> <span class="string">the</span> <span class="string">input</span> <span class="string">distribution</span>
+     (vi)   <span class="string">'dSdp'</span> - derivative of <span class="string">the</span> <span class="string">variance</span> <span class="string">of</span> <span class="string">the</span> <span class="string">predicted</span> <span class="string">state</span>
+             wrt <span class="string">the</span> <span class="string">controller</span> <span class="string">parameters</span>
+     (vii)  <span class="string">'dCdm'</span> - derivative of <span class="string">the</span> <span class="string">inv(s)*(covariance of the input and</span>
+             the <span class="string">predicted</span> <span class="string">state) wrt the mean of the input distribution</span>
+     (viii) <span class="string">'dCds'</span> - derivative of <span class="string">the</span> <span class="string">inv(s)*(covariance of the input and</span>
+             the <span class="string">predicted</span> <span class="string">state) wrt the variance of the input distribution</span>
+     (ix)   <span class="string">'dCdp'</span> - derivative of <span class="string">the</span> <span class="string">inv(s)*(covariance of the input and</span>
+             the <span class="string">predicted</span> <span class="string">state) wrt the controller parameters</span>
+plant      <span class="string">plant</span> <span class="string">structure</span>
+  .poli    state <span class="string">indices:</span> <span class="string">policy</span> <span class="string">inputs</span>
+  .dyno    state <span class="string">indices:</span> <span class="string">predicted</span> <span class="string">variables</span>
+  .dyni    state <span class="string">indices:</span> <span class="string">inputs</span> <span class="string">to</span> <span class="string">ODE</span> <span class="string">solver</span>
+  .difi    state <span class="string">indices</span> <span class="string">that</span> <span class="string">are</span> <span class="string">learned</span> <span class="string">via</span> <span class="string">differences</span>
+  .angi    state <span class="string">indices:</span> <span class="string">angles</span>
+  .poli    state <span class="string">indices:</span> <span class="string">policy</span> <span class="string">inputs</span>
+  .prop    <span class="keyword">function</span> handle to <span class="string">function</span> <span class="string">responsible</span> <span class="string">for</span> <span class="string">state</span>
+           propagation. Here: @propagated
+dynmodel   <span class="string">GP</span> <span class="string">dynamics</span> <span class="string">model</span> <span class="string">(structure)</span>
+  .hyp     log-hyper parameters
+  .inputs  training <span class="string">inputs</span>
+  .targets training <span class="string">targets</span>
+policy     <span class="string">policy</span> <span class="string">structure</span>
+  .maxU    maximum <span class="string">amplitude</span> <span class="string">of</span> <span class="string">control</span>
+  .fcn     <span class="keyword">function</span> handle to <span class="string">policy</span>
+  .p       struct <span class="string">of</span> <span class="string">policy</span> <span class="string">parameters</span>
+  .p.&lt;&gt;    policy-specific parameters <span class="string">are</span> <span class="string">stored</span> <span class="string">here</span>
+m          <span class="string">mean</span> <span class="string">of</span> <span class="string">the</span> <span class="string">input</span> <span class="string">distribution</span>
+s          <span class="string">covariance</span> <span class="string">of</span> <span class="string">the</span> <span class="string">input</span> <span class="string">distribution</span>
+delta      (optional) finite <span class="string">difference</span> <span class="string">parameter.</span> <span class="string">Default:</span> <span class="string">1e-4</span>
+</pre><p><b>Output arguments:</b></p><pre class="language-matlab">dd         <span class="string">relative</span> <span class="string">error</span> <span class="string">of</span> <span class="string">analytical</span> <span class="string">vs.</span> <span class="string">finite</span> <span class="string">difference</span> <span class="string">gradient</span>
+dy         <span class="string">analytical</span> <span class="string">gradient</span>
+dh         <span class="string">finite</span> <span class="string">difference</span> <span class="string">gradient</span>
+</pre><p>Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</p><p>Last modified: 2013-03-21</p><pre class="codeinput"><span class="keyword">function</span> [dd dy dh] = propagateT(deriv, plant, dynmodel, policy, m, s, delta)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput"><span class="keyword">if</span> nargin &lt; 2,
+  randn(<span class="string">'seed'</span>,24)
+  nn = 10;
+  E = 4; F = 3;
+  m = randn(D,1);
+  s = randn(D); s = s*s';
+
+  <span class="comment">% Plant ----------------------------------------------------------------</span>
+  plant.poli = 1:E;
+  plant.dyno = 1:E;
+  plant.dyni = 1:E;
+  plant.difi = 1:E;
+  plant.angi = [];
+  plant.prop = @propagated;
+
+  <span class="comment">% Policy ---------------------------------------------------------------</span>
+  policy.p.w = randn(F,E);
+  policy.p.b = randn(F,1);
+  policy.fcn = @(policy,m,s)conCat(@conlin,@gSat,policy,m,s);
+  policy.maxU = 20*ones(1,F);
+
+  <span class="comment">% Dynamics -------------------------------------------------------------</span>
+  dynmodel.hyp = zeros(1,E);
+  dynmodel.inputs  = randn(nn,E+F);
+  dynmodel.targets = randn(nn,E);
+
+<span class="keyword">end</span>
+
+<span class="keyword">if</span> nargin &lt; 7; delta = 1e-4; <span class="keyword">end</span>
+
+
+D = length(m);
+
+<span class="keyword">switch</span> deriv
+
+  <span class="keyword">case</span> <span class="string">'dMdm'</span>
+      [dd dy dh] = checkgrad(@propagateT0, m, delta, plant, dynmodel, policy, s);
+
+  <span class="keyword">case</span> <span class="string">'dSdm'</span>
+      [dd dy dh] = checkgrad(@propagateT1, m, delta, plant, dynmodel, policy, s);
+
+  <span class="keyword">case</span> <span class="string">'dMds'</span>
+      [dd dy dh] = checkgrad(@propagateT2, s(tril(ones(D))==1), delta, plant, <span class="keyword">...</span>
+                                                        dynmodel, policy, m);
+
+  <span class="keyword">case</span> <span class="string">'dSds'</span>
+      [dd dy dh] = checkgrad(@propagateT3, s(tril(ones(D))==1), delta, plant, <span class="keyword">...</span>
+                                                        dynmodel, policy, m);
+
+  <span class="keyword">case</span> <span class="string">'dMdp'</span>
+      p = unwrap(policy.p);
+      [dd dy dh] = checkgrad(@propagateT4, p, delta, plant, dynmodel, policy, m, s);
+
+  <span class="keyword">case</span> <span class="string">'dSdp'</span>
+      p = unwrap(policy.p);
+      [dd dy dh] = checkgrad(@propagateT5, p, delta, plant, dynmodel, policy, m, s);
+<span class="keyword">end</span>
+</pre><pre class="codeinput"><span class="keyword">function</span> [f, df] = propagateT0(m, plant, dynmodel, policy, s)       <span class="comment">% dMdm</span>
+<span class="keyword">if</span> nargout == 1
+  M = plant.prop(m, s, plant, dynmodel, policy);
+<span class="keyword">else</span>
+  [M, S, dMdm] = plant.prop(m, s, plant, dynmodel, policy);
+  df = permute(dMdm,[1,3,2]);
+<span class="keyword">end</span>
+f = M;
+
+<span class="keyword">function</span> [f, df] = propagateT1(m, plant, dynmodel, policy, s)       <span class="comment">% dSdm</span>
+<span class="keyword">if</span> nargout == 1
+  [M, S] = plant.prop(m, s, plant, dynmodel, policy);
+<span class="keyword">else</span>
+  [M, S, dMdm, dSdm] = plant.prop(m, s, plant, dynmodel, policy);
+  dd = length(M); df = reshape(dSdm,dd,dd,[]);
+<span class="keyword">end</span>
+f = S;
+
+<span class="keyword">function</span> [f, df] = propagateT2(s, plant, dynmodel, policy, m)       <span class="comment">% dMds</span>
+d = length(m);
+ss(tril(ones(d))==1) = s; ss = reshape(ss,d,d); ss = ss + ss' - diag(diag(ss));
+<span class="keyword">if</span> nargout == 1
+  M = plant.prop(m, ss, plant, dynmodel, policy);
+<span class="keyword">else</span>
+  [M, S, dMdm, dSdm, dMds] = plant.prop(m, ss, plant, dynmodel, policy);
+  dd = length(M); dMds = reshape(dMds,dd,d,d); df = zeros(dd,1,d*(d+1)/2);
+  <span class="keyword">for</span> i=1:dd;
+        dMdsi(:,:) = dMds(i,:,:); dMdsi = dMdsi + dMdsi'-diag(diag(dMdsi));
+        df(i,:) = dMdsi(tril(ones(d))==1);
+  <span class="keyword">end</span>
+<span class="keyword">end</span>
+f = M;
+
+<span class="keyword">function</span> [f, df] = propagateT3(s, plant, dynmodel, policy, m)       <span class="comment">% dSds</span>
+d = length(m);
+ss(tril(ones(d))==1) = s; ss = reshape(ss,d,d); ss = ss + ss' - diag(diag(ss));
+<span class="keyword">if</span> nargout == 1
+  [M, S] = plant.prop(m, ss, plant, dynmodel, policy);
+<span class="keyword">else</span>
+  [M, S, dMdm, dSdm, dMds, dSds] = <span class="keyword">...</span>
+                               plant.prop(m, ss, plant, dynmodel, policy);
+  dd = length(M); dSds = reshape(dSds,dd,dd,d,d); df = zeros(dd,dd,d*(d+1)/2);
+    <span class="keyword">for</span> i=1:dd; <span class="keyword">for</span> j=1:dd
+        dSdsi(:,:) = dSds(i,j,:,:); dSdsi = dSdsi+dSdsi'-diag(diag(dSdsi));
+        df(i,j,:) = dSdsi(tril(ones(d))==1);
+    <span class="keyword">end</span>; <span class="keyword">end</span>
+<span class="keyword">end</span>
+f = S;
+
+<span class="keyword">function</span> [f, df] = propagateT4(p, plant, dynmodel, policy, m, s)    <span class="comment">% dMdp</span>
+policy.p = rewrap(policy.p, p);
+<span class="keyword">if</span> nargout == 1
+  M = plant.prop(m, s, plant, dynmodel, policy);
+<span class="keyword">else</span>
+  [M, S, dMdm, dSdm, dMds, dSds, dMdp] = plant.prop(m, s, plant, dynmodel, policy);
+  df = dMdp;
+<span class="keyword">end</span>
+f = M;
+
+<span class="keyword">function</span> [f, df] = propagateT5(p, plant, dynmodel, policy, m, s)    <span class="comment">% dSdp</span>
+policy.p = rewrap(policy.p, p);
+<span class="keyword">if</span> nargout == 1
+  [M, S] = plant.prop(m, s, plant, dynmodel, policy);
+<span class="keyword">else</span>
+  [M, S, dMdm, dSdm, dMds, dSds, dMdp, dSdp] = <span class="keyword">...</span>
+                                plant.prop(m, s, plant, dynmodel, policy);
+  df = dSdp;
+<span class="keyword">end</span>
+f = S;
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% propagateT.m
+% *Summary:* Test derivatives of the propagate function, which computes the 
+% mean and the variance of the successor state distribution, assuming that the
+% current state is Gaussian distributed with mean m and covariance matrix
+% s.
+%
+%   [dd dy dh] = propagateT(deriv, plant, dynmodel, policy, m, s, delta)
+%
+%
+% *Input arguments:*
+%
+%   deriv    desired derivative. options:
+%        (i)    'dMdm' - derivative of the mean of the predicted state
+%                wrt the mean of the input distribution
+%        (ii)   'dMds' - derivative of the mean of the predicted state 
+%                wrt the variance of the input distribution
+%        (iii)  'dMdp' - derivative of the mean of the predicted state 
+%                wrt the controller parameters
+%        (iv)   'dSdm' - derivative of the variance of the predicted state 
+%                wrt the mean of the input distribution
+%        (v)    'dSds' - derivative of the variance of the predicted state 
+%                wrt the variance of the input distribution
+%        (vi)   'dSdp' - derivative of the variance of the predicted state 
+%                wrt the controller parameters
+%        (vii)  'dCdm' - derivative of the inv(s)*(covariance of the input and 
+%                the predicted state) wrt the mean of the input distribution
+%        (viii) 'dCds' - derivative of the inv(s)*(covariance of the input and 
+%                the predicted state) wrt the variance of the input distribution
+%        (ix)   'dCdp' - derivative of the inv(s)*(covariance of the input and 
+%                the predicted state) wrt the controller parameters
+%   plant      plant structure
+%     .poli    state indices: policy inputs
+%     .dyno    state indices: predicted variables
+%     .dyni    state indices: inputs to ODE solver
+%     .difi    state indices that are learned via differences
+%     .angi    state indices: angles
+%     .poli    state indices: policy inputs
+%     .prop    function handle to function responsible for state
+%              propagation. Here: @propagated
+%   dynmodel   GP dynamics model (structure)
+%     .hyp     log-hyper parameters
+%     .inputs  training inputs
+%     .targets training targets
+%   policy     policy structure
+%     .maxU    maximum amplitude of control
+%     .fcn     function handle to policy 
+%     .p       struct of policy parameters
+%     .p.<>    policy-specific parameters are stored here
+%   m          mean of the input distribution
+%   s          covariance of the input distribution
+%   delta      (optional) finite difference parameter. Default: 1e-4
+%
+%
+% *Output arguments:*
+%
+%   dd         relative error of analytical vs. finite difference gradient
+%   dy         analytical gradient
+%   dh         finite difference gradient
+%
+% Copyright (C) 2008-2013 by 
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modified: 2013-03-21
+
+
+function [dd dy dh] = propagateT(deriv, plant, dynmodel, policy, m, s, delta)
+%% Code
+if nargin < 2,
+  randn('seed',24)
+  nn = 10;
+  E = 4; F = 3;
+  m = randn(D,1);
+  s = randn(D); s = s*s';
+  
+  % Plant REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH
+  plant.poli = 1:E;
+  plant.dyno = 1:E;
+  plant.dyni = 1:E;
+  plant.difi = 1:E;
+  plant.angi = [];
+  plant.prop = @propagated;
+  
+  % Policy REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH-
+  policy.p.w = randn(F,E);
+  policy.p.b = randn(F,1);
+  policy.fcn = @(policy,m,s)conCat(@conlin,@gSat,policy,m,s);
+  policy.maxU = 20*ones(1,F);
+  
+  % Dynamics REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH-
+  dynmodel.hyp = zeros(1,E);
+  dynmodel.inputs  = randn(nn,E+F);
+  dynmodel.targets = randn(nn,E);
+  
+end
+
+if nargin < 7; delta = 1e-4; end
+
+
+D = length(m);
+
+switch deriv
+  
+  case 'dMdm'      
+      [dd dy dh] = checkgrad(@propagateT0, m, delta, plant, dynmodel, policy, s);
+
+  case 'dSdm'
+      [dd dy dh] = checkgrad(@propagateT1, m, delta, plant, dynmodel, policy, s);
+
+  case 'dMds'
+      [dd dy dh] = checkgrad(@propagateT2, s(tril(ones(D))==1), delta, plant, ...
+                                                        dynmodel, policy, m);
+   
+  case 'dSds'
+      [dd dy dh] = checkgrad(@propagateT3, s(tril(ones(D))==1), delta, plant, ...
+                                                        dynmodel, policy, m);
+ 
+  case 'dMdp'
+      p = unwrap(policy.p);
+      [dd dy dh] = checkgrad(@propagateT4, p, delta, plant, dynmodel, policy, m, s);
+ 
+  case 'dSdp'
+      p = unwrap(policy.p);
+      [dd dy dh] = checkgrad(@propagateT5, p, delta, plant, dynmodel, policy, m, s);
+end
+
+
+function [f, df] = propagateT0(m, plant, dynmodel, policy, s)       % dMdm
+if nargout == 1
+  M = plant.prop(m, s, plant, dynmodel, policy);
+else
+  [M, S, dMdm] = plant.prop(m, s, plant, dynmodel, policy);
+  df = permute(dMdm,[1,3,2]);
+end
+f = M;
+
+function [f, df] = propagateT1(m, plant, dynmodel, policy, s)       % dSdm
+if nargout == 1
+  [M, S] = plant.prop(m, s, plant, dynmodel, policy);
+else
+  [M, S, dMdm, dSdm] = plant.prop(m, s, plant, dynmodel, policy);
+  dd = length(M); df = reshape(dSdm,dd,dd,[]);
+end
+f = S;
+
+function [f, df] = propagateT2(s, plant, dynmodel, policy, m)       % dMds
+d = length(m);
+ss(tril(ones(d))==1) = s; ss = reshape(ss,d,d); ss = ss + ss' - diag(diag(ss));
+if nargout == 1
+  M = plant.prop(m, ss, plant, dynmodel, policy);
+else
+  [M, S, dMdm, dSdm, dMds] = plant.prop(m, ss, plant, dynmodel, policy);
+  dd = length(M); dMds = reshape(dMds,dd,d,d); df = zeros(dd,1,d*(d+1)/2);
+  for i=1:dd; 
+        dMdsi(:,:) = dMds(i,:,:); dMdsi = dMdsi + dMdsi'-diag(diag(dMdsi)); 
+        df(i,:) = dMdsi(tril(ones(d))==1);
+  end
+end
+f = M;
+
+function [f, df] = propagateT3(s, plant, dynmodel, policy, m)       % dSds
+d = length(m);
+ss(tril(ones(d))==1) = s; ss = reshape(ss,d,d); ss = ss + ss' - diag(diag(ss));
+if nargout == 1
+  [M, S] = plant.prop(m, ss, plant, dynmodel, policy);
+else
+  [M, S, dMdm, dSdm, dMds, dSds] = ...
+                               plant.prop(m, ss, plant, dynmodel, policy);
+  dd = length(M); dSds = reshape(dSds,dd,dd,d,d); df = zeros(dd,dd,d*(d+1)/2);
+    for i=1:dd; for j=1:dd
+        dSdsi(:,:) = dSds(i,j,:,:); dSdsi = dSdsi+dSdsi'-diag(diag(dSdsi)); 
+        df(i,j,:) = dSdsi(tril(ones(d))==1);
+    end; end
+end
+f = S;
+
+function [f, df] = propagateT4(p, plant, dynmodel, policy, m, s)    % dMdp
+policy.p = rewrap(policy.p, p);
+if nargout == 1
+  M = plant.prop(m, s, plant, dynmodel, policy);
+else
+  [M, S, dMdm, dSdm, dMds, dSds, dMdp] = plant.prop(m, s, plant, dynmodel, policy);
+  df = dMdp;
+end
+f = M;
+
+function [f, df] = propagateT5(p, plant, dynmodel, policy, m, s)    % dSdp
+policy.p = rewrap(policy.p, p);
+if nargout == 1
+  [M, S] = plant.prop(m, s, plant, dynmodel, policy);
+else
+  [M, S, dMdm, dSdm, dMds, dSds, dMdp, dSdp] = ...
+                                plant.prop(m, s, plant, dynmodel, policy);
+  df = dSdp;
+end
+f = S;
+
+##### SOURCE END #####
+--></body></html>

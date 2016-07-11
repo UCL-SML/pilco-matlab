@@ -1,0 +1,61 @@
+
+% This LaTeX was auto-generated from an M-file by MATLAB.
+% To make changes, update the M-file and republish this document.
+
+
+
+    
+    
+      \subsection{pred.m}
+
+\begin{par}
+\textbf{Summary:} Compute predictive (marginal) distributions of a trajecory
+\end{par} \vspace{1em}
+\begin{verbatim}[M S] = pred(policy, plant, dynmodel, m, s, H)\end{verbatim}
+\begin{par}
+\textbf{Input arguments:}
+\end{par} \vspace{1em}
+\begin{verbatim}policy             policy structure
+plant              plant structure
+dynmodel           dynamics model structure
+m                  D-by-1 mean of the initial state distribution
+s                  D-by-D covariance of the initial state distribution
+H                  length of prediction horizon\end{verbatim}
+\begin{par}
+\textbf{Output arguments:}
+\end{par} \vspace{1em}
+\begin{verbatim}M                  D-by-(H+1) sequence of predicted mean vectors
+S                  D-by-D-(H+1) sequence of predicted covariance
+                   matrices\end{verbatim}
+\begin{par}
+Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+\end{par} \vspace{1em}
+\begin{par}
+Last modified: 2013-01-23
+\end{par} \vspace{1em}
+
+
+\subsection*{High-Level Steps} 
+
+\begin{enumerate}
+\setlength{\itemsep}{-1ex}
+   \item Predict successor state distribution
+\end{enumerate}
+
+\begin{lstlisting}
+function [M S] = pred(policy, plant, dynmodel, m, s, H)
+\end{lstlisting}
+
+
+\subsection*{Code} 
+
+
+\begin{lstlisting}
+D = length(m); S = zeros(D,D,H+1); M = zeros(D,H+1);
+M(:,1) = m; S(:,:,1) = s;
+for i = 1:H
+  [m s] = plant.prop(m, s, plant, dynmodel, policy);
+  M(:,i+1) = m(end-D+1:end);
+  S(:,:,i+1) = s(end-D+1:end,end-D+1:end);
+end
+\end{lstlisting}

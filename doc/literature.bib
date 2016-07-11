@@ -1,0 +1,176 @@
+% This file was created with JabRef 2.10b2.
+% Encoding: UTF-8
+
+
+@InProceedings{Bagnell2001,
+  Title                    = {Autonomous {Helicopter Control using Reinforcement Learning Policy Search Methods}},
+  Author                   = {James A. Bagnell and Jeff G. Schneider},
+  Booktitle                = {Proceedings of the International Conference on Robotics and Automation},
+  Year                     = {2001},
+
+  Citeseerurl              = {http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.26.6233},
+  Doi                      = {10.1.1.26.6233},
+  Owner                    = {marc},
+  Timestamp                = {2013.04.16},
+  Url                      = {http://www.ri.cmu.edu/pub_files/pub3/bagnell_james_2001_2/bagnell_james_2001_2.pdf}
+}
+
+@Book{Deisenroth2010b,
+  Title                    = {Efficient {Reinforcement Learning using Gaussian Processes}},
+  Author                   = {Marc P. Deisenroth},
+  Editor                   = {U. D. Hanebeck},
+  Publisher                = {KIT Scientific Publishing},
+  Year                     = {2010},
+  Month                    = {November},
+  Note                     = {ISBN 978-3-86644-569-7},
+  Series                   = {Karlsruhe Series on Intelligent Sensor-Actuator-Systems},
+  Volume                   = {9},
+
+  Abstract                 = {This book examines Gaussian processes (GPs) in model-based
+reinforcement learning (RL) and inference in nonlinear dynamic
+systems.
+
+First, we introduce PILCO, a fully Bayesian approach for efficient RL
+in continuous-valued state and action spaces when no expert knowledge
+is available. PILCO learns fast since it takes model uncertainties
+consistently into account during long-term planning and decision
+making. Thus, it reduces model bias, a common problem in model-based
+RL. Due to its generality and efficiency, PILCO is a conceptual and
+practical approach to jointly learning models and controllers fully
+automatically. Across all tasks, we report an unprecedented degree of
+automation and an unprecedented speed of learning.
+
+Second, we propose principled algorithms for robust filtering and
+smoothing in GP dynamic systems. Our methods are based on analytic
+moment matching and clearly advance state-of-the-art methods.},
+  Owner                    = {marc},
+  Timestamp                = {2010.11.17},
+  Url                      = {http://www.ksp.kit.edu/shop/isbn2shopid.php?isbn=978-3-86644-569-7}
+}
+
+@Article{Deisenroth2014,
+  Title                    = {Gaussian {Processes for Data-Efficient Learning in Robotics and Control}},
+  Author                   = {Marc P. Deisenroth and Dieter Fox and Carl E. Rasmussen},
+  Journal                  = {IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  Year                     = {2014},
+  Volume                   = {36},
+
+  Abstract                 = {Autonomous learning has been a promising direction in control and robotics for more than a decade since data-driven learning allows to reduce the amount of engineering knowledge, which is otherwise required. However, autonomous reinforcement learning (RL) approaches typically require many interactions with the system to learn controllers, which is a practical limitation in real systems, such as robots, where many interactions can be impractical and time consuming. To address this problem, current learning approaches typically require task-specific knowledge in form of expert demonstrations, realistic simulators, pre-shaped policies, or specific knowledge about the underlying dynamics. In this article, we follow a different approach and speed up learning by extracting more information from data. In particular, we learn a probabilistic, non-parametric Gaussian process transition model of the system. By explicitly incorporating model uncertainty into long-term planning and controller learning our approach reduces the effects of model errors, a key problem in model-based learning. Compared to state-of-the art RL our model-based policy search method achieves an unprecedented speed of learning. We demonstrate its applicability to autonomous learning in real robot and control tasks.},
+  Doi                      = {10.1109/TPAMI.2013.218},
+  Owner                    = {marc},
+  Timestamp                = {2012.06.17}
+}
+
+@InProceedings{Deisenroth2011c,
+  Title                    = {P{ILCO: A Model-Based and Data-Efficient Approach to Policy Search}},
+  Author                   = {Marc P. Deisenroth and Carl E. Rasmussen},
+  Booktitle                = {Proceedings of the International Conference on Machine Learning},
+  Year                     = {2011},
+
+  Address                  = {New York, NY, USA},
+  Month                    = {June},
+  Pages                    = {465--472},
+  Publisher                = {ACM},
+
+  Abstract                 = {In this paper, we introduce PILCO, a practical, data-efficient model-based policy search method. PILCO reduces model bias, one of the key problems of model-based reinforcement learning, in a principled way. By learning a probabilistic dynamics model and explicitly incorporating model uncertainty into long-term planning, PILCO can cope with very little data and facilitates learning from scratch in only a few trials. Policy evaluation is performed in closed form using state-of-the-art approximate inference. Furthermore, policy gradients are computed analytically for policy improvement. We report unprecedented learning efficiency on challenging and high-dimensional control tasks.},
+  Owner                    = {marc},
+  Timestamp                = {2011.01.20}
+}
+
+@InProceedings{Deisenroth2011b,
+  Title                    = {Learning {to Control a Low-Cost Manipulator using Data-Efficient Reinforcement Learning}},
+  Author                   = {Marc P. Deisenroth and Carl E. Rasmussen and Dieter Fox},
+  Booktitle                = {Proceedings of the International Conference on Robotics: Science and Systems},
+  Year                     = {2011},
+
+  Address                  = {Los Angeles, CA, USA},
+  Month                    = {June},
+
+  Abstract                 = {Over the last years, there has been substantial progress in robust manipulation in unstructured environments. The long-term goal of our work is to get away from precise, but very expensive robotic systems and to develop affordable, potentially imprecise, self-adaptive manipulator systems that can interactively perform tasks such as playing with children. In this paper, we demonstrate how a low-cost off-the-shelf robotic system can learn closed-loop policies for a stacking task in only a handful of trials-from scratch. Our manipulator is inaccurate and provides no pose feedback. For learning a controller in the work space of a Kinect-style depth camera, we use a model-based reinforcement learning technique. Our learning method is data efficient, reduces model bias, and deals with several noise sources in a principled way during long-term planning. We present a way of incorporating state-space constraints into the learning process and analyze the learning gain by exploiting the sequential structure of the stacking task.},
+  Owner                    = {marc},
+  Timestamp                = {2011.01.20},
+  Url                      = {http://www.roboticsproceedings.org/rss07/p08-pdf.html}
+}
+
+@Unpublished{Forster2009,
+  Title                    = {Robotic {Unicycle}},
+  Author                   = {David Forster},
+  Note                     = {Report, Department of Engineering, University of Cambridge, UK},
+  Year                     = {2009},
+
+  Owner                    = {marc},
+  Timestamp                = {2009.08.10}
+}
+
+@InProceedings{Quinonero-Candela2003a,
+  Title                    = {Propagation {of Uncertainty in Bayesian Kernel Models---Application to Multiple-Step Ahead Forecasting}},
+  Author                   = {Joaquin {Qui{\~n}onero-Candela} and Agathe Girard and Jan Larsen and Carl E. Rasmussen},
+  Booktitle                = {IEEE International Conference on Acoustics, Speech and Signal Processing},
+  Year                     = {2003},
+  Month                    = {April},
+  Pages                    = {701--704},
+  Volume                   = {2},
+
+  Abstract                 = {The object of Bayesian modelling is the predictive distribution, which in a forecasting scenario enables improved estimates of forecasted values and their uncertainties. In this paper we focus on reliably estimating the predictive mean and variance of forecasted values using Bayesian kernel based models such as the Gaussian Process and the Relevance Vector Machine. We derive novel analytic expressions for the predictive mean and variance for Gaussian kernel shapes under the assumption of a Gaussian input distribution in the static case, and of a recursive Gaussian predictive density in iterative forecasting. The capability of the method is demonstrated for forecasting of time-series and compared to approximate methods.},
+  Doi                      = {10.1109/ICASSP.2003.1202463},
+  File                     = {pdf2686.pdf:http\://www.kyb.mpg.de/publications/pdfs/pdf2686.pdf:PDF},
+  Owner                    = {marc},
+  Timestamp                = {2008.02.06}
+}
+
+@Book{Rasmussen2006,
+  Title                    = {Gaussian {Processes for Machine Learning}},
+  Author                   = {Carl E. Rasmussen and Christopher K. I. Williams},
+  Editor                   = {T. G. Dietterich},
+  Publisher                = {The MIT Press},
+  Year                     = {2006},
+
+  Address                  = {Cambridge, MA, USA},
+  Series                   = {Adaptive Computation and Machine Learning},
+
+  Owner                    = {deisenroth},
+  Timestamp                = {2006.12.06},
+  Url                      = {http://www.gaussianprocess.org/gpml/chapters/}
+}
+
+@InCollection{Snelson2006,
+  Title                    = {Sparse {Gaussian Processes using Pseudo-inputs}},
+  Author                   = {Edward Snelson and Zoubin Ghahramani},
+  Booktitle                = {Advances in {Neural Information Processing Systems} 18},
+  Publisher                = {The MIT Press},
+  Year                     = {2006},
+
+  Address                  = {Cambridge, MA, USA},
+  Editor                   = {Y. Weiss and B. Sch\"{o}lkopf and J. C. Platt},
+  Pages                    = {1257--1264},
+
+  Owner                    = {marc},
+  Timestamp                = {2007.10.10},
+  Url                      = {http://books.nips.cc/papers/files/nips18/NIPS2005_0543.pdf}
+}
+
+@InProceedings{Spong1995,
+  Title                    = {The {Pendubot: A Mechatronic System for Control Research and Education}},
+  Author                   = {Mark W. Spong and Daniel J. Block},
+  Booktitle                = {Proceedings of the Conference on Decision and Control},
+  Year                     = {1995},
+  Pages                    = {555--557},
+
+  Doi                      = {10.1.1.56.7067},
+  Owner                    = {marc},
+  Timestamp                = {2009.03.25},
+  Url                      = {http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.56.7067}
+}
+
+@Book{Sutton1998,
+  Title                    = {Reinforcement {Learning: An Introduction}},
+  Author                   = {Richard S. Sutton and Andrew G. Barto},
+  Editor                   = {T. G. Dietterich},
+  Publisher                = {The MIT Press},
+  Year                     = {1998},
+
+  Owner                    = {deisenroth},
+  Timestamp                = {2006.12.19},
+  Url                      = {http://www.cs.ualberta.ca/%7Esutton/book/ebook/the-book.html}
+}
+

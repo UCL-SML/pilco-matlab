@@ -1,0 +1,265 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>simulate.m</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="simulate.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>simulate.m</h1><!--introduction--><p><b>Summary:</b> Simulate dynamics using a given control scheme.</p><pre>  function next = simulate(x0, f, plant)</pre><p><b>Input arguments:</b></p><pre>x0      start state (with additional control states if required)
+f       the control setpoint for this time step
+plant   plant structure
+  .dt        time discretization
+  .dynamics  system function
+  .ctrl      function defining control implementation
+                @zoh - zero-order-hold control (ZOH)
+                @foh - first-order-hold control (FOH)
+                       with optional rise time 0 &lt; plant.tau &lt;= dt
+                @lag - lagged control with time constant 0 &lt; plant.tau
+  .delay     continuous-time delay, in range [0 dt)</pre><p><b>Output arguments:</b></p><pre>next    successor state (with additional control states if required)</pre><p>Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</p><p>Last modification: 2012-06-30</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">High-Level Steps</a></li><li><a href="#2">Code</a></li></ul></div><h2>High-Level Steps<a name="1"></a></h2><p>For each time step # Set up the control function # Simulate the dynamics (by calling ODE45) # Update control part of the state</p><pre class="codeinput"><span class="keyword">function</span> next = simulate(x0, f, plant)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput">OPTIONS = odeset(<span class="string">'RelTol'</span>, 1e-12, <span class="string">'AbsTol'</span>, 1e-12);    <span class="comment">% accuracy of ode45</span>
+
+x0 = x0(:); f = f(:); nU = length(f);
+dt = plant.dt; dynamics = plant.dynamics;
+<span class="keyword">if</span> isfield(plant,<span class="string">'delay'</span>), delay = plant.delay; <span class="keyword">else</span> delay = 0; <span class="keyword">end</span>
+<span class="keyword">if</span> isfield(plant,<span class="string">'tau'</span>), tau = plant.tau; <span class="keyword">else</span> tau = dt; <span class="keyword">end</span>
+par.dt = dt; par.delay = delay; par.tau = tau;
+
+<span class="comment">% 1. Set up control function ------------------------------------------------</span>
+<span class="comment">% f{t} = control setpoint over time t to d+dt (determined by policy)</span>
+<span class="comment">% u{t} = control currently being applied at time t</span>
+con = functions(plant.ctrl); con = con.function;
+<span class="keyword">if</span> (strcmp(con,<span class="string">'zoh'</span>) &amp;&amp; delay==0)                            <span class="comment">% U = [f{t}]</span>
+  x0s = x0;U = f; id = 0;
+<span class="keyword">elseif</span> strcmp(con,<span class="string">'zoh'</span>) || <span class="keyword">...</span><span class="comment">                          % U = [u{t} f{t}]</span>
+   (strcmp(con,<span class="string">'foh'</span>) &amp;&amp; tau+delay&lt;=dt) || (strcmp(con,<span class="string">'lag'</span>) &amp;&amp; delay==0)
+  x0s = x0(1:end-nU); U = [x0(end-nU+1:end) f]; id = 1;
+<span class="keyword">else</span>                                              <span class="comment">% U = [f{t-1} u{t} f{t}]</span>
+  x0s=x0(1:end-2*nU); U=[reshape( x0(end-2*nU+1:end), [nU 2]) f]; id = 2;
+<span class="keyword">end</span>
+ctrlfcn = str2func(con); u0 = cell(1,nU);        <span class="comment">% create control function</span>
+<span class="keyword">for</span> j = 1:nU, u0{j} = @(t)ctrlfcn(U(j,:),t,par); <span class="keyword">end</span>
+
+<span class="comment">% 2. Simulate dynamics ------------------------------------------------------</span>
+[T y] = ode45(dynamics, [0 dt/2 dt], x0s, OPTIONS, u0{:});
+x1 = y(3,:)';                                                 <span class="comment">% next state</span>
+
+<span class="comment">% 3. Update control part of the state ---------------------------------------</span>
+udt = zeros(nU,1); <span class="keyword">for</span> j=1:nU, udt(j) = u0{j}(dt); <span class="keyword">end</span>
+<span class="keyword">if</span> id==0,     next =  x1;                         <span class="comment">% return augmented state</span>
+<span class="keyword">elseif</span> id==1, next = [x1; udt];
+<span class="keyword">else</span>          next = [x1; f; udt];
+<span class="keyword">end</span>
+</pre><pre class="codeinput"><span class="keyword">function</span> u = zoh(f, t, par) <span class="comment">% **************************** zero-order hold</span>
+d = par.delay;
+<span class="keyword">if</span> d==0
+                  u = f;
+<span class="keyword">else</span>
+  e = d/100; t0=t-(d-e/2);
+  <span class="keyword">if</span> t&lt;d-e/2,     u=f(1);
+  <span class="keyword">elseif</span> t&lt;d+e/2, u=(1-t0/e)*f(1) + t0/e*f(2);    <span class="comment">% prevents ODE stiffness</span>
+  <span class="keyword">else</span>            u=f(2);
+  <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+<span class="keyword">function</span> u = foh(f, t, par) <span class="comment">% *************************** first-order hold</span>
+d = par.delay; tau = par.tau; dt = par.dt;
+<span class="keyword">if</span> tau + d &lt; dt
+  t0=t-d;
+  <span class="keyword">if</span> t&lt;d,         u=f(1);
+  <span class="keyword">elseif</span> t&lt;tau+d, u=(1-t0/tau)*f(1) + t0/tau*f(2);
+  <span class="keyword">else</span>            u=f(2);
+  <span class="keyword">end</span>
+<span class="keyword">else</span>
+  bit = d-(dt-tau);
+  <span class="keyword">if</span> t&lt;bit,       u=(1-t/bit)*f(2) + t/tau*f(1);
+  <span class="keyword">elseif</span> t&lt;d,     u=f(1);
+  <span class="keyword">else</span> t0=t+d;    u=(1-t0/tau)*f(1) + t0/tau*f(3);
+  <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+<span class="keyword">function</span> u = lag(f, t, par) <span class="comment">% **************************** first-order lag</span>
+d = par.delay; tau = par.tau;
+<span class="keyword">if</span> d==0
+                  u = f(1) + (f(2)-f(1))*exp(-t/tau);
+<span class="keyword">else</span>
+  bit = f(2) + (f(1)-f(2))*exp(-d/tau);
+  <span class="keyword">if</span> t&lt;d,         u = f(2) + (f(1)-f(2))*exp(-t/tau);
+  <span class="keyword">else</span>            u = bit  + (f(3)-bit )*exp(-t/tau);
+  <span class="keyword">end</span>
+<span class="keyword">end</span>
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% simulate.m
+% *Summary:* Simulate dynamics using a given control scheme.
+%
+%    function next = simulate(x0, f, plant)
+%
+% *Input arguments:*
+%
+%  x0      start state (with additional control states if required)
+%  f       the control setpoint for this time step
+%  plant   plant structure
+%    .dt        time discretization
+%    .dynamics  system function
+%    .ctrl      function defining control implementation
+%                  @zoh - zero-order-hold control (ZOH)
+%                  @foh - first-order-hold control (FOH)
+%                         with optional rise time 0 < plant.tau <= dt
+%                  @lag - lagged control with time constant 0 < plant.tau
+%    .delay     continuous-time delay, in range [0 dt)
+%
+% *Output arguments:*
+%
+%  next    successor state (with additional control states if required)
+%
+%
+% Copyright (C) 2008-2013 by 
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modification: 2012-06-30
+%
+%% High-Level Steps
+% For each time step
+% # Set up the control function
+% # Simulate the dynamics (by calling ODE45)
+% # Update control part of the state
+
+function next = simulate(x0, f, plant)
+%% Code
+
+
+OPTIONS = odeset('RelTol', 1e-12, 'AbsTol', 1e-12);    % accuracy of ode45
+
+x0 = x0(:); f = f(:); nU = length(f);
+dt = plant.dt; dynamics = plant.dynamics;
+if isfield(plant,'delay'), delay = plant.delay; else delay = 0; end
+if isfield(plant,'tau'), tau = plant.tau; else tau = dt; end
+par.dt = dt; par.delay = delay; par.tau = tau;
+
+% 1. Set up control function REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH
+% f{t} = control setpoint over time t to d+dt (determined by policy)
+% u{t} = control currently being applied at time t
+con = functions(plant.ctrl); con = con.function;
+if (strcmp(con,'zoh') && delay==0)                            % U = [f{t}]
+  x0s = x0;U = f; id = 0;
+elseif strcmp(con,'zoh') || ...                          % U = [u{t} f{t}]
+   (strcmp(con,'foh') && tau+delay<=dt) || (strcmp(con,'lag') && delay==0)
+  x0s = x0(1:end-nU); U = [x0(end-nU+1:end) f]; id = 1;
+else                                              % U = [f{t-1} u{t} f{t}]
+  x0s=x0(1:end-2*nU); U=[reshape( x0(end-2*nU+1:end), [nU 2]) f]; id = 2;
+end
+ctrlfcn = str2func(con); u0 = cell(1,nU);        % create control function
+for j = 1:nU, u0{j} = @(t)ctrlfcn(U(j,:),t,par); end
+
+% 2. Simulate dynamics REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH
+[T y] = ode45(dynamics, [0 dt/2 dt], x0s, OPTIONS, u0{:});
+x1 = y(3,:)';                                                 % next state 
+
+% 3. Update control part of the state REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH-
+udt = zeros(nU,1); for j=1:nU, udt(j) = u0{j}(dt); end
+if id==0,     next =  x1;                         % return augmented state
+elseif id==1, next = [x1; udt];
+else          next = [x1; f; udt];
+end
+
+
+function u = zoh(f, t, par) % **************************** zero-order hold
+d = par.delay;
+if d==0
+                  u = f;
+else
+  e = d/100; t0=t-(d-e/2);
+  if t<d-e/2,     u=f(1);
+  elseif t<d+e/2, u=(1-t0/e)*f(1) + t0/e*f(2);    % prevents ODE stiffness
+  else            u=f(2);
+  end
+end
+
+function u = foh(f, t, par) % *************************** first-order hold
+d = par.delay; tau = par.tau; dt = par.dt;
+if tau + d < dt
+  t0=t-d;
+  if t<d,         u=f(1);
+  elseif t<tau+d, u=(1-t0/tau)*f(1) + t0/tau*f(2);
+  else            u=f(2);
+  end
+else
+  bit = d-(dt-tau);
+  if t<bit,       u=(1-t/bit)*f(2) + t/tau*f(1);
+  elseif t<d,     u=f(1);
+  else t0=t+d;    u=(1-t0/tau)*f(1) + t0/tau*f(3);
+  end
+end
+
+function u = lag(f, t, par) % **************************** first-order lag
+d = par.delay; tau = par.tau;
+if d==0
+                  u = f(1) + (f(2)-f(1))*exp(-t/tau);
+else
+  bit = f(2) + (f(1)-f(2))*exp(-d/tau);
+  if t<d,         u = f(2) + (f(1)-f(2))*exp(-t/tau);
+  else            u = bit  + (f(3)-bit )*exp(-t/tau);
+  end
+end
+##### SOURCE END #####
+--></body></html>

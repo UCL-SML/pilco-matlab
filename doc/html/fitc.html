@@ -1,0 +1,287 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>fitc.m</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="fitc.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>fitc.m</h1><!--introduction--><p><b>Summary:</b> Compute the FITC negative log marginal likelihood and its derivatives with  respect to the inducing inputs (we don't compute the derivatives with respect to the GP hyper-parameters)</p><pre class="language-matlab"><span class="keyword">function</span> [nml dnml] = fitc(induce, gpmodel)
+</pre><p><b>Input arguments:</b></p><pre class="language-matlab">induce          <span class="string">matrix</span> <span class="string">of</span> <span class="string">inducing</span> <span class="string">inputs</span>                       <span class="string">[M x D x uE]</span>
+                M: number of <span class="string">inducing</span> <span class="string">inputs</span>
+                E: either 1 (inducing inputs are shared across target dim.)
+                   or     <span class="string">E</span> <span class="string">(different inducing inputs for each target dim.)</span>
+gpmodel         <span class="string">GP</span> <span class="string">structure</span>
+  .hyp          log-hyper-parameters                               [D+2 x E]
+  .inputs       training <span class="string">inputs</span>                                    <span class="string">[N   x D]</span>
+  .targets      training <span class="string">targets</span>                                   <span class="string">[N   x E]</span>
+  .noise (opt)  noise
+</pre><p><b>Output arguments:</b></p><pre class="language-matlab">nlml             <span class="string">negative</span> <span class="string">log-marginal</span> <span class="string">likelihood</span>
+dnlml            <span class="string">derivative</span> <span class="string">of</span> <span class="string">negative</span> <span class="string">log-marginal</span> <span class="string">likelihood</span> <span class="string">wrt</span>
+                 inducing <span class="string">inputs</span>
+</pre><p>Adapted from Ed Snelson's SPGP code.</p><p>Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</p><p>Last modified: 2013-05-21</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">High-Level Steps</a></li><li><a href="#2">Code</a></li></ul></div><h2>High-Level Steps<a name="1"></a></h2><div><ol><li>Compute FITC marginal likelihood</li><li>Compute corresponding gradients wrt the pseudo inputs</li></ol></div><pre class="codeinput"><span class="keyword">function</span> [nlml dnlml] = fitc(induce, gpmodel)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput">ridge = 1e-06;                       <span class="comment">% jitter to make matrix better conditioned</span>
+
+[N D] = size(gpmodel.inputs); E = size(gpmodel.targets,2);
+[M uD uE] = size(induce);
+<span class="keyword">if</span> uD ~= D || (uE~=1 &amp;&amp; uE ~= E); error(<span class="string">'Wrong size of inducing inputs'</span>); <span class="keyword">end</span>
+
+nlml = 0; dfxb = zeros(M, D); dnlml = zeros(M, D, E); <span class="comment">% zero and allocate outputs</span>
+
+<span class="keyword">for</span> j = 1:E
+  <span class="keyword">if</span> uE &gt; 1; u = induce(:,:,j); <span class="keyword">else</span> u = induce; <span class="keyword">end</span>
+  b = exp(gpmodel.hyp(1:D,j));                                 <span class="comment">% length-scales</span>
+  c = gpmodel.hyp(D+1,j);                                 <span class="comment">% log signal std dev</span>
+  sig = exp(2.*gpmodel.hyp(D+2,j));                           <span class="comment">% noise variance</span>
+
+  xb = bsxfun(@rdivide,u,b');                 <span class="comment">% divide inducing by lengthscales</span>
+  x = bsxfun(@rdivide,gpmodel.inputs,b');     <span class="comment">% divide inputs by length-scales</span>
+  y = gpmodel.targets(:,j);                                  <span class="comment">% training targets</span>
+
+  Kmm = exp(2*c-maha(xb,xb)/2) + ridge*eye(M);
+  Kmn = exp(2*c-maha(xb,x)/2);
+
+  <span class="comment">% Check whether Kmm is no longer positive definite. If so, return</span>
+  <span class="keyword">try</span>
+    L = chol(Kmm)';
+  <span class="keyword">catch</span>
+    nlml = Inf; dnlml = zeros(size(params));
+    <span class="keyword">return</span>;
+  <span class="keyword">end</span>
+  V = L\Kmn;                                               <span class="comment">% inv(sqrt(Kmm))*Kmn</span>
+
+  <span class="keyword">if</span> isfield(gpmodel,<span class="string">'noise'</span>)
+    Gamma = 1 + (exp(2*c)-sum(V.^2)'+gpmodel.noise(:,j))/sig;
+  <span class="keyword">else</span>
+    Gamma = 1 + (exp(2*c)-sum(V.^2)')/sig;      <span class="comment">% Gamma = diag(Knn-Qnn)/sig + I</span>
+  <span class="keyword">end</span>
+
+  V = bsxfun(@rdivide,V,sqrt(Gamma)');  <span class="comment">% inv(sqrt(Kmm))*Kmn * inv(sqrt(Gamma))</span>
+  y = y./sqrt(Gamma);
+  Am = chol(sig*eye(M) + V*V')';        <span class="comment">% chol(inv(sqrt(Kmm))*A*inv(sqrt(Kmm)))</span>
+                <span class="comment">% V*V' = inv(chol(Kmm)')*K*inv(diag(Gamma))*K'*inv(chol(Kmm)')'</span>
+  Vy = V*y;
+  beta = Am\Vy;
+
+  nlml = nlml + sum(log(diag(Am))) + (N-M)/2*log(sig) + sum(log(Gamma))/2 <span class="keyword">...</span>
+         + (y'*y - beta'*beta)/2/sig + 0.5*N*log(2*pi);
+
+  <span class="keyword">if</span> nargout == 2               <span class="comment">% ... and if requested, its partial derivatives</span>
+
+    At = L*Am; iAt = At\eye(M);              <span class="comment">% chol(sig*B) [Ed's thesis, p. 40]</span>
+    iA = iAt'*iAt;                                                 <span class="comment">% inv(sig*B)</span>
+
+    iAmV = Am\V;                                                    <span class="comment">% inv(Am)*V</span>
+    B1 = At'\(iAmV);
+    b1 = At'\beta;                                                  <span class="comment">% b1 = B1*y</span>
+
+    iLV = L'\V;                                 <span class="comment">% inv(Kmm)*Kmn*inv(sqrt(Gamma))</span>
+    iL = L\eye(M);
+    iKmm = iL'*iL;
+
+    mu = ((Am'\beta)'*V)';
+    bs = y.*(beta'*iAmV)'/sig - sum(iAmV.*iAmV)'/2 - (y.^2+mu.^2)/2/sig + 0.5;
+    TT = iLV*(bsxfun(@times,iLV',bs));
+    Kmn = bsxfun(@rdivide,Kmn,sqrt(Gamma)');                    <span class="comment">% overwrite Kmn</span>
+
+    <span class="keyword">for</span> i = 1:D                               <span class="comment">% derivatives wrt inducing inputs</span>
+      dsq_mm = bsxfun(@minus,xb(:,i),xb(:,i)').*Kmm;
+      dsq_mn = bsxfun(@minus,-xb(:,i),-x(:,i)').*Kmn;
+      dGamma = -2/sig*dsq_mn.*iLV;
+
+      dfxb(:,i) = -b1.*(dsq_mn*(y-mu)/sig + dsq_mm*b1) + dGamma*bs <span class="keyword">...</span>
+                  + sum((iKmm - iA*sig).*dsq_mm,2) - 2/sig*sum(dsq_mm.*TT,2);
+      dsq_mn = dsq_mn.*B1;                                   <span class="comment">% overwrite dsq_mn</span>
+      dfxb(:,i) = dfxb(:,i) + sum(dsq_mn,2);
+      dfxb(:,i) = dfxb(:,i)/b(i);
+    <span class="keyword">end</span>
+
+    dnlml(:,:,j) = dfxb;
+  <span class="keyword">end</span>
+<span class="keyword">end</span>
+<span class="keyword">if</span> 1 == uE; dnlml = sum(dnlml,3); <span class="keyword">end</span> <span class="comment">% combine derivatives if sharing inducing</span>
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% fitc.m
+% *Summary:* Compute the FITC negative log marginal likelihood and its
+% derivatives with  respect to the inducing inputs (we don't compute the
+% derivatives with respect to the GP hyper-parameters)
+%
+%   function [nml dnml] = fitc(induce, gpmodel)
+%
+% *Input arguments:*
+%
+%   induce          matrix of inducing inputs                       [M x D x uE]
+%                   M: number of inducing inputs
+%                   E: either 1 (inducing inputs are shared across target dim.)
+%                      or     E (different inducing inputs for each target dim.)
+%   gpmodel         GP structure
+%     .hyp          log-hyper-parameters                               [D+2 x E]
+%     .inputs       training inputs                                    [N   x D]
+%     .targets      training targets                                   [N   x E]
+%     .noise (opt)  noise
+%
+%
+% *Output arguments:*
+%
+%   nlml             negative log-marginal likelihood
+%   dnlml            derivative of negative log-marginal likelihood wrt
+%                    inducing inputs
+%
+% Adapted from Ed Snelson's SPGP code.
+%
+% Copyright (C) 2008-2013 by
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modified: 2013-05-21
+%
+%% High-Level Steps
+%
+% # Compute FITC marginal likelihood 
+% # Compute corresponding gradients wrt the pseudo inputs
+
+function [nlml dnlml] = fitc(induce, gpmodel)
+%% Code
+
+ridge = 1e-06;                       % jitter to make matrix better conditioned
+
+[N D] = size(gpmodel.inputs); E = size(gpmodel.targets,2);
+[M uD uE] = size(induce);
+if uD ~= D || (uE~=1 && uE ~= E); error('Wrong size of inducing inputs'); end
+
+nlml = 0; dfxb = zeros(M, D); dnlml = zeros(M, D, E); % zero and allocate outputs
+
+for j = 1:E
+  if uE > 1; u = induce(:,:,j); else u = induce; end
+  b = exp(gpmodel.hyp(1:D,j));                                 % length-scales
+  c = gpmodel.hyp(D+1,j);                                 % log signal std dev
+  sig = exp(2.*gpmodel.hyp(D+2,j));                           % noise variance
+  
+  xb = bsxfun(@rdivide,u,b');                 % divide inducing by lengthscales
+  x = bsxfun(@rdivide,gpmodel.inputs,b');     % divide inputs by length-scales
+  y = gpmodel.targets(:,j);                                  % training targets
+  
+  Kmm = exp(2*c-maha(xb,xb)/2) + ridge*eye(M);
+  Kmn = exp(2*c-maha(xb,x)/2);
+  
+  % Check whether Kmm is no longer positive definite. If so, return
+  try 
+    L = chol(Kmm)'; 
+  catch
+    nlml = Inf; dnlml = zeros(size(params)); 
+    return;
+  end
+  V = L\Kmn;                                               % inv(sqrt(Kmm))*Kmn
+  
+  if isfield(gpmodel,'noise')
+    Gamma = 1 + (exp(2*c)-sum(V.^2)'+gpmodel.noise(:,j))/sig;
+  else
+    Gamma = 1 + (exp(2*c)-sum(V.^2)')/sig;      % Gamma = diag(Knn-Qnn)/sig + I
+  end
+  
+  V = bsxfun(@rdivide,V,sqrt(Gamma)');  % inv(sqrt(Kmm))*Kmn * inv(sqrt(Gamma))
+  y = y./sqrt(Gamma);
+  Am = chol(sig*eye(M) + V*V')';        % chol(inv(sqrt(Kmm))*A*inv(sqrt(Kmm)))
+                % V*V' = inv(chol(Kmm)')*K*inv(diag(Gamma))*K'*inv(chol(Kmm)')'
+  Vy = V*y;
+  beta = Am\Vy;
+  
+  nlml = nlml + sum(log(diag(Am))) + (N-M)/2*log(sig) + sum(log(Gamma))/2 ...
+         + (y'*y - beta'*beta)/2/sig + 0.5*N*log(2*pi);
+  
+  if nargout == 2               % ... and if requested, its partial derivatives
+    
+    At = L*Am; iAt = At\eye(M);              % chol(sig*B) [Ed's thesis, p. 40]
+    iA = iAt'*iAt;                                                 % inv(sig*B)
+    
+    iAmV = Am\V;                                                    % inv(Am)*V
+    B1 = At'\(iAmV);
+    b1 = At'\beta;                                                  % b1 = B1*y
+    
+    iLV = L'\V;                                 % inv(Kmm)*Kmn*inv(sqrt(Gamma))
+    iL = L\eye(M);
+    iKmm = iL'*iL;
+    
+    mu = ((Am'\beta)'*V)';
+    bs = y.*(beta'*iAmV)'/sig - sum(iAmV.*iAmV)'/2 - (y.^2+mu.^2)/2/sig + 0.5;
+    TT = iLV*(bsxfun(@times,iLV',bs));
+    Kmn = bsxfun(@rdivide,Kmn,sqrt(Gamma)');                    % overwrite Kmn
+    
+    for i = 1:D                               % derivatives wrt inducing inputs
+      dsq_mm = bsxfun(@minus,xb(:,i),xb(:,i)').*Kmm;
+      dsq_mn = bsxfun(@minus,-xb(:,i),-x(:,i)').*Kmn;
+      dGamma = -2/sig*dsq_mn.*iLV;
+      
+      dfxb(:,i) = -b1.*(dsq_mn*(y-mu)/sig + dsq_mm*b1) + dGamma*bs ...
+                  + sum((iKmm - iA*sig).*dsq_mm,2) - 2/sig*sum(dsq_mm.*TT,2);
+      dsq_mn = dsq_mn.*B1;                                   % overwrite dsq_mn
+      dfxb(:,i) = dfxb(:,i) + sum(dsq_mn,2);
+      dfxb(:,i) = dfxb(:,i)/b(i);
+    end
+    
+    dnlml(:,:,j) = dfxb;
+  end
+end
+if 1 == uE; dnlml = sum(dnlml,3); end % combine derivatives if sharing inducing
+
+##### SOURCE END #####
+--></body></html>

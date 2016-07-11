@@ -1,0 +1,228 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>draw_cp</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="draw_cp.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#1">draw_cp.m</a></li><li><a href="#2">Code</a></li></ul></div><h2>draw_cp.m<a name="1"></a></h2><p><b>Summary:</b> Draw the cart-pole system with reward, applied force, and predictive uncertainty of the tip of the pendulum</p><pre>  function draw_cp(x, theta, force, cost, text1, text2, M, S)</pre><p><b>Input arguments:</b></p><pre class="codeinput"><span class="comment">%		x          position of the cart</span>
+<span class="comment">%   theta      angle of pendulum</span>
+<span class="comment">%   force      force applied to cart</span>
+<span class="comment">%   cost       cost structure</span>
+<span class="comment">%     .fcn     function handle (it is assumed to use saturating cost)</span>
+<span class="comment">%     .&lt;&gt;      other fields that are passed to cost</span>
+<span class="comment">%   M          (optional) mean of state</span>
+<span class="comment">%   S          (optional) covariance of state</span>
+<span class="comment">%   text1      (optional) text field 1</span>
+<span class="comment">%   text2      (optional) text field 2</span>
+<span class="comment">%</span>
+<span class="comment">%</span>
+<span class="comment">% Copyright (C) 2008-2013 by</span>
+<span class="comment">% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</span>
+<span class="comment">%</span>
+<span class="comment">% Last modified: 2013-03-07</span>
+
+<span class="keyword">function</span> draw_cp(x, theta, force, cost, text1, text2, M, S)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput">l = 0.6;
+xmin = -3;
+xmax = 3;
+height = 0.1;
+width  = 0.3;
+maxU = 10;
+
+<span class="comment">% Compute positions</span>
+cart = [ x + width,  height
+         x + width, -height
+         x - width, -height
+         x - width,  height
+         x + width,  height ];
+pendulum = [x, 0; x+2*l*sin(theta), -cos(theta)*2*l];
+
+
+clf; hold <span class="string">on</span>
+plot(0,2*l,<span class="string">'k+'</span>,<span class="string">'MarkerSize'</span>,20,<span class="string">'linewidth'</span>,2)
+plot([xmin, xmax], [-height-0.03, -height-0.03],<span class="string">'k'</span>,<span class="string">'linewidth'</span>,2)
+
+<span class="comment">% Plot force</span>
+plot([0 force/maxU*xmax],[-0.3, -0.3],<span class="string">'g'</span>,<span class="string">'linewidth'</span>,10)
+
+<span class="comment">% Plot reward</span>
+reward = 1-cost.fcn(cost,[x, 0, 0, theta]', zeros(4));
+plot([0 reward*xmax],[-0.5, -0.5],<span class="string">'y'</span>,<span class="string">'linewidth'</span>,10)
+
+<span class="comment">% Plot the cart-pole</span>
+fill(cart(:,1), cart(:,2),<span class="string">'k'</span>,<span class="string">'edgecolor'</span>,<span class="string">'k'</span>);
+plot(pendulum(:,1), pendulum(:,2),<span class="string">'r'</span>,<span class="string">'linewidth'</span>,4)
+
+<span class="comment">% Plot the joint and the tip</span>
+plot(x,0,<span class="string">'y.'</span>,<span class="string">'markersize'</span>,24)
+plot(pendulum(2,1),pendulum(2,2),<span class="string">'y.'</span>,<span class="string">'markersize'</span>,24)
+
+<span class="comment">% plot ellipse around tip of pendulum (if M, S exist)</span>
+<span class="keyword">try</span>
+  [M1 S1] = getPlotDistr_cp(M,S,2*l);
+  error_ellipse(S1,M1,<span class="string">'style'</span>,<span class="string">'b'</span>);
+<span class="keyword">catch</span>
+<span class="keyword">end</span>
+
+<span class="comment">% Text</span>
+text(0,-0.3,<span class="string">'applied force'</span>)
+text(0,-0.5,<span class="string">'immediate reward'</span>)
+<span class="keyword">if</span> exist(<span class="string">'text1'</span>,<span class="string">'var'</span>)
+  text(0,-0.9, text1)
+<span class="keyword">end</span>
+<span class="keyword">if</span> exist(<span class="string">'text2'</span>,<span class="string">'var'</span>)
+  text(0,-1.1, text2)
+<span class="keyword">end</span>
+
+set(gca,<span class="string">'DataAspectRatio'</span>,[1 1 1],<span class="string">'XLim'</span>,[xmin xmax],<span class="string">'YLim'</span>,[-1.4 1.4]);
+axis <span class="string">off</span>;
+drawnow;
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% draw_cp.m
+% *Summary:* Draw the cart-pole system with reward, applied force, and 
+% predictive uncertainty of the tip of the pendulum
+%
+%    function draw_cp(x, theta, force, cost, text1, text2, M, S)
+%
+%
+% *Input arguments:*
+%
+%		x          position of the cart
+%   theta      angle of pendulum
+%   force      force applied to cart
+%   cost       cost structure
+%     .fcn     function handle (it is assumed to use saturating cost)
+%     .<>      other fields that are passed to cost
+%   M          (optional) mean of state
+%   S          (optional) covariance of state
+%   text1      (optional) text field 1
+%   text2      (optional) text field 2
+%
+%
+% Copyright (C) 2008-2013 by
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modified: 2013-03-07
+
+function draw_cp(x, theta, force, cost, text1, text2, M, S)
+%% Code
+
+l = 0.6;
+xmin = -3; 
+xmax = 3;    
+height = 0.1;
+width  = 0.3;
+maxU = 10;
+
+% Compute positions 
+cart = [ x + width,  height
+         x + width, -height
+         x - width, -height
+         x - width,  height
+         x + width,  height ];
+pendulum = [x, 0; x+2*l*sin(theta), -cos(theta)*2*l];
+
+
+clf; hold on
+plot(0,2*l,'k+','MarkerSize',20,'linewidth',2)
+plot([xmin, xmax], [-height-0.03, -height-0.03],'k','linewidth',2)
+
+% Plot force
+plot([0 force/maxU*xmax],[-0.3, -0.3],'g','linewidth',10)
+
+% Plot reward
+reward = 1-cost.fcn(cost,[x, 0, 0, theta]', zeros(4));
+plot([0 reward*xmax],[-0.5, -0.5],'y','linewidth',10)
+
+% Plot the cart-pole
+fill(cart(:,1), cart(:,2),'k','edgecolor','k');
+plot(pendulum(:,1), pendulum(:,2),'r','linewidth',4)
+
+% Plot the joint and the tip
+plot(x,0,'y.','markersize',24)
+plot(pendulum(2,1),pendulum(2,2),'y.','markersize',24)
+
+% plot ellipse around tip of pendulum (if M, S exist)
+try
+  [M1 S1] = getPlotDistr_cp(M,S,2*l);
+  error_ellipse(S1,M1,'style','b');
+catch
+end
+
+% Text
+text(0,-0.3,'applied force')
+text(0,-0.5,'immediate reward')
+if exist('text1','var')
+  text(0,-0.9, text1)
+end
+if exist('text2','var')
+  text(0,-1.1, text2)
+end
+
+set(gca,'DataAspectRatio',[1 1 1],'XLim',[xmin xmax],'YLim',[-1.4 1.4]);
+axis off;
+drawnow;
+##### SOURCE END #####
+--></body></html>

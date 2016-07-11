@@ -1,0 +1,47 @@
+
+% This LaTeX was auto-generated from an M-file by MATLAB.
+% To make changes, update the M-file and republish this document.
+
+
+
+    
+    
+
+\subsection*{maha.m} 
+
+\begin{par}
+\textbf{Summary:} Point-wise squared Mahalanobis distance (a-b)*Q*(a-b)'. Vectors are row-vectors
+\end{par} \vspace{1em}
+
+\begin{verbatim}  function K = maha(a, b, Q)\end{verbatim}
+    \begin{par}
+\textbf{Input arguments:}
+\end{par} \vspace{1em}
+\begin{verbatim}a   matrix containing n row vectors                                 [n x D]
+b   matrix containing n row vectors                                 [n x D]
+Q   weight matrix. Default: eye(D)                                  [D x D]\end{verbatim}
+\begin{par}
+\textbf{Output arguments:}  K    point-wise squared distances                                    [n x n]
+\end{par} \vspace{1em}
+\begin{par}
+Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+\end{par} \vspace{1em}
+\begin{par}
+Last modified: 2013-03-21
+\end{par} \vspace{1em}
+
+\begin{lstlisting}
+function K = maha(a, b, Q)
+\end{lstlisting}
+
+
+\subsection*{Code} 
+
+
+\begin{lstlisting}
+if nargin == 2                                                  % assume unit Q
+  K = bsxfun(@plus,sum(a.*a,2),sum(b.*b,2)')-2*a*b';
+else
+  aQ = a*Q; K = bsxfun(@plus,sum(aQ.*a,2),sum(b*Q.*b,2)')-2*aQ*b';
+end
+\end{lstlisting}

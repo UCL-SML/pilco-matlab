@@ -1,0 +1,3516 @@
+\documentclass[a4paper,11pt]{report}
+
+\input{header.tex}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+
+\begin{abstract}%   <- trailing '%' for backward compatibility of .sty file
+  We describe a Matlab package for the \textsc{pilco} policy search
+  framework for data-efficient reinforcement learning. This package
+  implements the \textsc{pilco} learning framework in multiple
+  different scenarios with continuous states and actions: pendulum
+  swing-up, cart-pole swing-up, double-pendulum swing-up (with either
+  one or two actuators), cart-double-pendulum swing-up, and
+  unicycling. Results from some of these scenarios have been presented
+  previously in
+  \cite{Deisenroth2011c,Deisenroth2011b,Deisenroth2014}. The
+  high-level steps of the \textsc{pilco} algorithm, which are also
+  implemented in this software package, are the following: Learn a
+  Gaussian process (GP) model of the system dynamics, perform
+  deterministic approximate inference for policy evaluation, update
+  the policy parameters using exact gradient information, apply the
+  learned controller to the system.
+  % benefit
+  The software package provides an interface that allows for setting
+  up novel tasks without the need to be familiar with the intricate
+  details of model learning, policy evaluation and improvement.
+\end{abstract}
+
+\chapter{Introduction}
+% say something about the general problem of RL/learning
+Reinforcement learning (RL) is a general paradigm for learning
+(optimal) policies for stochastic sequential decision making
+processes~\cite{Sutton1998}. In many practical engineering
+applications, such as robotics and control, RL methods are difficult
+to apply: First, the state and action spaces are often continuous
+valued and high dimensional. Second, the number of interactions that
+can be performed with a real system is practically limited. Therefore,
+learning methods that efficiently extract valuable information from
+available data are important. Policy search methods have been playing
+an increasingly important role in robotics as they consider a
+simplified RL problem and search (optimal) policies in a constrained
+policy space~\cite{Bagnell2001, Deisenroth2011c}, typically in an
+episodic set-up, i.e., a finite-horizon set-up with a fixed initial
+state (distribution).
+
+We present the \textsc{pilco} software package for data-efficient
+policy search that allows to learn (non)linear controllers with
+hundreds of parameters for high-dimensional systems. A key element is
+a learned probabilistic GP dynamics model. Uncertainty about the
+learned dynamics model (expressed by the GP posterior) is explicitly
+taken into account for multiple-step ahead predictions, policy
+evaluation, and policy improvement.
+
+
+\section{Intended Use}
+% what is the software good for
+The intended use of this software package is to provide a relatively
+simple interface for practitioners who want to solve RL problems with
+continuous states and actions efficiently, i.e., without the need of
+excessively sized data sets. As \textsc{pilco} is very data efficient,
+it has been successfully applied to robots to learn policies from
+scratch, i.e., without the need to provide demonstrations or other
+``informative'' prior
+knowledge~\cite{Deisenroth2011c,Deisenroth2011b}.  In this document,
+we intentionally hide the involved model learning and inference
+mechanisms to make the code more accessible. Details about inference
+and model learning can be found in~\cite{Deisenroth2010b}.
+
+
+% other software packages: RLGlue etc.
+This software package is \emph{not} ideal for getting familiar with classical
+RL scenarios and algorithms (e.g., Q-learning, SARSA, TD-learning),
+which typically involve discrete states and actions. For this
+purpose, we refer to existing RL software packages, such as RLGlue,
+CLSquare\footnote{\url{http://www.ni.uos.de/index.php?id=70}},
+PIQLE\footnote{\url{http://piqle.sourceforge.net/}}, RL
+Toolbox\footnote{\url{http://www.igi.tugraz.at/ril-toolbox/}},
+LibPG\footnote{\url{http://code.google.com/p/libpgrl/}}, or
+RLPy\footnote{\url{http://acl.mit.edu/RLPy/}}.
+
+\section{Software Design and Implementation}
+% show a nice diagram here!
+\begin{figure}[tb]
+\centering
+\includegraphics[width = 0.8\hsize]{./figures/flow}
+\caption{Main modules: After an initialization, the first module is
+  responsible for training a GP from available data. The second module
+  is used for policy learning, which consists of policy evaluation and
+  improvement. The third module is responsible for applying the
+  learned policy to the system, which can be either a simulated system
+  or a real system, such as a robot. The collected data from this
+  application is used for updating the model, and the cycle starts
+  from the beginning.}
+\label{fig:modules}
+\end{figure}
+% general objective
+
+
+
+The high-level modules 1) Model learning, 2) Policy learning, 3)
+Policy application are summarized in the following.
+% function modules
+\subsection{Model Learning}
+
+The forward model learned is a non-parametric, probabilistic Gaussian
+process~\cite{Rasmussen2006}. The non-parametric property of the GP
+does not require an explicit task-dependent parametrization of the
+dynamics of the system. The probabilistic property of the GP reduces
+the effect of model errors.
+
+% training inputs/targets
+Inputs to the GP are state-action pairs $(\vec x_t, \vec u_t)$, where
+$t$ is a time index. Training targets are either successor states
+$\vec x_{t+1}$ or differences $\Delta_t = \vec x_{t+1} - \vec x_t$.
+
+% sparse GP
+By default, a full GP model is trained by evidence maximization, where
+we penalize high signal-to-noise ratios in order to maintain numerical
+stability. There is an option to switch to sparse GPs in case the
+number of data points exceeds a particular threshold. We implemented
+the FITC\slash SPGP sparse GP method proposed by \cite{Snelson2006}
+for GP training and predictions at uncertain inputs.
+
+
+
+\subsection{Policy Learning}
+For policy learning, \textsc{pilco} uses the learned GP forward model
+to compute approximate long-term predictions $p(\vec x_1|\pi),\dotsc,
+p(\vec x_T|\pi)$ for a given controller $\pi$. To do so, we follow the
+analytic moment-matching approach proposed
+by~\cite{Quinonero-Candela2003a}, and approximate all $p(\vec
+x_t|\pi)$ by Gaussians $\gaussx{\vec x_t}{\vec\mu_t}{\mat\Sigma_t}$.
+
+\textbf{Policy Evaluation.}
+Once the long-term predictions $p(\vec x_1|\pi),\dotsc, p(\vec
+x_T|\pi)$ are computed, the expected long-term cost
+%
+\begin{align}
+  J^\pi = \sum_{t=1}^T \E[c(\vec x_t)\vert\pi]\,,\qquad p(\vec x_0) =
+  \gauss{\vec\mu_0}{\mat\Sigma_0}\,,
+\end{align}
+% 
+can be computed analytically for many cost functions $c$, e.g.,
+polynomials, trigonometric functions, or Gaussian-shaped functions. In
+our implementation, we typically use a Gaussian-shaped cost function
+%
+\begin{align*}
+c(\vec x) = 1-\exp\big(-\tfrac{1}{2}\|\vec x - \vec
+x_{\text{target}}\|^2_{\mat W}/\sigma_c^2\big)\,, 
+\end{align*}
+% 
+where $\|\vec x - \vec x_{\text{target}}\|^2_{\mat W}$ is the
+Mahalanobis distance between $\vec x$ and $\vec x_{\text{target}}$,
+weighted by $\mat W$, $\sigma_c$ is a scaling factor, and $\vec
+x_{\text{target}}$ is a target state.
+
+\textbf{Policy Improvement.}  To improve the policy, we use
+gradient-based Quasi-Newton optimization methods, such as BFGS. The
+required gradients of the expected long-term cost $J^\pi$ with respect
+to the policy parameters are computed analytically, which allows for
+learning low-level policies with hundreds of
+parameters~\cite{Deisenroth2011c}.
+
+\subsection{Policy Application}
+This module takes care of applying the learned controller to the
+(simulated) system. At each time step $t$, the learned controller
+$\pi$ computes the corresponding control signal $\vec u_t$ from the
+current state $\vec x_t$. An ODE solver is used to determine the
+corresponding successor state $\vec x_{t+1}$. The module returns a
+trajectory of state-action pairs, from which the training inputs and
+targets for the GP model can be extracted.
+
+If the controller is applied to a real system, such as a robot, this
+module is not necessary. Instead, state estimation and control
+computation need to be performed on the robot
+directly~\cite{Deisenroth2011b}.
+
+
+\newpage
+
+\section{User Interface by Example}
+
+
+\begin{lstlisting}
+% 0. Initialization
+settings;                   % load scenario-specific settings
+
+for jj = 1:J                % Initial J random rollouts
+  [xx, yy, realCost{jj}, latent{jj}] = ...
+    rollout(gaussian(mu0, S0), struct('maxU',policy.maxU), H, plant, cost);
+  x = [x; xx]; y = [y; yy]; % augment training sets for dynamics model  
+end
+
+% Controlled learning (N iterations)
+for j = 1:N
+  % 1. Train (GP) dynamics model
+  trainDynModel;  
+        
+  % 2. Learn policy       
+  learnPolicy;                    
+
+  % 3. Apply controller to system
+  applyController;                
+end
+\end{lstlisting}
+
+
+In line 2, a scenario-specific settings script is executed. Here, we
+have to define the policy structure (e.g., parametrization, torque
+limits), the cost function, the
+dynamics model (e.g., definition of training inputs\slash targets),
+ some details about the system\slash plant (e.g., sampling
+frequency) that are needed for the ODE solver, and some general
+parameters (e.g., prediction horizon, discount factor).
+
+In lines 4--8, we create an initial set of trajectory rollouts by
+applying random actions to the system, starting from a state
+$\vec x_0$ sampled from $p(\vec x_0)=\gauss{\vec \mu_0, \mat
+  S_0}$. The \texttt{rollout} function in line 6 takes care of
+this. For each trajectory, the training inputs and targets are
+collected in the matrices \texttt{x} and \texttt{y}, respectively.
+
+In lines 11--20, the three main modules are executed
+iteratively. First, the GP dynamics model is learned in the
+\texttt{trainDynModel} script, using the current training data
+\texttt{x,y} (line 13). Second, the policy is learned in the
+\texttt{learnPolicy} script, which updates the policy parameters using
+analytic policy evaluation and policy gradients. The third module,
+i.e., the application of the learned controller to the system, is
+encapsulated in the \texttt{applyController} script, which also
+augments the current data set \texttt{x,y} for training the GP model
+with the new trajectory.
+
+\section{Quick Start}
+If you want to try it out without diving into the details, navigate to
+\texttt{\path scenarios/cartPole} and execute the
+\texttt{cartPole\_learn} script.
+
+\chapter{Software Package Overview}
+
+This software package implements the \textsc{pilco} reinforcement
+learning framework~\cite{Deisenroth2011c}. The package contains the
+following directories
+
+\begin{itemize}
+\item \texttt{base:} Root directory. Contains all other directories.
+\item \texttt{control:} Directory that implements several controllers.
+\item \texttt{doc:} Documention
+\item \texttt{gp:} Everything that has to do with Gaussian processes
+  (training, predictions, sparse GPs etc.)
+\item \texttt{loss:} Several immediate cost functions
+\item \texttt{scenarios:} Different scenarios. Each scenario is
+  packaged in a separate directory with all scenario-specific files
+\item \texttt{util:} Utility files
+\item \texttt{test:} Test functions (derivatives etc.)
+\end{itemize}
+
+\section{Main Modules}
+The main modules of the \textsc{pilco} framework and their interplay
+are visualized in Figure~\ref{fig:modules}. Each module is implemented in
+a separate script and can be found in \texttt{\path base}. 
+%
+
+
+Let us have a look at the high-level functionality of the three main
+modules in Figure~\ref{fig:modules}:
+\begin{enumerate}
+\item \texttt{applyController}
+\begin{enumerate}
+\item determine start state
+\item generate rollout
+\begin{enumerate}
+\item compute control signal $\pi(\vec x_t)$
+\item simulate dynamics (or apply control to real robot)
+\item transition to state $\vec x_{t+1}$
+\end{enumerate}
+\end{enumerate}
+\item \texttt{trainDynModel}
+\item \texttt{learnPolicy}
+\begin{enumerate}
+\item call gradient-based non-convex optimizer \texttt{minimize}:
+  minimize \texttt{value} with respect to policy parameters
+  $\vec\theta$
+\begin{enumerate}
+\item \texttt{propagated:} compute successor state distribution
+  $p(\vec x_{t+1})$ and gradients $\partial p(\vec
+  x_{t+1})/\partial\vec\theta$ with respect to the policy parameters
+  and gradients $\partial p(\vec x_{t+1})/\partial p(\vec x_t)$ with respect
+  to the previous state distribution $p(\vec x_t)$.
+\begin{enumerate}
+\item trigonometric augmentation of the state distribution $p(\vec
+  x_t)$
+\item compute distribution of preliminary (unsquashed) policy
+  $p(\tilde\pi(\vec x_t))$
+\item compute distribution of squashed (limited-amplitude) policy
+  $p(\pi(\vec x_t))=p(\vec u_t)$
+\item determine successor state distribution $p(\vec x_{t+1})$ using
+  GP prediction (\texttt{gp*})
+\end{enumerate}
+\item \texttt{cost.fcn:} Scenario-specific function that computes the
+  expected (immediate) cost $\E_{\vec x}[c(\vec x)]$ and its partial derivatives
+  $\partial\E_{\vec x}[c(\vec x)]/\partial p(\vec x)$
+\end{enumerate}
+\end{enumerate}
+\end{enumerate}
+
+
+\subsection{\texttt{applyController}}
+\begin{lstlisting}
+% 1. Generate trajectory rollout given the current policy
+if isfield(plant,'constraint'), HH = maxH; else HH = H; end
+[xx, yy, realCost{j+J}, latent{j}] = ...
+  rollout(gaussian(mu0, S0), policy, HH, plant, cost);
+disp(xx);                           % display states of observed trajectory
+x = [x; xx]; y = [y; yy];                            % augment training set
+if plotting.verbosity > 0
+  if ~ishandle(3); figure(3); else set(0,'CurrentFigure',3); end
+  hold on; plot(1:length(realCost{J+j}),realCost{J+j},'r'); drawnow;
+end
+
+% 2. Make many rollouts to test the controller quality
+if plotting.verbosity > 1
+  lat = cell(1,10);
+  for i=1:10
+    [~,~,~,lat{i}] = rollout(gaussian(mu0, S0), policy, HH, plant, cost);
+  end
+
+  if ~ishandle(4); figure(4); else set(0,'CurrentFigure',4); end; clf(4);
+
+  ldyno = length(dyno);
+  for i=1:ldyno       % plot the rollouts on top of predicted error bars
+    
+    subplot(ceil(ldyno/sqrt(ldyno)),ceil(sqrt(ldyno)),i); hold on;
+    errorbar( 0:length(M{j}(i,:))-1, M{j}(i,:), ...
+      2*sqrt(squeeze(Sigma{j}(i,i,:))) );
+    for ii=1:10
+      plot( 0:size(lat{ii}(:,dyno(i)),1)-1, lat{ii}(:,dyno(i)), 'r' );
+    end
+    plot( 0:size(latent{j}(:,dyno(i)),1)-1, latent{j}(:,dyno(i)),'g');
+    axis tight
+  end
+  drawnow;
+end
+
+% 3. Save data
+filename = [basename num2str(j) '_H' num2str(H)]; save(filename);
+\end{lstlisting}
+
+The script \texttt{applyController} executes the following high-level
+steps:
+\begin{enumerate}
+\item Generate a trajectory rollout by applying the current policy to
+  the system (lines 1--4). The initial state is sampled from $p(\vec
+  x_0)=\mathcal N(\texttt{mu0},\texttt{S0})$, see line 4. This
+  trajectory is used to augment the GP training set (line 6).
+\item (optional) Generate more trajectories with different start
+  states $\vec x_0\sim p(\vec x_0)$ and plot a sample distribution of
+  the trajectory distribution (lines 12-- 33).
+\item Save the entire workspace (line 36).
+\end{enumerate}
+
+
+
+
+\subsection{\texttt{trainDynModel}}
+\begin{lstlisting}
+% 1. Train GP dynamics model
+Du = length(policy.maxU); Da = length(plant.angi); % no. of ctrl and angles
+xaug = [x(:,dyno) x(:,end-Du-2*Da+1:end-Du)];     % x augmented with angles
+dynmodel.inputs = [xaug(:,dyni) x(:,end-Du+1:end)];     % use dyni and ctrl
+dynmodel.targets = y(:,dyno);
+dynmodel.targets(:,difi) = dynmodel.targets(:,difi) - x(:,dyno(difi));
+
+dynmodel = dynmodel.train(dynmodel, plant, trainOpt);  %  train dynamics GP
+
+% display some hyperparameters
+Xh = dynmodel.hyp;
+% noise standard deviations
+disp(['Learned noise std: ' num2str(exp(Xh(end,:)))]);
+% signal-to-noise ratios (values > 500 can cause numerical problems)
+disp(['SNRs             : ' num2str(exp(Xh(end-1,:)-Xh(end,:)))]);
+\end{lstlisting}
+
+The script that takes care of training the GP executes the following
+high-level steps:
+\begin{enumerate}
+\item Extract states and controls from \texttt{x}-matrix (lines 2--3)
+\item Define the training inputs and targets of the GP (lines 4--6)
+\item Train the GP (line 8)
+\item Display GP hyper-parameters, the learned noise hyper-parameters,
+  and the signal-to-noise ratios (lines 10--15). This information is
+  very valuable for debugging purposes.
+\end{enumerate}
+
+
+\subsection{\texttt{learnPolicy}}
+\begin{lstlisting}
+% 1. Update the policy
+opt.fh = 1;
+[policy.p fX3] = minimize(policy.p, 'value', opt, mu0Sim, S0Sim, ...
+  dynmodel, policy, plant, cost, H);
+
+% (optional) Plot overall optimization progress
+if exist('plotting', 'var') && isfield(plotting, 'verbosity') ...
+    && plotting.verbosity > 1
+  if ~ishandle(2); figure(2); else set(0,'CurrentFigure',2); end
+  hold on; plot(fX3); drawnow; 
+  xlabel('line search iteration'); ylabel('function value')
+end
+
+% 2. Predict trajectory from p(x0) and compute cost trajectory 
+[M{j} Sigma{j}] = pred(policy, plant, dynmodel, mu0Sim(:,1), S0Sim, H);
+[fantasy.mean{j} fantasy.std{j}] = ...
+  calcCost(cost, M{j}, Sigma{j}); % predict cost trajectory
+
+% (optional) Plot predicted immediate costs (as a function of the time steps)
+if exist('plotting', 'var') && isfield(plotting, 'verbosity') ...
+    && plotting.verbosity > 0
+  if ~ishandle(3); figure(3); else set(0,'CurrentFigure',3); end
+  clf(3); errorbar(0:H,fantasy.mean{j},2*fantasy.std{j}); drawnow;
+  xlabel('time step'); ylabel('immediate cost');
+end
+
+\end{lstlisting}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width = \hsize]{./figures/learnP}
+\caption{Functions being called from \texttt{learnPolicy.m} for
+  learning the policy.}
+\label{fig:learnP}
+\end{figure}
+
+
+
+\begin{enumerate}
+\item Learn the policy by calling
+  \texttt{minimize}. Figure~\ref{fig:learnP} depicts the functions
+  that are called by \texttt{learnPolicy} in order to perform the
+  policy search to find a good parameter set $\vec\theta^*$.
+\item (optional) Plot overall optimization progress.
+\item Long-term prediction of a state trajectory from $p(\vec x_0)$
+  using the learned policy (line 15) by calling \texttt{pred}. This
+  prediction is equivalent to the last predicted trajectory during
+  policy learning, i.e., the predicted state trajectory that belongs
+  to the the learned controller.
+\item The predicted state trajectory is used to compute the
+  corresponding distribution over immediate costs (lines 16--17) by
+  calling \texttt{calcCost}.
+\item (optional) Plot the predicted immediate cost distribution as a
+  function of the time steps (lines 19--25).
+\end{enumerate}
+
+\section{Working with a Real Robot}
+When you want to apply \textsc{pilco} to a learning controller
+parameters for a real robot, only a few modifications are
+necessary. As policy learning is not real-time anyway, it does not
+make too much sense performing it on the robot directly. Therefore,
+the robot only needs to know about the learned policy, but nothing
+about the learned dynamics model.
+
+Here is a list of modifications:
+\begin{itemize}
+\item An ODE does not need to be specified for simulating the system.
+\item All trajectory rollouts are executed directly on the robot.
+\item The module \texttt{applyController} needs to take care of
+  generating a trajectory on the robot.
+\item For generating a trajectory using the robot, the probably least
+  coding extensive approach is the following:
+\begin{enumerate}
+\item Learn the dynamics model and the policy.
+\item Save the learned policy parameters in a file.
+\item Transfer the parameters to your robot
+\item Write a controller function in whatever programming language the
+  robot needs.
+\item When the controller is applied, just map the measured state
+  through the policy to obtain the desired control signal.
+\item Save the recorded trajectory in a file and make it available to
+  \textsc{pilco} and save them in \texttt{xx, yy}.
+\end{enumerate}
+\end{itemize}
+
+Here is a high-level code-snippet that explains the main steps.
+\begin{lstlisting}
+% 0. Initialization
+settings;                   % load scenario-specific settings
+
+applyController_on_robot;   % collect data from robot
+
+% Controlled learning (N iterations)
+for j = 1:N
+  % 1. Train (GP) dynamics model
+  trainDynModel;  
+        
+  % 2. Learn policy       
+  learnPolicy;                    
+
+  % 3. Apply controller to system
+  applyController_on_robot;                
+end
+\end{lstlisting}
+
+We successfully applied this procedure on different hardware
+platforms~\cite{Deisenroth2011b, Deisenroth2011c}.
+
+
+\chapter{Important Function Interfaces}
+The \textsc{pilco} software package relies on several high-level
+functionalities with unified interfaces: 
+\begin{itemize}
+\item Predicting with GPs when the test input is Gaussian
+  distributed. We have implemented several versions of GPs (including
+  sparse GPs), which perform these predictions. The generic interface
+  is detailed in the following.
+\item Controller functions. With a unified interface, it is
+  straightforward to swap between controllers in a learning scenario. We
+  discuss the generic interface in this chapter.
+\item Cost functions. With this software package, we ship
+  implementations of several cost functions. The interface of them is
+  discussed in this chapter.
+\end{itemize}
+
+
+\section{GP Predictions}
+%
+Table~\ref{tab:gpP overview} gives an overview of all implemented
+functions that are related to predicting with GPs at a Gaussian
+distributed test input $\vec x_*\sim \mathcal
+N(\vec\mu_*,\mat\Sigma_*)$.
+%
+\begin{table}[ht]
+\centering
+\caption{Overview of functions for GP predictions with Gaussian
+  distributed test inputs.}
+\label{tab:gpP overview}
+\begin{tabular}{l|ccc|cc}
+& \texttt{[M S V]} & \texttt{[dMdm dSdm  dVdm dMds dSds
+  dVds]} & \texttt{[dMdP dSdP dVdP]} & sparse & prob. GP\\
+\hline
+\texttt{gp0} & \cmark &  \xmark & \xmark & \xmark & \cmark \\
+\texttt{gp0d}& \cmark &  \cmark & \xmark & \xmark & \cmark\\
+\hline
+\texttt{gp1} & \cmark &  \xmark & \xmark & \cmark & \cmark\\
+\texttt{gp1d}& \cmark &  \cmark & \xmark & \cmark & \cmark\\
+\hline
+\texttt{gp2} & \cmark &  \xmark & \xmark & \xmark & \xmark\\
+\texttt{gp2d}& \cmark &  \cmark & \cmark & \xmark & \xmark  
+\end{tabular}
+\end{table}
+%
+ We assume that the input dimension is $D$
+and the predictive dimension is $E$. All functions are in the
+directory \texttt{\path gp/}.
+
+The convention in the function name is that a ``\texttt{d}'' indicates
+that derivatives are computed. For instance, \texttt{gp0d} computes
+the same function values as \texttt{gp0}, but it additionally computes
+some derivatives. We have three different categories of functions for
+GP predictions:
+\begin{itemize}
+\item \texttt{gp0}: The underlying model is a full probabilistic GP
+  model. This model is used for implementing the standard GP dynamics
+  model.
+\item \texttt{gp1}: The underlying model is a sparse GP model. In
+  particular, we use the SPGP/FITC approach by Snelson and
+  Ghahramani~\cite{Snelson2006}. This model is used for implementing
+  the GP dynamics when the data set is too large.
+\item \texttt{gp2}: The underlying model is a full ``deterministic''
+  GP model. The model differs from the full probabilistic model
+  (\texttt{gp0}) by ignoring the posterior uncertainty about the
+  underlying function. The model essentially consists of the mean
+  function only.  This makes it functionally equivalent to a
+  radial-basis-function (RBF) network. This kind of model is used for
+  implementing nonlinear controllers.
+\end{itemize}
+
+\subsection{Input Arguments}
+
+For all functions \texttt{gp*}, the input arguments are the following:
+\begin{enumerate}
+\item \texttt{gpmodel}: Structure containing all relevant information
+\begin{itemize}
+\item \texttt{.hyp}: log-hyper-parameters in a $(D+2)\times E$ matrix
+  ($D$ log-length scales, 1 log-signal-standard deviation, 1
+  log-noise-standard deviation per predictive dimension)
+\item \texttt{.inputs}: training inputs in an $n\times D$ matrix
+\item \texttt{.targets}: training targets in an $n\times E$ matrix
+\end{itemize}
+\item \texttt{m}: Mean of the state distribution $p(\vec x)$,  $(D\times 1)$
+\item \texttt{s}: Covariance matrix of the state distribution $p(\vec
+  x)$, $(D\times D)$
+\end{enumerate}
+
+\subsection{Output Arguments}
+The \texttt{gp*} functions can be used to compute the mean and the
+covariance of the joint distribution $p(\vec x, f(\vec x))$, where
+$f\sim \mathcal{GP}$ and $\vec x\sim\mathcal N(\texttt{m},
+\texttt{s})$.
+
+
+All functions \texttt{gp*} predict the mean \texttt{M} and the
+covariance \texttt{S} of $p(f(\vec x))$ as well as
+\texttt{V}=$\texttt{s}\inv\cov[\vec x, f(\vec x)]$. Note that
+\texttt{gp1*} compute these values using sparse GPs and \texttt{gp2*}
+use only the mean function of the GP, i.e., the posterior uncertainty
+about $f$ is discarded.
+
+For policy learning, we require from the \emph{dynamics model} the
+following derivatives:
+\begin{itemize}
+\item \texttt{dMdm:} $\partial M/\partial m\in\R^{E\times D}$ The
+  derivative of the mean of the prediction with respect to the
+  mean of the input distribution.
+\item \texttt{dSdm:} $\partial S/\partial m\in\R^{E^2\times D}$ The
+  derivative of the covariance of the prediction with respect to the
+  mean of the input distribution.
+\item \texttt{dVdm:} $\partial V/\partial m\in\R^{DE\times D}$ The
+  derivative of $V$ with respect to the
+  mean of the input distribution.
+\item \texttt{dMds:} $\partial M/\partial s\in\R^{E\times D^2}$ The
+  derivative of the mean of the prediction with respect to the
+  covariance of the input distribution.
+\item \texttt{dSds:} $\partial S/\partial m\in\R^{E^2\times D^2}$ The
+  derivative of the covariance of the prediction with respect to the
+  covariance of the input distribution.
+\item \texttt{dVds:} $\partial V/\partial m\in\R^{DE\times D^2}$ The
+  derivative of  $V$ with respect to the
+  covariance of the input distribution.
+\end{itemize}
+As \texttt{gp0d} and \texttt{gp1d} are the functions used to propagate
+uncertainties through a GP dynamics model, they all compute these
+derivatives, see Table~\ref{tab:gpP overview}.
+
+
+
+% additional derivatives for policy 
+When we use \texttt{gp2*} as a convenient implementation of an RBF
+network \emph{controller}, we additionally require the gradients of
+\texttt{M, S, V} with respect to the ``parameters'' of the GP, which
+are abbreviated by \texttt{P} in Table~\ref{tab:gpP overview}. These
+parameters comprise the training inputs, the training targets, and the
+log-hyper-parameters:
+\begin{itemize}
+\item \texttt{dMdP}$=\{\partial M/\partial X, \partial M/\partial
+  y, \partial M/\partial\theta \}$: The derivative of the mean
+  prediction with respect to the training inputs $X$, the training
+  targets $y$, and the log-hyper-parameters $\theta$.
+\item \texttt{dSdP}$=\{\partial S/\partial X, \partial S/\partial
+  y, \partial S/\partial\theta \}$: The derivative of the covariance
+  of the prediction with respect to the training inputs $X$, the
+  training targets $y$, and the log-hyper-parameters $\theta$.
+\item \texttt{dVdP}$=\{\partial V/\partial X, \partial V/\partial
+  y, \partial V/\partial\theta \}$: The derivative of \texttt{V} with
+  respect to the training inputs $X$, the training targets $y$, and
+  the log-hyper-parameters $\theta$.
+\end{itemize}
+
+
+\section{Controller}
+The control directory is located at \path\texttt{control}. The
+controllers compute the (unconstrained) control signals
+$\tilde\pi(\vec x)$.
+
+The generic function call is as follows, where 
+\texttt{controller} is a generic name\footnote{We have implemented two
+  controller functions: \texttt{conlin} and \texttt{congp}}:
+\begin{lstlisting}
+function [M, S, V, dMdm, dSdm, dCdm, dMds, dSds, dVds, dMdp, dSdp, dVdp] ...
+         = controller(policy, m, s)
+\end{lstlisting}
+
+
+\subsection{Interface}
+Let us explain the interface in more detail
+\subsubsection{Input Arguments}
+All controllers expect the following inputs
+\begin{enumerate}
+\item \texttt{policy:} A struct with the following fields
+\begin{itemize}
+\item \texttt{policy.fcn}: A function handle to \texttt{controller}. This is
+  not needed by the controller function itself, but by other functions
+  that call \texttt{controller}.
+\item \texttt{policy.p}: The policy parameters. Everything that is in this
+  field is considered a free parameter and optimized during policy
+  learning.
+\item \texttt{policy.<>}: Other arguments the controller function requires.
+\end{itemize}
+\item \texttt{m}: $\E[\vec x]\in\R^D$ The mean of the state
+  distribution $p(\vec x)$.
+\item \texttt{s}: $\var[\vec x]\in\R^{D\times D}$ The covariance
+  matrix of the state distribution $p(\vec x)$.
+\end{enumerate}
+
+
+\subsubsection{Output Arguments}
+All controller functions are expected to compute
+\begin{enumerate}
+\item \texttt{M:} $\E[\tilde\pi(\vec x)]\in\R^F$ The mean of the
+  predicted (unconstrained) control signal
+\item \texttt{S:} $\var[\tilde\pi(\vec x)]\in\R^{F\times F}$ The
+  covariance matrix of the predicted (unconstrained) control signal
+\item \texttt{V:} $\var(\vec x)\inv\cov[\vec x,\tilde\pi(\vec x)]$ The
+  cross-covariance between the (input) state $\vec x$ and the control
+  signal $\tilde\pi(\vec x)$, pre-multiplied with $\var(\vec x)\inv$,
+  the inverse of the covariance matrix of $p(\vec x)$. We do not
+  compute $\cov[\vec x,\tilde\pi(\vec x)]$ because of numerical
+  reasons.
+\item Gradients. The gradients of all output arguments with
+  respect to all input arguments are computed:
+\begin{itemize}
+\item \texttt{dMdm:} $\partial M/\partial m\in\R^{F\times D}$ The
+  derivative of the mean of the predicted control with respect to the
+  mean of the state distribution.
+\item \texttt{dSdm:} $\partial S/\partial m\in\R^{F^2\times D}$ The
+  derivative of the covariance of the predicted control with respect to the
+  mean of the state distribution.
+\item \texttt{dVdm:} $\partial V/\partial m\in\R^{DF\times D}$ The
+  derivative of $V$ with respect to the
+  mean of the state distribution.
+\item \texttt{dMds:} $\partial M/\partial s\in\R^{F\times D^2}$ The
+  derivative of the mean of the predicted control with respect to the
+  covariance of the state distribution.
+\item \texttt{dSds:} $\partial S/\partial m\in\R^{F^2\times D^2}$ The
+  derivative of the covariance of the predicted control with respect to the
+  covariance of the state distribution.
+\item \texttt{dVds:} $\partial V/\partial m\in\R^{DF\times D^2}$ The
+  derivative of  $V$ with respect to the
+  covariance of the state distribution.
+\item \texttt{dMdp:} $\partial M/\partial\polpar\in\R^{F\times |\vec\polpar|}$ The
+  derivative of the mean of the predicted control with respect to the
+  policy parameters $\vec\polpar$.
+\item \texttt{dSdp:} $\partial S/\partial\polpar\in\R^{F^2\times |\vec\polpar|}$ The
+  derivative of the covariance of the predicted control with respect to the
+  policy parameters $\vec\polpar$.
+\item \texttt{dVdp:} $\partial V/\partial\polpar\in\R^{DF\times
+    |\vec\polpar|}$ The derivative of $V$ with respect to the policy
+  parameters $\vec\polpar$.
+\end{itemize}
+\end{enumerate}
+
+% \begin{verbatim}
+% M             mean of the predicted control                      [ F  x  1 ]
+% S             covariance of predicted control                    [ F  x  F ]
+% C             inv(s)*covariance between input and control        [ D  x  F ]
+% dMdm          deriv. of mean control wrt mean of state           [ F  x  D ]
+% dSdm          deriv. of control variance wrt mean of state       [F*F x  D ]
+% dCdm          deriv. of C wrt mean of state                      [D*F x  D ]
+% dMds          deriv. of mean control wrt variance                [ F  x D*D]
+% dSds          deriv. of control variance wrt variance            [F*F x D*D]
+% dCds          deriv. of C wrt variance                           [D*F x D*D]
+% dMdp          deriv. of mean control wrt GP hyper-parameters     [ F  x  P ]
+% dSdp          deriv. of control variance wrt GP hyper-parameters [F*F x  P ]
+% dCdp          deriv. of C wrt GP hyper-parameters                [D*F x  P ]
+% \end{verbatim}
+
+
+\section{Cost Functions}
+Any (generic) cost function is supposed to compute the expected
+(immediate) cost $\E[c(\vec x)]$ and the corresponding variance
+$\var[c(\vec x)]$ for a Gaussian distributed state $\vec x\sim
+\mathcal N(\vec m, \mat S)$. 
+
+Cost functions have to be written for each scenario. Example cost
+functions can be found in \texttt{\path scenarios/*}.
+
+\subsection{Interface for Scenario-specific Cost Functions}
+\begin{lstlisting}
+function [L, dLdm, dLds, S] = loss(cost, m, s)
+\end{lstlisting}
+
+
+\paragraph{Input Arguments}
+\begin{verbatim}
+cost            cost structure
+  .p            parameters that are required to compute the cost,
+                e.g., length of pendulum                            [P x  1 ]
+  .expl         (optional) exploration parameter
+  .target       target state                                        [D x  1 ]
+m               mean of state distribution                          [D x  1 ]
+s               covariance matrix for the state distribution        [D x  D ]
+\end{verbatim}
+We only listed typical fields of the \texttt{cost} structure. It is
+possible to add more information. \texttt{cost.expl} allows for
+UCB-type exploration, in which case the returned cost \texttt{L}
+should be computed according to
+%
+\begin{align}
+  L(\vec x) = \E_{\vec x}[c(\vec x)] + \kappa\sqrt{\var_{\vec
+      x}[c(\vec x)]}\,,
+\label{eq:UCB cost}
+\end{align}
+% 
+where $\kappa$ is an exploration parameter stored in
+\texttt{cost.expl}. Exploration is encouraged for $\kappa<0$ and
+discouraged for $\kappa > 0$. By default, exploration is disabled,
+i.e., \texttt{cost.expl=0}. A target state can be passed in via
+\texttt{cost.target}, but could also be hard-coded in the cost
+function.
+
+
+\paragraph{Output Arguments}
+\begin{verbatim}
+L     expected cost                                                 [1 x  1 ]
+dLdm  derivative of expected cost wrt. state mean vector            [1 x  D ]
+dLds  derivative of expected cost wrt. state covariance matrix      [1 x D^2]
+S     variance of cost                                              [1 x  1 ]   
+\end{verbatim}
+
+Note that the expected cost $L=\E[c(\vec x)]$ can take care of
+UCB-type exploration, see Equation~\eqref{eq:UCB cost}. The gradients
+of \texttt{L} with respect to the mean (\texttt{dLdm}) and covariance
+(\texttt{dLds}) of the input distribution are required for policy
+learning.
+
+\subsection{General Building Blocks}
+We have implemented some generic building blocks that can be called by
+the scenario-specific cost functions. In the following, we detail the
+computation of a saturating cost function \texttt{\path
+  loss/lossSat.m} and a quadratic cost function \texttt{\path
+  loss/lossQuad.m}.
+
+\subsubsection{Saturating Cost}
+
+
+%%%%%% show image...
+
+\texttt{lossSat} computes the expectation and variance of a
+saturating cost 
+\begin{align*}
+  1 - \exp\big(-\tfrac{1}{2}(\vec x - \vec z)\T\mat W(\vec x - \vec
+  z)\big)\in[0,1]
+\end{align*}
+and their derivatives, where $\vec x \sim\mathcal N(\vec m, \mat S)$,
+and a is a normalizing constant. The matrix $\mat W$ is never inverted
+and plays the role of a precision matrix. Moreover, it is
+straightforward to eliminate the influence of state variables in the
+cost function by setting the corresponding values in $\mat W$ to 0.
+
+
+\begin{lstlisting}[name=lossSat]
+function [L, dLdm, dLds, S, dSdm, dSds, C, dCdm, dCds] = lossSat(cost, m, s)
+\end{lstlisting}
+
+\begin{par}
+\textbf{Input arguments:}
+\end{par} 
+
+\begin{verbatim}  
+cost
+  .z:     target state                                               [D x 1]
+  .W:     weight matrix                                              [D x D]
+m         mean of input distribution                                 [D x 1]
+s         covariance matrix of input distribution                    [D x D]
+\end{verbatim}
+
+\begin{par}
+\textbf{Output arguments:}
+\end{par} 
+
+\begin{verbatim}
+L               expected loss                                  [1   x    1 ]
+dLdm            derivative of L wrt input mean                 [1   x    D ]
+dLds            derivative of L wrt input covariance           [1   x   D^2]
+S               variance of loss                               [1   x    1 ]
+dSdm            derivative of S wrt input mean                 [1   x    D ]
+dSds            derivative of S wrt input covariance           [1   x   D^2]
+C               inv(S) times input-output covariance           [D   x    1 ]
+dCdm            derivative of C wrt input mean                 [D   x    D ]
+dCds            derivative of C wrt input covariance           [D   x   D^2]
+\end{verbatim}
+
+
+
+
+\subsubsection*{Implementation}
+\vspace{-5mm}
+\begin{lstlisting}[name=lossSat]
+% some precomputations
+D = length(m); % get state dimension
+
+% set some defaults if necessary
+if isfield(cost,'W'); W = cost.W; else W = eye(D); end
+if isfield(cost,'z'); z = cost.z; else z = zeros(D,1); end
+
+SW = s*W;
+iSpW = W/(eye(D)+SW);
+\end{lstlisting}
+In lines 6--7, we check whether the weight matrix $\mat W$ and the
+state $\vec z$ exist. Their default values are $\mat I$ and $\vec 0$,
+respectively. Lines 9--10 do
+some pre-computations of matrices that will be frequently used
+afterwards.
+
+
+\begin{lstlisting}[name=lossSat]
+% 1. Expected cost
+L = -exp(-(m-z)'*iSpW*(m-z)/2)/sqrt(det(eye(D)+SW)); % in interval [-1,0]
+
+% 1a. derivatives of expected cost
+if nargout > 1
+  dLdm = -L*(m-z)'*iSpW;  % wrt input mean
+  dLds = L*(iSpW*(m-z)*(m-z)'-eye(D))*iSpW/2;  % wrt input covariance matrix
+end
+\end{lstlisting}
+In lines 11--18, we compute the expected cost $L = \E[c(\vec x)]$ and
+its derivatives with respect to the mean and the covariance matrix of
+the input distribution.  A detailed derivation can be found
+in~\cite{Deisenroth2010b}. Note that at the moment,
+\texttt{L}$\in[-1,0]$ (line 12).
+
+
+\begin{lstlisting}[name=lossSat]
+% 2. Variance of cost
+if nargout > 3
+  i2SpW = W/(eye(D)+2*SW);
+  r2 = exp(-(m-z)'*i2SpW*(m-z))/sqrt(det(eye(D)+2*SW));
+  S = r2 - L^2;
+  if S < 1e-12; S=0; end % for numerical reasons
+end
+
+% 2a. derivatives of variance of cost
+if nargout > 4
+  % wrt input mean
+  dSdm = -2*r2*(m-z)'*i2SpW-2*L*dLdm;
+  % wrt input covariance matrix
+  dSds = r2*(2*i2SpW*(m-z)*(m-z)'-eye(D))*i2SpW-2*L*dLds;
+end
+\end{lstlisting}
+In lines 19--33, we compute the variance $\var[c(\vec x)]$ of the cost
+and its derivatives with respect to the mean and the covariance matrix
+of the input distribution. A detailed derivation can be found
+in~\cite{Deisenroth2010b}. If the variance $\var[c(\vec x)]<10^{-12}$,
+we set it to 0 for numerical reasons (line 24).
+
+
+\begin{lstlisting}[name=lossSat]
+% 3. inv(s)*cov(x,L)
+if nargout > 6
+    t = W*z - iSpW*(SW*z+m);
+    C = L*t;
+    dCdm = t*dLdm - L*iSpW;
+    dCds = -L*(bsxfun(@times,iSpW,permute(t,[3,2,1])) + ...
+                                    bsxfun(@times,permute(iSpW,[1,3,2]),t'))/2;
+    dCds = bsxfun(@times,t,dLds(:)') + reshape(dCds,D,D^2);
+end
+\end{lstlisting}
+If required, lines 34--42 compute $\mat S\inv\cov[\vec x, c(\vec x)]$
+and the corresponding derivatives with respect to the mean and the
+covariance of the (Gaussian) state distribution $p(\vec x)$.
+
+\begin{lstlisting}[name=lossSat]
+L = 1+L; % bring cost to the interval [0,1]
+\end{lstlisting}
+Line 43 brings the expected cost \texttt{L} to the interval $[0,1]$.
+
+
+\subsubsection{Quadratic Cost}
+
+
+\texttt{lossQuad} computes the expectation and variance of a quadratic
+cost
+\begin{align*}
+c(\vec x) = (\vec x - \vec z)\T\mat W(\vec x - \vec z)
+\end{align*}
+and their derivatives with respect to the mean and covariance matrix
+of the (Gaussian) input distribution $p(\vec x)$.
+
+\begin{lstlisting}[name=lossQuad]
+function [L, dLdm, dLds, S, dSdm, dSds, C, dCdm, dCds] = lossQuad(cost, m, S)
+\end{lstlisting}
+
+\paragraph{Input arguments}
+
+
+\begin{verbatim}  
+cost
+  .z:     target state                                               [D x 1]
+  .W:     weight matrix                                              [D x D]
+m         mean of input distribution                                 [D x 1]
+s         covariance matrix of input distribution                    [D x D]
+\end{verbatim}
+\begin{par}
+\textbf{Output arguments}
+\end{par}
+\begin{verbatim}
+L         expected loss                                        [1   x    1 ]
+dLdm      derivative of L wrt input mean                       [1   x    D ]
+dLds      derivative of L wrt input covariance                 [1   x   D^2]
+S         variance of loss                                     [1   x    1 ]
+dSdm      derivative of S wrt input mean                       [1   x    D ]
+dSds      derivative of S wrt input covariance                 [1   x   D^2]
+C         inv(S) times input-output covariance                 [D   x    1 ]
+dCdm      derivative of C wrt input mean                       [D   x    D ]
+dCds      derivative of C wrt input covariance                 [D   x   D^2]
+\end{verbatim}
+
+
+\subsubsection*{Implementation} 
+\vspace{-5mm}
+
+\begin{lstlisting}[name=lossQuad]
+D = length(m); % get state dimension
+
+% set some defaults if necessary
+if isfield(cost,'W'); W = cost.W; else W = eye(D); end
+if isfield(cost,'z'); z = cost.z; else z = zeros(D,1); end
+\end{lstlisting}
+In lines 5--6, we check whether the weight matrix $\mat W$ and the
+state $\vec z$ exist. Their default values are $\mat I$ and $\vec 0$,
+respectively.
+
+\begin{lstlisting}[name=lossQuad]
+% 1. expected cost
+L = S(:)'*W(:) + (z-m)'*W*(z-m);
+
+% 1a. derivatives of expected cost
+if nargout > 1
+  dLdm = 2*(m-z)'*W; % wrt input mean
+  dLds = W';         % wrt input covariance matrix
+end
+\end{lstlisting}
+In lines 7--14, we compute the expected cost $L = \E[c(\vec x)]$ and
+its derivatives with respect to the mean and the covariance matrix of
+the input distribution.  A detailed derivation can be found
+in~\cite{Deisenroth2010b}. 
+
+
+\begin{lstlisting}[name=lossQuad]
+% 2. variance of cost
+if nargout > 3
+  S = trace(W*S*(W + W')*S) + (z-m)'*(W + W')*S*(W + W')*(z-m);
+  if S < 1e-12; S = 0; end % for numerical reasons
+end
+
+% 2a. derivatives of variance of cost
+if nargout > 4
+  % wrt input mean
+  dSdm = -(2*(W+W')*S*(W+W)*(z-m))';
+  % wrt input covariance matrix
+  dSds = W'*S'*(W + W')'+(W + W')'*S'*W' + (W + W')*(z-m)*((W + W')*(z-m))';
+end
+\end{lstlisting}
+In lines 15--27, we compute the variance $\var[c(\vec x)]$ of the cost
+and its derivatives with respect to the mean and the covariance matrix
+of the input distribution. A detailed derivation can be found
+in~\cite{Deisenroth2010b}. If the variance $\var[c(\vec x)]<10^{-12}$,
+we set it to 0 for numerical reasons (line 18).
+
+\begin{lstlisting}[name=lossQuad]
+% 3. inv(s) times IO covariance with derivatives
+if nargout > 6
+    C = 2*W*(m-z);
+    dCdm = 2*W;
+    dCds = zeros(D,D^2);
+end
+\end{lstlisting}
+If required, lines 28--33 compute $\mat S\inv\cov[\vec x, c(\vec x)]$
+and the corresponding derivatives with respect to the mean and the
+covariance of the (Gaussian) state distribution $p(\vec x)$.
+
+
+\chapter{How to Create Your Own Scenario}
+In this chapter, we explain in sufficient detail how to set up a new
+scenario by going step-by-step through the cart-pole scenario, which
+can be found in \texttt{\path scenarios/cartPole}.
+
+
+\section{Necessary Files}
+For each scenario, we need the following set of files, which are
+specific to this scenario. In the cart-pole case, these files are the
+following:
+\begin{itemize}
+\item \texttt{settings\_cp.m}: A file that contains scenario-specific
+  settings and initializations
+\item \texttt{loss\_cp.m}: A cost function
+\item \texttt{dynamics\_cp.m}: A file that implements the ODE, which governs
+  the dynamics.\footnote{When working with a real robot, this file is
+    not needed.}
+\item \texttt{learn\_cp.m}: A file that puts everything together
+\item (optional) visualization
+\end{itemize}
+
+
+\section{ODE Dynamics}
+
+In the following, we briefly describe the interface and the
+functionality of the cart-pole dynamics. The \textsc{pilco} code
+assumes by default that the dynamics model is given by an ODE that is
+solved numerically using ODE45 (see \texttt{\path util/simulate.m} for more
+details).
+
+\begin{lstlisting}[name=dynamics_cp] 
+function dz = dynamics_cp(t, z, f)
+\end{lstlisting}
+\textbf{Input arguments:}
+
+\begin{verbatim}
+   t     current time step (called from ODE solver)
+   z     state                                                    [4 x 1]
+   f     (optional): force f(t)
+\end{verbatim}
+The input arguments are as follows:
+\begin{itemize}
+\item \texttt{t}: The current time.
+\item \texttt{z}: The state. It is assumed that the state $\vec z$ is
+  given as follows:
+%
+\begin{align*}
+\vec z = [x, \dot x, \dot\theta, \theta]\,,
+\end{align*}
+where $x$ is the position of the cart (given in $\unit{m}$), $\dot x$ is
+the cart's velocity (in $\unit{m/s}$), $\dot\theta$ is the pendulum's
+angular velocity in $\unit{rad/s}$, and $\theta$ is the pendulum's
+angle in $\unit{rad}$. For the angle $\theta$, we chose
+$\unit[0]{rad}$ to be the angle when the pendulum hangs downward.
+\item \texttt{f}: The applied force to the cart.
+\end{itemize}
+ \begin{par}
+\textbf{Output arguments:}
+\end{par} \vspace{1em}
+\begin{verbatim}
+   dz    if 3 input arguments:      state derivative wrt time
+         if only 2 input arguments: total mechanical energy
+\end{verbatim}
+The function returns either $\dot{\vec z}$, if three input arguments
+are given, or the total mechanical energy with two input
+arguments. The total mechanical energy can be used to verify that the
+system preserves energy (here, the friction coefficient in line 5
+needs to be set to 0).
+
+\begin{lstlisting}[name=dynamics_cp]
+l = 0.5;  % [m]      length of pendulum
+m = 0.5;  % [kg]     mass of pendulum
+M = 0.5;  % [kg]     mass of cart
+b = 0.1;  % [N/m/s]  coefficient of friction between cart and ground
+g = 9.82; % [m/s^2]  acceleration of gravity
+\end{lstlisting}
+In lines 2--6, the parameters of the cart-pole system are defined: the
+length of the pendulum \texttt{l} (line 2), the mass of the pendulum
+\texttt{m} (line 3), the mass of the cart \texttt{M} (line 4), the
+coefficient of friction between cart and ground \texttt{b} (line 5),
+and the acceleration of gravity \texttt{g} (line 6).
+
+\begin{lstlisting}[name=dynamics_cp]
+if nargin==3
+  dz = zeros(4,1);
+  dz(1) = z(2);
+  dz(2) = ( 2*m*l*z(3)^2*sin(z(4)) + 3*m*g*sin(z(4))*cos(z(4)) ...
+          + 4*f(t) - 4*b*z(2) )/( 4*(M+m)-3*m*cos(z(4))^2 );
+  dz(3) = (-3*m*l*z(3)^2*sin(z(4))*cos(z(4)) - 6*(M+m)*g*sin(z(4)) ...
+          - 6*(f(t)-b*z(2))*cos(z(4)) )/( 4*l*(m+M)-3*m*l*cos(z(4))^2 );
+  dz(4) = z(3);
+else
+  dz = (M+m)*z(2)^2/2 + 1/6*m*l^2*z(3)^2 + m*l*(z(2)*z(3)-g)*cos(z(4))/2;
+end
+\end{lstlisting}
+Lines 7--17 compute either $\dot{\vec z}$ (lines 8--14) or the total
+mechanical energy (line 16). A principled derivation of the system
+dynamics and the mechanical energy can be found
+in~\cite{Deisenroth2010b}.
+
+
+
+\section{Scenario-specific Settings}
+
+
+\subsection{Adding Paths}
+%
+\begin{lstlisting}[name=settings_cp]
+rand('seed',1); randn('seed',1); format short; format compact;
+% include some paths
+try
+  rd = '../../';
+  addpath([rd 'base'],[rd 'util'],[rd 'gp'],[rd 'control'],[rd 'loss']);
+catch
+end
+\end{lstlisting}
+First, we include (relative) paths to the directories required for
+learning and initialize the random seed to make the experiments
+reproducible. The setting of the random seeds (line 1) will cause some
+warnings in newer versions of MATLAB, but it is backwards compatible
+to MATLAB~2007.
+
+\subsection{Indices}
+\begin{lstlisting}[name=settings_cp]
+% 1. Define state and important indices
+
+% 1a. Full state representation (including all augmentations)
+%
+%  1  x          cart position
+%  2  v          cart velocity
+%  3  dtheta     angular velocity
+%  4  theta      angle of the pendulum
+%  5  sin(theta) complex representation ...
+%  6  cos(theta) of theta
+%  7  u          force applied to cart
+%
+
+% 1b. Important indices
+% odei  indicies for the ode solver
+% augi  indicies for variables augmented to the ode variables
+% dyno  indicies for the output from the dynamics model and indicies to loss
+% angi  indicies for variables treated as angles (using sin/cos representation)
+% dyni  indicies for inputs to the dynamics model
+% poli  indicies for the inputs to the policy
+% difi  indicies for training targets that are differences (rather than values)
+
+odei = [1 2 3 4];            % varibles for the ode solver
+augi = [];                   % variables to be augmented
+dyno = [1 2 3 4];            % variables to be predicted (and known to loss)
+angi = [4];                  % angle variables
+dyni = [1 2 3 5 6];          % variables that serve as inputs to the dynamics GP
+poli = [1 2 3 5 6];          % variables that serve as inputs to the policy
+difi = [1 2 3 4];            % variables that are learned via differences
+\end{lstlisting}
+We now define important state indices that are required by the code
+that does the actual learning. We assume that the state is given as
+\begin{align*}
+\vec x = [x, \dot x, \dot\theta, \theta]\T\,,
+\end{align*}
+where $x$ is the position of the cart, $\dot x$ the corresponding
+velocity, and $\dot\theta$ and $\theta$ are the angular velocity and
+the angle of the pendulum.
+
+The ODE-solver requires to know what parts of the state are used for
+the forward dynamics. These indices are captured by $\texttt{odei}$
+(line 30).
+
+The predictive dimensions of the dynamics GP model are stored in
+\texttt{dyno} (line 32). 
+
+The indices in $\texttt{angi}$ (line 33) indicate which variables are
+angles. We represent these angle variables in the complex plane
+%
+\begin{align*}
+  \theta \mapsto [\sin\theta, \cos\theta]\T
+\end{align*}
+% 
+to be able to exploit the wrap-around condition $\theta\equiv
+\theta+2k\pi$, $k\in\mathds{Z}$. With this augmentation, we define the
+auxiliary state vector, i.e., the state vector augmented with the
+complex representation of the angle, as
+%
+\begin{align}
+  \vec x = [x, \dot x, \dot\theta, \theta, \sin\theta,
+  \cos\theta]\T\,.
+\label{eq:aux state}
+\end{align}
+% 
+
+The \texttt{dyni} indices (line 34) describe which variables from the
+auxiliary state vector in Equation~\eqref{eq:aux state} are used as
+the training inputs for the GP dynamics model. Note that we use the
+complex representation $[\sin\theta, \cos\theta]$ instead of $\theta$,
+i.e., we no longer need $\theta$ in the inputs of the dynamics GP.
+
+The \texttt{poli} indices (line 35) describe which state variables
+from the auxiliary state vector in Equation~\eqref{eq:aux state} are
+used as inputs to the policy.
+
+The \texttt{difi} indices (line 36) are a subset of $\texttt{dyno}$
+and contain the indices of the state variables for which the GP
+training targets are differences
+%
+\begin{align*}
+\Delta_t = \vec x_{t+1} - \vec x_t
+\end{align*}
+% 
+instead of $\vec x_{t+1}$. Using differences as training targets
+encodes an implicit prior mean function $m(\vec x) = \vec x$. This
+means that when leaving the training data, the GP predictions do not
+fall back to 0 but they remain constant. A practical implication is
+that learning differences $\Delta_t$ generalizes better across
+different parts of the state space.  From a learning point of view,
+training a GP on differences is much simpler than training it on
+absolute values: The function to be learned does not vary so much,
+i.e., we do not need so many data points in the end. From a robotics
+point of view, robot dynamics are typically relative to the current
+state, they do not so much depend on absolute coordinates.
+
+
+\subsection{General Settings}
+
+\begin{lstlisting}[name=settings_cp]
+% 2. Set up the scenario
+dt = 0.10;                         % [s] sampling time
+T = 4.0;                           % [s] initial prediction horizon time
+H = ceil(T/dt);                    % prediction steps (optimization horizon)
+mu0 = [0 0 0 0]';                  % initial state mean
+S0 = diag([0.1 0.1 0.1 0.1].^2);   % initial state covariance
+N = 15;                            % number controller optimizations
+J = 1;                             % initial J trajectories of length H
+K = 1;                             % no. of initial states for which we optimize
+nc = 100;                          % number of controller basis functions
+\end{lstlisting}
+
+
+\texttt{dt} is the sampling time, i.e., $1/dt$ is the sampling
+frequency. 
+
+\texttt{T} is the length of the prediction horizon in seconds.
+
+\texttt{H}$=T/dt$ is the length of the prediction horizon in time
+steps.
+
+\texttt{mu0} is the mean of the distribution $p(\vec x_0)$ of the
+initial state. Here, \texttt{mu0}$=\vec 0$ encodes that the cart is
+in the middle of the track (with zero velocity) with the pendulum
+hanging down (with zero angular velocity).
+
+\texttt{S0} is the covariance matrix of $p(\vec x_0)$.
+
+\texttt{N} is the number of times the loop in Figure~\ref{fig:modules}
+is executed.
+
+\texttt{J} is the number of initial random rollouts, i.e., rollouts
+with a random policy. These rollouts are used to collect an initial
+data set for training the first GP dynamics model. Usually, we set
+this to 1.
+
+\texttt{K} is the number of initial states for which the policy is
+learned. The code can manage initial state distributions of the form
+%
+\begin{align}
+p(\vec x_0) \propto \sum_{i=1}^K \mathcal N(\vec\mu_{0}^{(i)}, \mat\Sigma_0)\,,
+\end{align}
+% 
+which corresponds to a distributions with different means
+$\vec\mu_0^{(i)}$ but shared covariance matrices $\Sigma_0$.
+
+\texttt{nc} is the number of basis functions of the policy. In this
+scenario, we use a nonlinear policy of the form
+%
+\begin{align}
+  \pi(\vec x) &= u_{\max}\sigma\tilde\pi(\vec x)\label{eq:squashed rbf policy}\\
+  \tilde\pi(\vec x) &= \sum_{i=1}^{\texttt{nc}} w_i 
+  \exp\big(-\tfrac{1}{2}(\vec x - \vec c_i)\T\mat W(\vec x - \vec
+  c_i)\big)\label{eq:unsquashed rbf policy}\,,
+\end{align}
+% 
+where $\sigma$ is a squashing function, which maps its argument to the
+interval $[-1,1]$, $\vec c_i$ are the locations of the Gaussian-shaped
+basis functions, and $\mat W$ is a (shared) weight matrix. 
+
+\begin{figure}[tb]
+\centering
+\includegraphics[width = 0.45\hsize]{./figures/preliminary_policy}
+\hspace{5mm}
+\includegraphics[width=0.45\hsize]{./figures/squashed_preliminary_policy}
+\caption{Preliminary policy $\tilde\pi$ and squashed policy $\pi$. The
+  squashing function ensures that the control signals $\vec u =
+  \pi(\vec x)$ do not exceed the values $\pm \vec u_{\max}$.}
+\end{figure}
+
+
+
+\subsection{Plant Structure}
+\begin{lstlisting}[name=settings_cp]
+% 3. Plant structure
+plant.dynamics = @dynamics_cp;                    % dynamics ode function
+plant.noise = diag(ones(1,4)*0.01.^2);            % measurement noise
+plant.dt = dt;
+plant.ctrl = @zoh;                                % controler is zero order hold
+plant.odei = odei;
+plant.augi = augi;
+plant.angi = angi;
+plant.poli = poli;
+plant.dyno = dyno;
+plant.dyni = dyni;
+plant.difi = difi;
+plant.prop = @propagated;
+\end{lstlisting}
+
+\texttt{plant.dynamics} requires a function handle to the function
+that implements the ODE for simulating the system.
+
+\texttt{plant.noise} contains the measurement noise covariance
+matrix. We assume the noise is zero-mean Gaussian. The noise is added
+to the (latent) state during a trajectory rollout (see
+\texttt{base/rollout.m}).
+
+\texttt{plant.dt} is the sampling time, i.e., $1/dt$ is the sampling
+frequency. 
+
+\texttt{plant.ctrl} is the controller to be applied. Here,
+\texttt{@zoh} implements a zero-order-hold controller. Other options
+are \texttt{@foh} (first-order-hold) and \texttt{@lag}
+(first-order-lag). For more information, have a look at
+\texttt{base/simulate.m}.
+
+\texttt{plant.odei}--\texttt{plant.difi} copy the indices defined
+earlier into the \texttt{plant} structure.
+
+\texttt{plant.prop} requires a function handle to the function that
+computes $p(\vec x_{t+1})$ from $p(\vec x_t)$, i.e., a one-step
+(probabilistic) prediction. In this software package, we implemented a
+fairly generic function called \texttt{propagated}, which computes the
+predictive state distribution $p(\vec x_{t+1})$ and the partial
+derivatives that are required for gradient-based policy search. For
+details about the gradients, we refer to~\cite{Deisenroth2011c}.
+
+
+
+\subsection{Policy Structure}
+\begin{lstlisting}[name=settings_cp]
+% 4. Policy structure
+policy.fcn = @(policy,m,s)conCat(@congp,@gSat,policy,m,s);% controller
+                                                          % representation
+policy.maxU = 10;                                         % max. amplitude of
+                                                          % control
+[mm ss cc] = gTrig(mu0, S0, plant.angi);                  % represent angles
+mm = [mu0; mm]; cc = S0*cc; ss = [S0 cc; cc' ss];         % in complex plane
+policy.p.inputs = gaussian(mm(poli), ss(poli,poli), nc)'; % init. location of
+                                                          % basis functions
+policy.p.targets = 0.1*randn(nc, length(policy.maxU));    % init. policy targets
+                                                          % (close to zero)
+policy.p.hyp = log([1 1 1 0.7 0.7 1 0.01])';              % initialize policy
+                                                          % hyper-parameters
+\end{lstlisting}
+The policy we use in this example is the nonlinear policy given in
+Equations~\eqref{eq:squashed rbf policy}--\eqref{eq:unsquashed rbf
+  policy}. The policy function handle is stored in \texttt{policy.fcn}
+(line 61).  In this particular example, the policy is a concatenation
+of two functions: the RBF controller (\texttt{@congp}, see
+\texttt{ctrl/congp.m}), which is parametrized as the mean of a GP with
+a squared exponential covariance function, and a squashing function
+$\sigma$ (\texttt{@gSat}, see \texttt{\path util/gSat.m}), defined as
+%
+\begin{align}
+\sigma(x) = u_{\max}\frac{9\sin x+\sin (3x)}{8}\,,
+\end{align}
+% 
+which is the third-order Fourier series expansion of a trapezoidal
+wave, normalized to the interval \mbox{$[-u_{\max},-u_{\max}] $}.
+
+\texttt{policy.maxU} (line 63) defines the maximum force value
+$u_{\max}$ in Equation~\eqref{eq:squashed rbf policy}. We assume that
+$u \in[-u_{\max},-u_{\max}]$.
+
+% trigonometric augmentation
+In lines 65--66, we augment the original state by $[\sin\theta,
+\cos\theta]$ by means of \texttt{gTrig.m}, where the indices of the
+angles $\theta$ are stored in \texttt{plant.angi}. We compute a
+Gaussian approximation to the joint distribution $p(\vec x,
+\sin\theta, \cos\theta)$. The representation of angles $\theta$ by
+means of $[\sin\theta, \cos\theta]$ avoids discontinuities and
+automatically takes care of the ``wrap-around condition'', i.e.,
+$\theta \equiv \theta + 2k\pi, k \in\Z$.
+
+The following lines are used to initialize the policy parameters. The
+policy parameters are generally stored in \texttt{policy.p}. We
+distinguish between three types of policy parameters:
+\begin{itemize}
+\item \texttt{policy.p.inputs}: These values play the role of the
+  training inputs of a GP and correspond to the centers $\vec c_i$ of
+  the policy in Equation~\eqref{eq:unsquashed rbf policy}. We sample
+  the initial locations of the centers from the initial state
+  distribution $p(\vec x_0)$. We compute this initial state
+  distribution in lines 65--66, where we account for possible angle
+  representations (\texttt{plant.angi}) of the state. If
+  \texttt{plant.angi} is empty, lines 65--66 do not do anything and
+  \texttt{mm}$=$\texttt{mu0} and \texttt{ss}$=$\texttt{S0}.
+\item \texttt{policy.p.targets}: These values play the role of GP
+  training targets are initialized to values close to zero.
+\item \texttt{policy.p.hyp}: These values play the role of the GP
+  log-hyper-parameters: log-length-scales,
+  log-signal-standard-deviation, and log-noise-standard-deviation.  We
+  initialize the policy hyper-parameters as follows:
+\begin{itemize}
+\item Length-scales: The length-scales weight the dimensions of the
+  state that are passed to the policy (see \texttt{poli}). In our case
+  these are: $x, \dot x, \dot\theta, \sin\theta, \cos\theta$.  We
+  initialize the first three length-scales to 1. These values largely
+  depend on the scale of the input data. In our example, the cart
+  position and velocity are measured in $\unit{m}$ and $\unit{m/s}$,
+  respectively, the angular velocity is measured in
+  $\unit{rad/s}$. The last two length-scales scale trigonometric
+  values, i.e., $\sin(\theta)$ and $\cos(\theta)$. Since these
+  trigonometric functions map their argument into the interval
+  $[-1,1]$, we choose a length-scale of 0.7, which is somewhat smaller
+  than unity.
+\item Signal variance: We set the signal variance of the controller
+  $\tilde\pi$ to 1. Note that we squash $\tilde\pi$ through $\sigma$,
+  see Equation~\eqref{eq:squashed rbf policy}. To exploit the full
+  potential of the squashing function $\sigma$, it is sufficient to
+  cover the domain $[-\pi/2,\pi/2]$. Therefore, we initialize the signal
+  variance to 1.
+\item Noise variance: The noise variance is only important only
+  important as a relative factor to the signal variance. This ratio
+  essentially determines how smooth the policy is. We initialize the
+  noise variance to $0.01^2$.
+\end{itemize}
+
+\end{itemize}
+
+
+\begin{figure}
+\centering
+\includegraphics[ width = 0.4\hsize]{./figures/squashing_fct}
+\hspace{5mm}
+\includegraphics[width =
+0.4\hsize]{./figures/squashing_fct2}
+\caption{Squashing function.}
+\end{figure}
+
+
+
+\subsection{Cost Function Structure}
+In the following, we set up a structure for the immediate cost
+function.
+\begin{lstlisting}[name=settings_cp]
+% 5. Set up the cost structure
+cost.fcn = @loss_cp;                       % cost function
+cost.gamma = 1;                            % discount factor
+cost.p = 0.5;                              % length of pendulum
+cost.width = 0.25;                         % cost function width
+cost.expl =  0.0;                          % exploration parameter (UCB)
+cost.angle = plant.angi;                   % index of angle (for cost function)
+cost.target = [0 0 0 pi]';                 % target state
+\end{lstlisting}
+%
+In line 74, we store the function handle \texttt{@loss\_cp} in
+\texttt{cost.fcn}. The function \texttt{loss\_cp} implements a
+saturating cost function (an unnormalized Gaussian subtracted from 1)
+with spread $\sigma_c$, i.e.,
+%
+\begin{align}
+  c(\vec x) = 1 - \exp\big(-\tfrac{1}{2\sigma_c^2}\|\vec x - \vec
+  x_{\text{target}}\|^2\big)\quad\in[0,1]
+\label{eq:cp loss}
+\end{align}
+% 
+where $\vec x_{\text{target}}$ is a target state.
+
+We set the discount factor \texttt{cost.gamma} to 1 (line 75) as we
+look at a finite-horizon problem.
+
+The following parameters are specific to the cost function:
+\begin{itemize}
+\item \texttt{cost.p} (line 76) is the length of the pendulum. This
+  length is needed to compute the Euclidean distance of the tip of the
+  pendulum from the desired location in the inverted position.
+\item \texttt{cost.width} (line 77) is the spread\slash width
+  $\sigma_c$ of the cost function. Looking at the cost function in
+  \eqref{eq:cp loss} and the target state $[x, \dot x, \dot\theta,
+  \theta] = [0, *, *, 2k\pi+pi], k\in\Z$, the factor 0.25 essentially
+  encodes that the pendulum has to be above horizontal, such that a
+  cost substantially different from 1 is incurred (the length of the
+  pendulum is $\unit[0.5]{m}$). Figure \ref{fig:loss sat cp}
+  illustrates a simplified scenario with $\sigma_c = 1/2$.  For
+  $c\approx 1$, it can get difficult to obtain any useful
+  gradients. As a rule of thumb, one can set
+  \texttt{cost.width}$=\|\vec\mu_0-\vec x_{\text{target}}\|/10$.
+\item \texttt{cost.expl} (line 78) is a UCB-type exploration
+  parameter. Negative values encourage exploration, positive values
+  encourage the policy staying in regions with good predictive
+  performance. We set the value to 0 in order to disable any kind of
+  additional exploration or exploitation.
+\item \texttt{cost.angle} (line 79) tells the cost function, which
+  indices of the state are angles. In the cost function, we also
+  represent angles in the complex plane.
+\item \texttt{cost.target} (line 80) defines the target state $\vec
+  x_{\text{target}}$. Here, the target state is defined as the cart
+  being in the middle of the track and the pendulum upright, without
+  any velocity or angular velocity. 
+\end{itemize}
+
+\begin{figure}[tb]
+\centering
+\includegraphics[width = 0.5\hsize]{./figures/satLossPlot}
+\caption{In the saturating cost function, see Equation~\eqref{eq:cp
+    loss}, \texttt{cost.width} determines determines how far away from
+the target a cost $c<1$ can be attained.}
+\label{fig:loss sat cp}
+\end{figure}
+
+\subsection{GP Dynamics Model Structure}
+In the following, we set up the structure \texttt{dynmodel} for the GP
+dynamics model.
+%
+\begin{lstlisting}[name=settings_cp]
+% 6. Dynamics model structure
+dynmodel.fcn = @gp1d;                % function for GP predictions
+dynmodel.train = @train;             % function to train dynamics model
+dynmodel.induce = zeros(300,0,1);    % shared inducing inputs (sparse GP)
+trainOpt = [300 500];                % defines the max. number of line searches
+                                     % when training the GP dynamics models
+                                     % trainOpt(1): full GP,
+                                     % trainOpt(2): sparse GP (FITC)
+\end{lstlisting}
+%
+We generally assume that the model uses a squared exponential
+covariance, a Gaussian likelihood, and a zero prior mean. Therefore,
+these parameters are not explicitly specified here.
+
+\texttt{dynmodel.fcn} (line 82) contains a function handle to
+\texttt{gp1d}, which can predict with (sparse) GPs at uncertain
+inputs. If the GP is not sparse but full, \texttt{gp1d} calls
+\texttt{gp0d}, which implements GP predictions at uncertain inputs
+with the full GP model. 
+
+\texttt{dynmodel.train} (line 83) contains a function handle to
+\texttt{train}, which is responsible for GP training.
+
+\texttt{dynmodel.induce} (line 84) is optional and tells us when to
+switch from full GPs to sparse GPs. \texttt{dynmodel.induce} is a
+tensor of the form $a\times b\times c$, where $a$ is the number of
+inducing inputs\footnote{If the size of the training set exceeds $a$,
+  the full GP automatically switches to its sparse approximation.},
+$b=0$ tells us that there are no inducing inputs yet, and $c$ is
+either 1 or the number of predictive dimensions, which corresponds to
+the number of indices stored in \texttt{dyno}. For $c=1$, the inducing
+inputs are shared among all GPs. Otherwise, sets of inducing inputs
+are separately learned for each predictive dimension.
+
+\texttt{trainOpt} (line 85) contains the number of line searches for
+GP hyper-parameter training used by the full GP (first number) and the
+sparse GP (second parameter).
+
+\subsection{Optimization Parameters (Policy Learning)}
+
+In the following lines, we define (optional) parameters for policy
+learning. Generally, we use an adapted version of
+\texttt{minimize.m}\footnote{\url{http://www.gaussianprocess.org/gpml/code/matlab/util/minimize.m}},
+a non-convex gradient-based optimizer. These optional parameters are
+stored in a structure \texttt{opt}.
+\begin{lstlisting}[name=settings_cp]
+% 7. Parameters for policy optimization
+opt.length = 150;                        % max. number of line searches
+opt.MFEPLS = 30;                         % max. number of function evaluations
+                                         % per line search
+opt.verbosity = 1;                       % verbosity: specifies how much
+                                         % information is displayed during
+                                         % policy learning. Options: 0-3
+\end{lstlisting}
+\texttt{opt.length} (line 90) sets the maximum number of line searches after
+which the optimizer returns the best parameter set so far. 
+
+\texttt{opt.MFEPLS} (line 91) is the maximum number of function
+evaluations per line search. Either the line search succeeds by
+finding  a parameter set with a gradient close to 0 or it does not
+succeed and aborts after \texttt{opt.MFEPLS} many function (and
+gradient) evaluations. 
+
+\texttt{opt.verbosity} (line 93) regulates the verbosity of the
+optimization procedure. Verbosity ranges from 0 (no information
+displayed) to 3 (visualize the line search and the computed
+gradients\footnote{This is great for debugging.}).
+
+
+
+\subsection{Plotting Parameters}
+\begin{lstlisting}[name=settings_cp]
+% 8. Plotting verbosity
+plotting.verbosity = 1;            % 0: no plots
+                                   % 1: some plots
+                                   % 2: all plots
+\end{lstlisting}
+\texttt{plotting.verbosity} (line 97) is an easy way of controlling how much
+information is visualized during policy learning. 
+
+
+
+\subsection{Allocating Variables}
+In lines 100-103, we simply initialize a few array that are used to
+store data during the learning process.
+\begin{lstlisting}[name=settings_cp]
+% 9. Some initializations
+x = []; y = [];
+fantasy.mean = cell(1,N); fantasy.std = cell(1,N);
+realCost = cell(1,N); M = cell(N,1); Sigma = cell(N,1);
+\end{lstlisting}
+
+
+
+\section{Cost Function}
+In the following, we describe how to define a cost function for the
+cart-pole swing-up scenario. The cost function is stored in
+\texttt{loss\_cp.m} and implements the cost
+%
+\begin{align}
+  c(\vec x) = \frac{1}{\#\texttt{cost.cw}}
+  \sum_{i=1}^{\#\texttt{cost.cw}}(1-\exp\big(-\tfrac{1}{2(\sigma_c^{(i)})^2}\|\vec
+  x-\vec x_{\text{target}}\|^2\big)
+\label{eq:mixture cost}
+\end{align}
+% 
+which is a generalized version of Equation~\eqref{eq:cp loss}. In
+particular, \texttt{cost.cw} can be an array of different widths
+$\sigma_c^{(i)}$, which is used to compute a cost function $c(\vec x)$ as a
+mixture of cost functions with different widths.
+
+%
+The mean and the variance of the cost $c(\vec x)$ are computed by
+averaging over the Gaussian state distribution $p(\vec x) = \mathcal
+N(\vec x|\vec m,\mat S)$ with mean $\vec m$ and covariance matrix
+$\mat S$. Derivatives of the expected cost and the cost variance with
+respect to the mean and the covariance of the input distribution are
+computed when desired. 
+
+\subsection{Interface}
+\begin{lstlisting}[name=loss_cp]
+function [L, dLdm, dLds, S] = loss_cp(cost, m, s)
+\end{lstlisting}
+\begin{par}
+\textbf{Input arguments:}
+\end{par}\begin{verbatim}
+cost            cost structure
+  .p            length of pendulum                              [1 x  1 ]
+  .width        array of widths of the cost (summed together)
+  .expl         (optional) exploration parameter
+  .angle        (optional) array of angle indices
+  .target       target state                                    [D x  1 ]
+m               mean of state distribution                      [D x  1 ]
+s               covariance matrix for the state distribution    [D x  D ]\end{verbatim}
+\begin{par}
+\textbf{Output arguments:}
+\end{par}
+\begin{verbatim}
+L     expected cost                                             [1 x  1 ]
+dLdm  derivative of expected cost wrt. state mean vector        [1 x  D ]
+dLds  derivative of expected cost wrt. state covariance matrix  [1 x D^2]
+S     variance of cost                                          [1 x  1 ]
+\end{verbatim}
+
+
+
+
+
+
+\begin{lstlisting}[name=loss_cp]
+if isfield(cost,'width'); cw = cost.width; else cw = 1; end
+if ~isfield(cost,'expl') || isempty(cost.expl); b = 0; else b =  cost.expl; end
+\end{lstlisting}
+In lines 2--3, we check whether a scaling factor (array) and an
+exploration parameter exist. Default values are 1 (no scaling) and 0
+(no exploration), respectively.
+
+
+
+
+\begin{lstlisting}[name=loss_cp]
+% 1. Some precomputations
+D0 = size(s,2);                           % state dimension
+D1 = D0 + 2*length(cost.angle);           % state dimension (with sin/cos)
+
+M = zeros(D1,1); M(1:D0) = m; S = zeros(D1); S(1:D0,1:D0) = s;
+Mdm = [eye(D0); zeros(D1-D0,D0)]; Sdm = zeros(D1*D1,D0);
+Mds = zeros(D1,D0*D0); Sds = kron(Mdm,Mdm);
+\end{lstlisting}
+In line 5, the dimension of the state is determined.
+
+In line 6, the dimension of the state is augmented to account for
+potential angles in the state, which require a representation on the
+unit circle via $\sin\theta$ and $\cos\theta$. Therefore, the (fully)
+augmented state variable is then given as
+%
+\begin{align}
+  \vec j = [x, \dot x, \dot\theta, \theta, \sin\theta,
+  \cos\theta]\T\,.
+\label{eq:aug state}
+\end{align}
+% 
+
+Lines 8--10 initialize the output arguments to 0.
+
+
+In the following lines, the distance $\vec x-\vec x_{\text{target}}$
+is computed.
+\begin{lstlisting}[name=loss_cp]
+% 2. Define static penalty as distance from target setpoint
+ell = cost.p; % pendulum length
+Q = zeros(D1); Q([1 D0+1],[1 D0+1]) = [1 ell]'*[1 ell]; Q(D0+2,D0+2) = ell^2;
+\end{lstlisting}
+%
+Line 12 stores the pendulum length in \texttt{ell}.
+
+In line 12, the matrix $\mat Q$ is computed, such that $(\vec j - \vec
+j_{\text{target}})\T\mat Q (\vec j - \vec
+j_{\text{target}})$ is the squared Euclidean distance between the tip
+of the pendulum in the current state and the target state. For $\vec
+x_{\text{target}} = [0, *, *, \pi]\T$, i.e., the pendulum is balanced
+in the inverted position in the middle of the track, the Euclidean
+distance is given as
+\begin{align}
+  \|\vec x -\vec x_{\text{target}}\|^2
+  &=x^2+2xl\sin\theta+2l^2+2l^2\cos\theta = (\vec j - \vec
+  j_{\text{target}})\T\mat Q (\vec j - \vec
+  j_{\text{target}})\,,\\
+  \mat Q &= \begin{bmatrix}
+    1& 0 &0 & 0 & l&0\\
+    0& 0 &0 & 0 & 0 &0\\
+    0& 0 &0 & 0 & 0 &0\\
+    0& 0 &0 & 0 & 0 &0\\
+    l&  0 &0 & 0 & l^2&0\\
+    0&  0 &0 & 0&  0&l^2
+\end{bmatrix}\,.
+\end{align}
+Note that at this point only the $\mat Q$-matrix is determined.
+
+
+\begin{lstlisting}[name=loss_cp]
+% 3. Trigonometric augmentation
+if D1-D0 > 0
+  % augment target
+  target = [cost.target(:); gTrig(cost.target(:), 0*s, cost.angle)];
+
+  % augment state
+  i = 1:D0; k = D0+1:D1;
+  [M(k) S(k,k) C mdm sdm Cdm mds sds Cds] = gTrig(M(i),S(i,i),cost.angle);
+
+  % compute derivatives (for augmentation)
+  X = reshape(1:D1*D1,[D1 D1]); XT = X';              % vectorized indices
+  I=0*X; I(i,i)=1; ii=X(I==1)'; I=0*X; I(k,k)=1; kk=X(I==1)';
+  I=0*X; I(i,k)=1; ik=X(I==1)'; ki=XT(I==1)';
+
+  Mdm(k,:)  = mdm*Mdm(i,:) + mds*Sdm(ii,:);                    % chainrule
+  Mds(k,:)  = mdm*Mds(i,:) + mds*Sds(ii,:);
+  Sdm(kk,:) = sdm*Mdm(i,:) + sds*Sdm(ii,:);
+  Sds(kk,:) = sdm*Mds(i,:) + sds*Sds(ii,:);
+  dCdm      = Cdm*Mdm(i,:) + Cds*Sdm(ii,:);
+  dCds      = Cdm*Mds(i,:) + Cds*Sds(ii,:);
+
+  S(i,k) = S(i,i)*C; S(k,i) = S(i,k)';                      % off-diagonal
+  SS = kron(eye(length(k)),S(i,i)); CC = kron(C',eye(length(i)));
+  Sdm(ik,:) = SS*dCdm + CC*Sdm(ii,:); Sdm(ki,:) = Sdm(ik,:);
+  Sds(ik,:) = SS*dCds + CC*Sds(ii,:); Sds(ki,:) = Sds(ik,:);
+end
+\end{lstlisting}
+This block is only executed if angles are present (the check is
+performed in line 15).
+
+First (line 17), the target state $\vec x_{\text{target}}$ is
+augmented to 
+$$\vec j_{\text{target}} = [x_{\text{target}},\dot
+x_{\text{target}}, \dot\theta_{\text{target}}, \theta_{\text{target}},
+\sin(\theta_{\text{target}}),\cos(\theta_{\text{target}})]\T\,.$$
+
+In line 21, the state distribution $p(\vec x)$ is probabilistically
+augmented to $p(\vec j)$, where $\vec j$ is given in
+Equation~\eqref{eq:aux state}. Note that $p(\vec j)$ cannot be
+computed analytically. Instead, we compute the mean and covariance of
+$p(\vec j)$ exactly and approximate $p(\vec j)$ by a Gaussian. This
+probabilistic augmentation and the corresponding derivatives with
+respect to the mean and covariance of the state distribution are
+computed by \texttt{\path util/gTrig.m}.
+
+Lines 28--38 compute the derivatives of the mean and covariance of
+$p(\vec j)$ and the cross-covariance $\cov[\vec x, \vec j]$ with
+respect to the mean and covariance of $p(\vec x)$ using the chain
+rule.
+
+
+\begin{lstlisting}[name=loss_cp]
+% 4. Calculate loss
+L = 0; dLdm = zeros(1,D0); dLds = zeros(1,D0*D0); S = 0;
+for i = 1:length(cw)                    % scale mixture of immediate costs
+  cost.z = target; cost.W = Q/cw(i)^2;
+  [r rdM rdS s2 s2dM s2dS] = lossSat(cost, M, S);
+
+  L = L + r; S  = S + s2;
+  dLdm = dLdm + rdM(:)'*Mdm + rdS(:)'*Sdm;
+  dLds = dLds + rdM(:)'*Mds + rdS(:)'*Sds;
+
+  if (b~=0 || ~isempty(b)) && abs(s2)>1e-12
+    L = L + b*sqrt(s2);
+    dLdm = dLdm + b/sqrt(s2) * ( s2dM(:)'*Mdm + s2dS(:)'*Sdm )/2;
+    dLds = dLds + b/sqrt(s2) * ( s2dM(:)'*Mds + s2dS(:)'*Sds )/2;
+  end
+end
+
+% normalize
+n = length(cw); L = L/n; dLdm = dLdm/n; dLds = dLds/n; S = S/n;
+\end{lstlisting}
+After all the pre-computations, in lines 40--58, the expected cost for
+Equation~\eqref{eq:mixture cost} is finally computed:
+
+For all widths of the cost structure (line 42), we compute the mean
+and the variance of the saturating cost in Equation~\eqref{eq:cp
+  loss}, including the derivatives with respect to the mean and the
+covariance of $p(\vec j)$, see line 44. For these computations, the
+function \texttt{loss/lossSat.m} is called. 
+
+Lines 47--48 compute the derivatives of the expected cost and the
+variance of the cost with respect to the mean and covariance matrix of
+the state distribution $p(\vec x)$ by applying the chain rule.
+
+If exploration is desired (line 50), we add $\kappa\sqrt{\var[c(\vec
+  x)]}$ to the $\E[c(\vec x)]$ to allow for UCB-type exploration, see
+Equation~\eqref{eq:UCB cost}
+
+
+\section{Visualization}
+
+The following lines of code display a sequence of images (video) of a
+cart-pole trajectory and can be found in \texttt{\path
+  scenarios/cartPole/draw\_rollout\_cp.m}.
+\begin{lstlisting}
+% Loop over states in trajectory (= time steps)
+for r = 1:size(xx,1)
+  if exist('j','var') && ~isempty(M{j})
+    draw_cp(latent{j}(r,1), latent{j}(r,4), latent{j}(r,end), cost,  ...
+      ['trial # ' num2str(j+J) ', T=' num2str(H*dt) ' sec'], ...
+      ['total experience (after this trial): ' num2str(dt*size(x,1)) ...
+      ' sec'], M{j}(:,r), Sigma{j}(:,:,r));
+  else
+     draw_cp(latent{jj}(r,1), latent{jj}(r,4), latent{jj}(r,end), cost,  ...
+      ['(random) trial # ' num2str(jj) ', T=' num2str(H*dt) ' sec'], ...
+      ['total experience (after this trial): ' num2str(dt*size(x,1)) ...
+      ' sec'])
+  end
+  pause(dt);
+end
+\end{lstlisting}
+At each time step \texttt{r} of the most recent trajectory (stored in
+\texttt{xx}), an image of the current cart-pole state is drawn by
+repeatedly calling \texttt{draw\_cp}. We distinguish between two modes
+(\texttt{if-else} statement): Either we draw a trajectory \emph{after}
+having learned a policy (\texttt{if} statement), or we draw a
+trajectory from a random rollout, i.e., before a policy is learned
+(\texttt{else} statement). In the first case, \texttt{draw\_cp} also
+visualizes the long-term predictive means and variances of the tip of
+the pendulum, which are not given otherwise.
+
+% draw_cp
+The \texttt{draw\_cp} function plots the cart-pole system with reward,
+applied force, and predictive uncertainty of the tip of the
+pendulum. We just describe the interface in the following. The code is
+available at \texttt{\path scenarios/cartPole/draw\_cp.m}.
+
+
+\begin{lstlisting}
+function draw_cp(x, theta, force, cost, text1, text2, M, S)
+\end{lstlisting}
+
+    \begin{par}
+\textbf{Input arguments:}
+\end{par} \vspace{1em}
+
+\begin{verbatim}
+  x          position of the cart
+  theta      angle of pendulum
+  force      force applied to cart
+  cost       cost structure
+    .fcn     function handle (it is assumed to use saturating cost)
+    .<>      other fields that are passed to cost
+  M          (optional) mean of state
+  S          (optional) covariance of state
+  text1      (optional) text field 1
+  text2      (optional) text field 2
+\end{verbatim}
+
+
+
+
+\section{Main Function} 
+ 
+The main function executes the following high-level steps.
+\begin{enumerate}
+   \item Load scenario-specific setting
+   \item Create \texttt{J} initial trajectories by applying random controls
+   \item Controlled learning:
+\begin{enumerate}
+\item Train dynamics model
+\item Learn policy
+\item Apply policy to system
+\end{enumerate}
+\end{enumerate}
+
+
+\begin{lstlisting}[name=cpmain]
+% 1. Initialization
+clear all; close all;
+settings_cp;                      % load scenario-specific settings
+basename = 'cartPole_';           % filename used for saving data
+\end{lstlisting}
+Lines 1--4 load scenario-specific settings (line 3) and define a
+basename for data that is stored throughout the execution.
+
+
+\begin{lstlisting}[name=cpmain]
+% 2. Initial J random rollouts
+for jj = 1:J
+  [xx, yy, realCost{jj}, latent{jj}] = ...
+    rollout(gaussian(mu0, S0), struct('maxU',policy.maxU), H, plant, cost);
+  x = [x; xx]; y = [y; yy];       % augment training sets for dynamics model
+  if plotting.verbosity > 0;      % visualization of trajectory
+    if ~ishandle(1); figure(1); else set(0,'CurrentFigure',1); end; clf(1);
+    draw_rollout_cp;
+  end
+
+end
+
+mu0Sim(odei,:) = mu0; S0Sim(odei,odei) = S0;
+mu0Sim = mu0Sim(dyno); S0Sim = S0Sim(dyno,dyno);
+\end{lstlisting}
+To kick off learning, we need to create an initial (small) data set
+that can be learned for learning the first GP dynamics model. For
+this, we generate \texttt{J} trajectories of length \texttt{H} by
+applying random control signals using \texttt{\path base/rollout.m},
+(lines 7--8). Generally, the training data for the GP is stored in
+\texttt{x} and \texttt{y} (line 9). If desired, the trajectories of
+the cart-pole system are visualized (lines 10--13).
+%
+In lines 17--18, we define variables \texttt{mu0Sim} and
+\texttt{S0Sim}, which are used subsequently.
+
+
+
+\begin{lstlisting}[name=cpmain]
+% 3. Controlled learning (N iterations)
+for j = 1:N
+  trainDynModel;   % train (GP) dynamics model
+  learnPolicy;     % learn policy
+  applyController; % apply controller to system
+  disp(['controlled trial # ' num2str(j)]);
+  if plotting.verbosity > 0;      % visualization of trajectory
+    if ~ishandle(1); figure(1); else set(0,'CurrentFigure',1); end; clf(1);
+    draw_rollout_cp;
+  end
+end
+\end{lstlisting}
+The actual learning happens in lines 19--29, where \textsc{pilco}
+performs \texttt{N} (controlled) iterations of dynamics model learning
+(line 21), policy search (line 22), and controller application to the
+system (line 23). If desired, the trajectories of
+the cart-pole system are visualized (lines 25--28). 
+
+
+\subsection{Screen Prints and Visualization}
+
+When training the GP dynamics model, a typical feedback in the command
+window looks as follows:\\
+\line(1,0){400}
+\begin{verbatim}
+Train hyper-parameters of full GP ...
+GP 1/4
+Initial Function Value 1.853671e+01
+linesearch #     31;  value -8.942969e+01
+GP 2/4
+Initial Function Value 3.115190e+01
+linesearch #     34;  value -4.210842e+01
+GP 3/4
+Initial Function Value 8.045295e+01
+linesearch #     30;  value 4.742728e+00
+GP 4/4
+Initial Function Value -3.771471e+00
+linesearch #     37;  value -6.971879e+01
+Learned noise std: 0.016818    0.016432     0.04385    0.019182
+SNRs             : 28.91172      116.4612      112.2714      49.12984
+\end{verbatim}
+\line(1,0){400}\\
+%
+In this cart-pole example, we train four GPs (one for each predictive
+dimension stored in \texttt{dyno}). The hyper-parameters are learned
+after 30--40 line searches. Positive values are generally and
+indicator that the learned model is not so good at predicting this
+target dimension. This might be due to sparse data and\slash or very
+nonlinear dynamics. At the end, the learned noise standard deviations
+are displayed, together with the signal-to-noise ratios (SNRs). The
+SNRs are computed as 
+%
+\begin{align*}
+SNR = \frac{\sqrt{\sigma_f^2}}{\sqrt{\sigma_{\text{noise}}^2}}\,,
+\end{align*}
+% 
+where $\sigma_f^2$ is the variance of the underlying function and
+$\sigma_{\text{noise}}^2$ is the inferred noise variance. High SNRs
+($>$ 500) are penalized during GP training in \texttt{\path
+  gp/hypCurb.m} to improve numerical stability. If there are SNRs
+$>500$, it might be worthwhile adding some more noise to the GP
+training targets.
+
+
+
+%%%%%%%%% policy optimization
+
+
+\begin{figure}
+\centering
+\includegraphics[width = 0.7\hsize]{./figures/policy_opt}
+\caption{Typical display during policy learning: The top subplot shows
+  the overall progress of policy learning as a function of the number
+  of line searches. In this example, the initial policy caused a total
+  expected cost $J(\vec \theta)$ of 39.11; the policy after 150 line
+  search searches caused an expected cost of 33.16. The bottom subplot
+  shows the progress of the current line search as a function of the
+  distance in line search direction. The function values (+) and the
+  corresponding gradients are visualized. For more detailed
+  information about the visualization and the verbosity of the output
+  (\texttt{opt.verbosity}), we refer to \texttt{\path
+    util/minimize.m}.}
+\label{fig:policy optimization}
+\end{figure} 
+% 
+Figure~\ref{fig:policy optimization} displays a typical screen output
+during policy optimization, showing the overall progress of policy
+learning (top subplot) and the progress of the current line search
+(bottom subplot). The following lines are simultaneously displayed in
+the command window to show the current progress of learning:
+%
+\\\line(1,0){400}
+\begin{verbatim}
+Initial Function Value 3.910902e+01
+linesearch #    150;  value 3.316620e+01
+\end{verbatim}
+\line(1,0){400}\\
+If \texttt{opt.verbosity}$<3$, i.e., we are not interested in
+permanently displaying the gradients as in Figure~\ref{fig:policy
+  optimization}, it is possible to display the overall optimization
+progress at the end of each policy search by setting
+\texttt{plotting.verbosity=2}. The corresponding figure is given in
+Figure~\ref{fig:fX3}. 
+%
+\begin{figure}[tb]
+\centering
+\includegraphics[width = 0.6\hsize]{./figures/fX3}
+\caption{Overall progress of a policy search with 150 line searches.}
+\label{fig:fX3}
+\end{figure}
+% 
+This figure visually indicates whether the policy search was close to
+convergence. If it frequently happens that the curve does not flatten
+out, it might be worthwhile increasing the value of
+\texttt{opt.length} in the scenario-specific settings file (here:
+\texttt{settings\_cp.m}).
+
+%
+\begin{figure}[tb]
+\centering
+\includegraphics[width = 0.6\hsize]{./figures/cost_error_bar}
+\caption{Predicted immediate cost (blue error bar) and corresponding
+  incurred cost when applying the policy (red) for each time step of
+  the prediction horizon.}
+\label{fig:cost error bar}
+\end{figure}
+%
+Figure~\ref{fig:cost error bar} shows the predicted and the incurred
+immediate cost when applying the policy. Initially, the cost is at
+unity, which means that the initial state is far from the target
+area. After around 6 time steps, the predictive uncertainty in the
+cost increases, which means that the predictive state distribution
+substantially overlaps with the target area. In Figure~\ref{fig:cost
+  error bar} the reason is that the predictive state increases very
+quickly during the first time steps. 
+
+
+\begin{figure}[tb]
+\centering
+\subfigure[Early stages of learning.]{
+\includegraphics[width = 0.48\hsize]{./figures/example_trajectories}
+\label{fig:example trajectories early}
+}
+\hfill
+\subfigure[Final stages of learning.]{
+\includegraphics[width = 0.48\hsize]{./figures/example_trajectories2}
+\label{fig:example trajectories final}
+}
+\caption{Example trajectories. For each predictive dimension
+  (\texttt{dyno}), ten state trajectories are displayed, which
+  occurred when the same policy $\pi(\vec\theta^*)$ is applied to the
+  system. Note that the initial state differs as it is sampled from
+  the start state distribution, i.e., $\vec x_0\sim p(\vec x_0)$. The
+  green trajectory will be used in the next learning iteration to
+  update the GP training set; the other (red) trajectories are
+  generated to get an impression of the quality of the long-term
+  predictive state distributions, the 95\% confidence intervals of
+  which are shown by the blue error bars.}
+\label{fig:example trajectories}
+\end{figure}
+%
+Figure~\ref{fig:example trajectories} shows two sets of example
+trajectories for each predictive dimension. One set is generated in
+the early stages of learning (Figure~\ref{fig:example trajectories
+  early}), the other one is generated in the final stages of learning
+(Figure~\ref{fig:example trajectories final}). The green trajectory is
+stored in \texttt{xx} and will be used to augment the training data
+set for the GP model. The red trajectories are generated to (a)
+indicate whether the green trajectory is a ``typical'' trajectory or
+an outlier, (b) show the quality of the long-term predictive state
+distributions, whose 95\% predictive confidence intervals are
+indicated by the blue error bars, (c) give an intuition how sensitive
+the currently learned controller is to different initial states $\vec
+x_0\sim p(\vec x_0)$. As shown in Figure~\ref{fig:example trajectories
+  early}, in the early stages of learning, the controller is very
+sensitive to the initial conditions, i.e., the controlled trajectories
+vary a lot. A good controller is robust to the uncertain initial
+conditions and leads to very similar controlled trajectories as shown
+in Figure~\ref{fig:example trajectories final}.
+
+
+\begin{figure}[tb]
+\centering
+\includegraphics[width=0.6\hsize]{./figures/cp_rollout}
+\caption{Visualization of a trajectory of the cart-pole swing-up
+  during learning. The cart runs on an (infinite) track, the pendulum
+  is freely swinging. The cross denotes the target location for
+  balancing the tip of the pendulum, and the blue ellipse represents
+  the 95\% confidence bound of a $t$-step ahead prediction of the
+  location of the tip of the pendulum when applying the learned
+  policy. We also display the applied force (green bar), whose values
+  $u_{\max}$ and $-u_{\max}$ correspond to a green bar being either
+  full to the right or left side. Here, ``full'' means at the end of
+  the black line that represents the track. Moreover, we show the
+  incurred immediate reward (negative cost) of the current state of
+  the system. The immediate reward is represented by a yellow bar,
+  whose maximum is at the right end of the black bar. We also display
+  the number of total trials (this includes the random initial
+  trials), the prediction horizon $T$, and the total experience after
+  this trial.}
+\label{fig:cp rollout}
+\end{figure}
+%
+Figure~\ref{fig:cp rollout} shows a snapshot of a visualization of a
+trajectory of the cart-pole system. The cart runs on an (infinite)
+track, the pendulum is freely swinging. The cross denotes the target
+location for balancing the tip of the pendulum, and the blue ellipse
+represents the 95\% confidence bound of a $t$-step ahead prediction of
+the location of the tip of the pendulum when applying the learned
+policy. We also display the applied force (green bar), whose values
+$u_{\max}$ and $-u_{\max}$ correspond to a green bar being either full
+to the right or left side. Here, ``full'' means at the end of the
+black line that represents the track. Moreover, we show the incurred
+immediate reward (negative cost) of the current state of the
+system. The immediate reward is represented by a yellow bar, whose
+maximum is at the right end of the black bar. We also display the
+number of total trials (this includes the random initial trials), the
+prediction horizon $T$, and the total experience after this trial.
+
+\begin{table}
+\centering
+\caption{\texttt{plotting.verbosity} Overview.}
+\begin{tabular}{l || cccc}
+& 
+Figure~\ref{fig:fX3} & Figure~\ref{fig:cost error bar} &
+Figure~\ref{fig:example trajectories} & Figure~\ref{fig:cp rollout}\\
+\hline
+\texttt{plotting.verbosity=0}  & \xmark &\xmark &\xmark & \xmark \\
+\texttt{plotting.verbosity=1}  & \xmark &\cmark &\xmark & \cmark \\
+\texttt{plotting.verbosity=2}  & \cmark &\cmark &\cmark & \cmark
+\end{tabular}
+\end{table}
+
+
+
+\chapter{Implemented Scenarios}
+
+In the following, we introduce the scenarios that are shipped with
+this software package, and detail the derivation of the corresponding
+equations of motion, taken from~\cite{Deisenroth2010b}. All
+scenarios have their own folder in \texttt{\path scenarios/}.
+
+\begin{table}[ht]
+  \caption{State and control space dimensions in the implemented
+    scenarios.}
+\label{tab:scenarios}
+\centering
+\begin{tabular}{c||cc}
+Task & State Space & Control Space\\
+\hline
+Pendulum & $\R^2$ & $\R$\\
+Pendubot & $\R^4$ & $\R$\\
+Double Pendulum &  $\R^4$ & $\R^2$\\
+Cart-Pole & $\R^4$ & $\R$\\
+Cart-Double Pendulum & $\R^6$ & $\R$\\
+Unicycling & $\R^{12}$ & $\R^2$
+\end{tabular}
+\end{table}
+%
+Table~\ref{tab:scenarios} gives an
+overview of the corresponding state and control dimensions.
+
+
+\section{Pendulum Swing-up}
+\begin{figure}[tb]
+\centering
+\includegraphics[height= 2cm]{./figures/pendulum}
+\caption{Pendulum.}\label{fig:pendulum}
+\end{figure}
+
+The pendulum shown in Figure~\ref{fig:pendulum} possesses a mass $m$
+and a length $l$. The pendulum angle $\varphi$ is measured
+anti-clockwise from hanging down. A torque $u$ can be applied to the
+pendulum. Typical values are: $m=\unit[1]{kg}$ and $l=\unit[1]{m}$.
+
+The coordinates $x$ and $y$ of the midpoint of the pendulum are
+\begin{align*}
+x&=\tfrac{1}{2}l\sin\varphi\,,\\
+y&=-\tfrac{1}{2}l\cos\varphi,
+\end{align*}
+and the squared velocity of the  midpoint of the pendulum is
+\begin{align*}
+v^2&=\dot x^2+\dot y^2 = \tfrac{1}{4}l^2\dot\varphi^2\,.
+\end{align*}
+We derive the equations of motion via the system Lagrangian $L$, which
+is the difference between kinetic energy $T$ and potential energy $V$
+and given by
+\begin{equation}\label{eq:Lagrangian1 pend}
+L=T-V=
+\tfrac{1}{2}mv^2+\tfrac{1}{2}I\dot\varphi^2+\tfrac{1}{2}mlg\cos\varphi\,,
+\end{equation}
+where $g=\unit[9.82]{m/s^2}$ is the acceleration of gravity and
+$I=\tfrac{1}{12}ml^2$ is the moment of inertia of a pendulum
+around the pendulum midpoint. 
+
+The equations of motion can generally be derived from a set of equations
+defined through
+\begin{equation*}
+\frac{d}{d t}\frac{\partial L}{\partial\dot q_i}-\frac{\partial
+  L}{\partial q_i}=Q_i\,,
+\end{equation*}
+where $Q_i$ are the non-conservative forces and $q_i$ and $\dot q_i$
+are the state variables of the system. In our case,
+\begin{align*}
+  \frac{\partial
+    L}{\partial\dot\varphi}&=\tfrac{1}{4}ml^2\dot\varphi+I\dot\varphi\\
+  \frac{\partial L}{\partial\varphi}&=-\tfrac{1}{2}mlg\sin\varphi
+\end{align*}
+yield
+\begin{align*}
+\ddot\varphi(\tfrac{1}{4}ml^2+I)+\tfrac{1}{2}mlg\sin\varphi=u-b\dot\varphi\,,
+\end{align*}
+where $b$ is a friction coefficient. Collecting both variables $\vec
+z=[\dot\varphi,\varphi]\T$ the equations of motion can be conveniently
+expressed as two coupled ordinary differential equations
+\begin{align*}
+\frac{d\vec z}{d t}=
+\begin{bmatrix}
+\displaystyle
+\frac{u-bz_1-\tfrac{1}{2}mlg\sin z_2}{\tfrac{1}{4}ml^2+I}\\
+z_1
+\end{bmatrix}\,,
+\end{align*}
+which can be simulated numerically.
+
+\section{Double Pendulum Swing-up with a Single Actuator (Pendubot)}  
+\label{sec:pendubot}
+\begin{figure}[tb]
+\centering
+\includegraphics[height=3.5cm]{./figures/pendubot}
+\caption{Pendubot.}\label{fig:pendubot}
+\end{figure}
+
+
+The Pendubot in Figure~\ref{fig:pendubot} is a two-link (mass $m_2$
+and $m_3$ and length s $l_2$ and $l_3$ respectively), underactuated
+robot as described by~\cite{Spong1995}. The first joint exerts torque,
+but the second joint cannot. The system has four continuous state
+variables: two joint positions and two joint velocities. The angles of
+the joints, $\theta_2$ and $\theta_3$, are measured anti-clockwise
+from upright. An applied external torque $u$ controls the first
+joint. Typical values are: $m_2=0.5{\rm kg}$, $m_3=0.5{\rm kg}$
+$l_2=0.6{\rm m}$, $l_3=0.6{\rm m}$.
+
+The Cartesian coordinates $x_2$, $y_2$ and $x_3$, $y_3$ of the midpoints of the
+pendulum elements are
+\begin{equation}
+\begin{bmatrix}
+x_2\\y_2
+\end{bmatrix}
+=
+\begin{bmatrix}
+-\tfrac{1}{2}l_2\sin\theta_2\\
+\tfrac{1}{2}l_2\cos\theta_2 
+\end{bmatrix}\,,\quad
+\begin{bmatrix}
+x_3\\y_3
+\end{bmatrix}
+=
+\begin{bmatrix}
+-l_2\sin\theta_2-\tfrac{1}{2}l_3\sin\theta_3\\
+l_2\cos\theta_2+\tfrac{1}{2}l_3\cos\theta_3
+\end{bmatrix}\,,
+\end{equation}
+and the squared velocities of the pendulum midpoints are
+\begin{align}
+v_2^2&=\dot x_2^2+\dot
+y_2^2=\tfrac{1}{4}l_2^2\dot\theta_2^2\label{eq:pendubot v2}\\
+v_3^2&=\dot x_3^2+\dot y_3^2=l_2^2\dot\theta_2^2+
+\tfrac{1}{4}l_3^2\dot\theta_3^2+
+l_2l_3\dot\theta_2\dot\theta_3\cos(\theta_2-\theta_3)\label{eq:pendubot
+v3}.
+\end{align}
+The system Lagrangian is the difference between the kinematic energy $T$ and
+the potential energy $V$ and given by
+\begin{align*}
+L&=T-V=\tfrac{1}{2}m_2v_2^2+\tfrac{1}{2}m_3v_3^2+
+\tfrac{1}{2}I_2\dot\theta_2^2+\tfrac{1}{2}I_3\dot\theta_3^2-m_2gy_2-m_3gy_3\,,
+\end{align*}
+where the angular moment of inertia around the pendulum midpoint is
+$I=\tfrac{1}{12}ml^2$, and $g=9.82 {\rm m/s^2}$ is the acceleration of
+gravity. Using this moment of inertia, we assume that the pendulum is
+a thin (but rigid) wire.  Plugging in the squared
+velocities~(\ref{eq:pendubot v2}) and~\eqref{eq:pendubot v3}, we
+obtain
+\begin{align*}
+L&=\tfrac{1}{8}m_2l_2^2\dot\theta_2^2+\tfrac{1}{2}m_3\big(l_2^2\dot\theta_2^2 +
+\tfrac{1}{4}
+l_3^2\dot\theta_3^2+l_2l_3\dot\theta_2\dot\theta_3\cos(\theta_2-\theta_3)\big)\\
+&\quad + \tfrac{1}{2}I_2\dot\theta_2^2+\tfrac{1}{2}I_3\dot\theta_3^2
+-\tfrac{1}{2}m_2gl_2\cos\theta_2-m_3g(l_2\cos\theta_2 +
+\tfrac{1}{2}l_3\cos\theta_3)\,.
+\end{align*}
+%
+The equations of motion are
+\begin{equation}
+\frac{d}{d t}\frac{\partial L}{\partial\dot q_i}-\frac{\partial
+  L}{\partial q_i}=Q_i\,,
+\end{equation}
+where $Q_i$ are the non-conservative forces and $q_i$ and $\dot q_i$ are the
+state variables of the system. In our case,
+\begin{align*}
+\frac{\partial L}{\partial\dot\theta_2} &=
+l_2^2\dot\theta_2(\tfrac{1}{4}m_2+m_3) +
+\tfrac{1}{2}m_3l_2l_3\dot\theta_3\cos(\theta_2-\theta_3) + I_2\dot\theta_2\,,\\
+\frac{\partial L}{\partial\theta_2} & =
+-\tfrac{1}{2}m_3l_2l_3\dot\theta_2\dot\theta_3\sin(\theta_2-\theta_3) +
+(\tfrac{1}{2}m_2+m_3)gl_2\sin\theta_2\,,\\
+\frac{\partial L}{\partial\dot\theta_3}&= m_3l_3\big(\tfrac{1}{4}
+l_3\dot\theta_3 +
+\tfrac{1}{2} l_2\dot\theta_2\cos(\theta_2-\theta_3)\big) + I_3\dot\theta_3\,,\\
+\frac{\partial L}{\partial\theta_3}&=
+\tfrac{1}{2}m_3l_3\big(l_2\dot\theta_2\dot\theta_3\sin(\theta_2-\theta_3) +
+g\sin\theta_3\big)
+\end{align*}
+lead to the equations of motion
+\begin{align*}
+u &= \ddot\theta_{2}\big(l_2^2(\tfrac{1}{4}m_2+m_3) + I_2\big) +
+\ddot\theta_3\tfrac{1}{2}m_3l_3l_2\cos(\theta_2-\theta_3)\nonumber \\
+&\quad+
+l_2\big(\tfrac{1}{2}
+m_3l_3\dot\theta_3^2\sin(\theta_2-\theta_3)-g\sin\theta_2(\tfrac{1}{2}
+m_2+m_3)\big)\,,\\
+0&=\ddot\theta_2\tfrac{1}{2}l_2l_3m_3\cos(\theta_2-\theta_3)+\ddot\theta_3(\tfrac{1
+}{
+4}m_3l_3^2+I_3)-\tfrac{1}{2}m_3l_3\big(
+l_2\dot\theta_2^2\sin(\theta_2-\theta_3)+g\sin\theta_3\big)\,.
+\end{align*}
+To simulate the system numerically, we solve the linear equation system
+\begin{align*}
+\begin{bmatrix}
+l_2^2(\tfrac{1}{4}m_2+m_3) + I_2 &
+\tfrac{1}{2}m_3l_3l_2\cos(\theta_2-\theta_3)\\
+\tfrac{1}{2}l_2l_3m_3\cos(\theta_2-\theta_3) & \tfrac{1}{
+4}m_3l_3^2+I_3
+\end{bmatrix}
+\begin{bmatrix}
+\ddot\theta_2\\
+\ddot\theta_3
+\end{bmatrix}
+=
+\begin{bmatrix}
+c_2\\
+c_3
+\end{bmatrix}
+\end{align*}
+for $\ddot\theta_2$ and $\ddot\theta_3$, where
+\begin{align*}
+\begin{bmatrix}
+c_2\\c_3
+\end{bmatrix}
+=
+\begin{bmatrix}
+-l_2\big(\tfrac{1}{2}
+m_3l_3\dot\theta_3^2\sin(\theta_2-\theta_3)-g\sin\theta_2(\tfrac{1}{2}
+m_2+m_3)\big) + u\\
+\tfrac{1}{2}m_3l_3\big(
+l_2\dot\theta_2^2\sin(\theta_2-\theta_3)+g\sin\theta_3\big)
+\end{bmatrix}\,.
+\end{align*}
+
+
+\section{Double Pendulum Swing-up with Two Actuators}
+The dynamics of the double pendulum with two actuators (one at the
+shoulder, one at the elbow), are derived exactly as described in
+Section~\ref{sec:pendubot}, with the single modification that we need
+to take the second control signal into account in the equations of
+motion
+\begin{align*}
+u_1 &= \ddot\theta_{2}\big(l_2^2(\tfrac{1}{4}m_2+m_3) + I_2\big) +
+\ddot\theta_3\tfrac{1}{2}m_3l_3l_2\cos(\theta_2-\theta_3)\nonumber \\
+&\quad+
+l_2\big(\tfrac{1}{2}
+m_3l_3\dot\theta_3^2\sin(\theta_2-\theta_3)-g\sin\theta_2(\tfrac{1}{2}
+m_2+m_3)\big)\,,\\
+u_2&=\ddot\theta_2\tfrac{1}{2}l_2l_3m_3\cos(\theta_2-\theta_3)+\ddot\theta_3(\tfrac{1
+}{
+4}m_3l_3^2+I_3)-\tfrac{1}{2}m_3l_3\big(
+l_2\dot\theta_2^2\sin(\theta_2-\theta_3)+g\sin\theta_3\big)\,.
+\end{align*}
+To simulate the system numerically, we solve the linear equation system
+\begin{align*}
+\begin{bmatrix}
+l_2^2(\tfrac{1}{4}m_2+m_3) + I_2 &
+\tfrac{1}{2}m_3l_3l_2\cos(\theta_2-\theta_3)\\
+\tfrac{1}{2}l_2l_3m_3\cos(\theta_2-\theta_3) & \tfrac{1}{
+4}m_3l_3^2+I_3
+\end{bmatrix}
+\begin{bmatrix}
+\ddot\theta_2\\
+\ddot\theta_3
+\end{bmatrix}
+=
+\begin{bmatrix}
+c_2\\
+c_3
+\end{bmatrix}
+\end{align*}
+for $\ddot\theta_2$ and $\ddot\theta_3$, where
+\begin{align*}
+\begin{bmatrix}
+c_2\\c_3
+\end{bmatrix}
+=
+\begin{bmatrix}
+-l_2\big(\tfrac{1}{2}
+m_3l_3\dot\theta_3^2\sin(\theta_2-\theta_3)-g\sin\theta_2(\tfrac{1}{2}
+m_2+m_3)\big) + u_1\\
+\tfrac{1}{2}m_3l_3\big(
+l_2\dot\theta_2^2\sin(\theta_2-\theta_3)+g\sin\theta_3\big)+u_2
+\end{bmatrix}\,.
+\end{align*}
+
+
+
+\section{Cart-Pole Swing-up}
+\begin{wrapfigure}{r}{0.4\hsize}
+\vspace{-5mm}
+\centering
+\includegraphics[width=\hsize]{./figures/cp}
+\caption{Cart-pole system.}\label{fig:cp}
+\end{wrapfigure}
+%
+The cart-pole system (inverted pendulum) shown in Figure~\ref{fig:cp}
+consists of a cart with mass $m_1$ and an attached pedulum with mass
+$m_2$ and length $l$, which swings freely in the plane. The pendulum
+angle $\theta_2$ is measured anti-clockwise from hanging down. The
+cart can move horizontally with an applied external force $u$ and a
+parameter $b$, which describes the friction between cart and
+ground. Typical values are: $m_1=\unit[0.5]{kg}$,
+$m_2=\unit[0.5]{kg}$, $l=\unit[0.6]{m}$ and $b=\unit[0.1]{N/m/s}$.
+
+The position of the cart along the track is denoted by $x_1$. The
+coordinates $x_2$ and $y_2$ of the midpoint of the pendulum are
+\begin{align*}
+x_2&=x_1+\tfrac{1}{2}l\sin\theta_2\,,\\
+y_2&=-\tfrac{1}{2}l\cos\theta_2,
+\end{align*}
+and the squared velocity of the cart and the midpoint of the pendulum are
+\begin{align*}
+v_1^2&=\dot x_1^2\\
+v_2^2&=\dot x_2^2+\dot y_2^2 = \dot
+x_1^2+\tfrac{1}{4}l^2\dot\theta_2^2+l\dot x_1\dot\theta_2\cos\theta_2\,,
+\end{align*}
+respectively. We derive the equations of motion via the system
+Lagrangian $L$, which is the difference between kinetic energy $T$ and
+potential energy $V$ and given by
+\begin{equation}\label{eq:Lagrangian1 cp}
+L=T-V=
+\tfrac{1}{2}m_1v_1^2+\tfrac{1}{2}m_2v_2^2+\tfrac{1}{2}I\dot\theta_2^2-m_2gy_2\,,
+\end{equation}
+where $g=\unit[9.82]{m/s^2}$ is the acceleration of gravity and
+$I=\tfrac{1}{12}ml^2$ is the moment of inertia of a pendulum around the
+pendulum midpoint. Pluggin
+this value for $I$ into the system Lagrangian~(\ref{eq:Lagrangian1 cp}), we
+obtain
+\begin{align*}
+L=\tfrac{1}{2}(m_1+m_2)\dot
+x_1^2+\tfrac{1}{6}m_2l^2\dot\theta_2^2+\tfrac{1}{2}m_2l(\dot
+x_1\dot\theta_2+g)\cos\theta_2\,.
+\end{align*}
+
+The equations of motion can generally be derived from a set of equations
+defined through
+\begin{equation}
+\frac{d}{d t}\frac{\partial L}{\partial\dot q_i}-\frac{\partial
+  L}{\partial q_i}=Q_i\,,
+\end{equation}
+where $Q_i$ are the non-conservative forces and $q_i$ and $\dot q_i$ are the
+state variables of the system. In our case,
+\begin{align*}
+\frac{\partial L}{\partial\dot x_1}&=
+(m_1+m_2)\dot x_1+\tfrac{1}{2}m_2l\dot\theta_2\cos\theta_2\,,\\
+\frac{\partial L}{\partial x_1}&=0\,,\\
+\frac{\partial
+  L}{\partial\dot\theta_2}&=\tfrac{1}{3}m_2l^2\dot\theta_2
++\tfrac{1}{2}m_2l\dot x_1\cos\theta_2\,,\\
+\frac{\partial L}{\partial\theta_2}&=-\tfrac{1}{2}m_2l(\dot
+x_1\dot\theta_2+g),
+\end{align*}
+lead to the equations of motion
+\begin{align*}
+(m_1+m_2)\ddot x_1+\tfrac{1}{2}m_2l\ddot\theta_2\cos\theta_2
+-\tfrac{1}2m_2l\dot\theta_2^2\sin\theta_2&=u-b\dot x_1\,,\\
+2l\ddot\theta_2+3\ddot x_1\cos\theta_2+3g\sin\theta_2&=0\,.
+\end{align*}
+Collecting the four variables $\vec z=[x_1,\dot x_1,\dot\theta_2,\theta_2]\T$
+the equations of motion can be conveniently expressed as four coupled
+ordinary differential equations
+\begin{align*}
+\frac{d\vec z}{d t}=
+\begin{bmatrix}
+z_2\\[2mm]
+\displaystyle
+\frac{2m_2l z_3^2\sin z_4+3m_2g\sin z_4\cos z_4+4u-4bz_2}
+{4(m_1+m_2)-3m_2\cos^2 z_4}\\[2mm]
+\displaystyle
+\frac{-3m_2l z_3^2\sin z_4\cos z_4-6(m_1+m_2)g\sin z_4-6(u-bz_2)\cos z_4}
+{4l(m_1+m_2)-3m_2l\cos^2 z_4} \\
+z_3
+\end{bmatrix}\,,
+\end{align*}
+which can be simulated numerically.
+
+
+
+
+\section{Cart-Double Pendulum Swing-up}
+\begin{wrapfigure}{r}{0.3\hsize}
+\vspace{-5mm}
+\centering
+\includegraphics[width = \hsize]{./figures/cdp_sketch}
+\caption{Cart-double pendulum.}
+\label{fig:cdp dyn}
+\end{wrapfigure}
+%
+The cart-double pendulum dynamic system (see Figure~\ref{fig:cdp dyn})
+consists of a cart with mass $m_1$ and an attached double pendulum
+with masses $m_2$ and $m_3$ and lengths $l_2$ and $l_3$ for the two
+links, respectively. The double pendulum swings freely in the
+plane. The angles of the pendulum, $\theta_2$ and $\theta_3$, are
+measured anti-clockwise from upright. The cart can move horizontally,
+with an applied external force $u$ and the coefficient of friction
+$b$. Typical values are: $m_1=\unit[0.5]{kg}$, $m_2=\unit[0.5]{kg}$,
+$m_3=\unit[0.5]{kg}$ $l_2=\unit[0.6]{m}$, $l_3=\unit[0.6]{m}$, and
+$b=\unit[0.1]{Ns/m}$.
+
+The coordinates, $x_2$, $y_2$ and $x_3$, $y_3$ of the midpoint of the
+pendulum elements are
+\begin{align*}
+\begin{bmatrix}
+x_2\\
+y_2
+\end{bmatrix}
+&=
+\begin{bmatrix}
+x_1-\tfrac{1}{2}l_2\sin\theta_2\\
+\tfrac{1}{2}l_2\cos\theta_2
+\end{bmatrix}\\
+\begin{bmatrix}
+x_3\\
+y_3
+\end{bmatrix}
+&=
+\begin{bmatrix}
+x_1-l_2\sin\theta_2-\tfrac{1}{2}l_3\sin\theta_3\\
+y_3=l_2\cos\theta_2+\tfrac{1}{2}l_3\cos\theta_3
+\end{bmatrix} \,.
+\end{align*}
+The squared velocities of the cart and the pendulum midpoints are
+\begin{align*}
+v_1^2&=\dot x_1^2\,,\\
+v_2^2&=\dot x_2^2+\dot y_2^2=\dot x_1^2-
+l_2\dot x_1\dot\theta_2\cos\theta_2+\tfrac{1}{4}l_2^2\dot\theta_2^2\,,\\
+v_3^2&=\dot x_3^2+\dot y_3^2=\dot x_1^2+l_2^2\dot\theta_2^2+
+\tfrac{1}{4}l_3^2\dot\theta_3^2-2l_2\dot x_1\dot\theta_2\cos\theta_2-
+l_3\dot x_1\dot\theta_3\cos\theta_3+
+l_2l_3\dot\theta_2\dot\theta_3\cos(\theta_2-\theta_3)\,.
+\end{align*}
+The system Lagrangian is the difference between the kinematic energy
+$T$ and the potential energy $V$ and given by
+\begin{align*}
+  L&=T-V=\tfrac{1}{2}m_1v_1^2+\tfrac{1}{2}m_2v_2^2+\tfrac{1}{2}m_3v_3^2+
+  \tfrac{1}{2}I_2\dot\theta_2^2+\tfrac{1}{2}I_3\dot\theta_3^2-m_2gy_2-m_3gy_3
+  \\
+  &= \tfrac{1}{2}(m_1+m_2+m_3)\dot x_1^2 -\tfrac{1}{2} m_2l_2\dot
+  x\dot\theta_2\cos(\theta_2) - \tfrac{1}{2}m_3\big(2l_2\dot
+  x\dot\theta_2\cos(\theta_2) + l_3\dot
+  x_1\dot\theta_3\cos(\theta_3)\big)\nonumber \\
+  &\quad + \tfrac{1}{8} m_2l_2^2\dot\theta_2^2+
+  \tfrac{1}{2}I_2\dot\theta_2^2 + \tfrac{1}{2}m_3(l_2^2\dot\theta_2^2
+  + \tfrac{1}{4}l_3^2\dot\theta_3^2 +
+  l_2l_3\dot\theta_2\dot\theta_3\cos(\theta_2-\theta_3)) +
+  \tfrac{1}{2}I_3\dot\theta_3^2\nonumber  \\
+  &\quad - \tfrac{1}{2}m_2gl_2\cos(\theta_2) -
+  m_3g(l_2\cos(\theta_2)+\tfrac{1}{2}l_3\cos(\theta_3))\,.
+% &=\tfrac{1}{2}(m_1+m_2+m_3)\dot x_1^2+
+% (\tfrac{1}{6}m_2+\tfrac{1}{2}m_3)l_2^2\dot\theta_2^2+
+% \tfrac{1}{6}m_3l_3^2\dot\theta_3^2-
+% (\tfrac{1}{2}m_2+m_3)l_2\dot x_1\dot\theta_2\cos\theta_2\\
+% &\quad-\tfrac{1}{2}m_3l_3\dot x_1\dot\theta_3\cos\theta_3+
+% \tfrac{1}{2}m_3l_2l_3\dot\theta_2\dot\theta_3\cos(\theta_2-\theta_3)-
+% (\tfrac{1}{2}m_2+m_3)l_2g\cos\theta_2-\tfrac{1}{2}m_3l_3g\cos\theta_3,
+\end{align*}
+The angular moment of inertia $I_j$, $j=2,3$ around the pendulum
+midpoint is $I_j=\tfrac{1}{12}ml_j^2$, and $g=\unit[9.82]{m/s^2}$ is
+the acceleration of gravity. These moments inertia imply the
+assumption that the pendulums are thin (but rigid) wires.
+
+The equations of motion are
+\begin{equation}
+\frac{d}{d t}\frac{\partial L}{\partial\dot q_i}-\frac{\partial
+  L}{\partial q_i}=Q_i\,,
+\end{equation}
+where $Q_i$ are the non-conservative forces. 
+We obtain the partial derivatives
+\begin{align*}
+  \frac{\partial L}{\partial \dot x_1}&= (m_1+m_2+m_3)\dot
+  x_1-(\tfrac{1}{2}m_2+m_3)l_2\dot\theta_2
+  \cos\theta_2-\tfrac{1}{2}m_3l_3\dot\theta_3\cos\theta_3\,,\\
+  \frac{\partial L}{\partial x_1}&=0\,,\\
+  \frac{\partial L}{\partial\dot\theta_2}&=
+  (m_3l_2^2+\tfrac{1}{4}m_2l_2^2+I_2)\dot\theta_2 -
+  (\tfrac{1}{2}m_2+m_3)l_2\dot x_1\cos\theta_2+
+  \tfrac{1}{2}m_3l_2l_3\dot\theta_3\cos(\theta_2-\theta_3)\,,\\
+  \frac{\partial L}{\partial\theta_2}&=
+  (\tfrac{1}{2}m_2+m_3)l_2(\dot
+  x_1\dot\theta_2+g)\sin\theta_2-\tfrac{1}{2}
+  m_3l_2l_3\dot\theta_2\dot\theta_3\sin(\theta_2-\theta_3)\,,\\
+  \frac{\partial L}{\partial\dot\theta_3}&=
+  m_3l_3\big[-\tfrac{1}{2}\dot x_1\cos\theta_3+
+  \tfrac{1}{2}l_2\dot\theta_2\cos(\theta_2-\theta_3)+\tfrac{1}{4}l_3\dot\theta_3\big]+I_3\dot\theta_3\,,\\
+  \frac{\partial L}{\partial\theta_3}&= \tfrac{1}{2}m_3l_3\big[(\dot
+  x_1\dot\theta_3+g)\sin\theta_3+
+  l_2\dot\theta_2\dot\theta_3\sin(\theta_2-\theta_3)\big]
+\end{align*}
+leading to the equations of motion
+\begin{align*}
+  (m_1+m_2+m_3)\ddot x_1+\tfrac{1}{2}m_2+m_3)l_2
+  (\dot\theta_2^2\sin\theta_2-\ddot\theta_2\cos\theta_2)\nonumber\\
+  \quad +
+  \tfrac{1}{2}m_3l_3(\dot\theta_3^2\sin\theta_3-\ddot\theta_3\cos\theta_3)
+  &=u-b\dot x_1\\
+  (m_3l_2^2+I_2+\tfrac{1}{4}m_2l_2^2)\ddot\theta_2
+  -(\tfrac{1}{2}m_2+m_3)l_2(\ddot
+  x_1\cos\theta_2+g\sin\theta_2)\nonumber\\
+  \quad+ \tfrac{1}{2}m_3l_2l_3[\ddot\theta_3\cos(\theta_2-\theta_3)
+  +\dot\theta_3^2\sin(\theta_2-\theta_3)]&=0\\
+% 2l_3\ddot\theta_3+3l_2[\ddot\theta_2\cos(\theta_2-\theta_3)-
+% \dot\theta_2^2\sin(\theta_2-\theta_3)]-
+% 3\ddot x_1\cos\theta_3-3g\sin\theta_3&=0\\
+(\tfrac{1}{4}m_2 l_3^2+I_3)\ddot\theta_3 -\tfrac{1}{2}m_3l_3(\ddot
+x_1\cos\theta_3 + g\sin\theta_3)\nonumber \\
+\quad + \tfrac{1}{2}m_3l_2l_3[\ddot\theta_2\cos(\theta_2-\theta_3)-\dot\theta_2^2\sin(\theta_2-\theta_3)] & = 0
+\end{align*}
+%solve([(m1+m2+m3)*ddx-(m2/2+m3)*l2*cos(t2)*ddt2-m3*l3*cos(t3)/2*ddt3=u-b*dx1-(m2/2+m3)*l2*dt2*dt2*sin(t2)-m3*l3*dt3*dt3*sin(t3)/2,-(m2/2+m3)*cos(t2)*ddx+(m2/3+m3)*l2*ddt2+m3*l3*cos(t2-t3)/2=(m2/2+m3)*g*sin(t2)-m3*l3*dt3*dt3*sin(t2-t3)/2,-3*cos(t3)*ddx+3*l2*cos(t2-t3)*ddt2+2*l3*ddt3=3*l2*dt2*dt2*sin(t2-t3)+3*(dx1*dt3+g)*sin(t3)],[ddx,ddt2,ddt3]);
+These three linear equations in $(\ddot x_1, \ddot\theta_2,
+\ddot\theta_3)$ can be rewritten as the linear equation system
+\begin{align*}
+\begin{bmatrix}
+(m_1+m_2+m_3) &
+-\tfrac{1}{2}(m_2+2m_3)l_2\cos\theta_2 &
+-\tfrac{1}{2}m_3l_3\cos\theta_3\\
+-(\tfrac{1}{2}m_2+m_3)l_2\cos\theta_2
+& m_3l_2^2+I_2+\tfrac{1}{4}m_2l_2^2
+& \tfrac{1}{2}m_3l_2l_3\cos(\theta_2-\theta_3)
+\\
+-\tfrac{1}{2}m_3l_3\cos\theta_3
+& 
+\tfrac{1}{2}m_3l_2l_3\cos(\theta_2-\theta_3)
+& \tfrac{1}{4}m_2l_3^2+I_3
+\end{bmatrix}
+\begin{bmatrix}
+\ddot x_1 \\
+\ddot\theta_2 \\ \ddot\theta_3
+\end{bmatrix}
+ =
+\begin{bmatrix}
+c_1\\c_2\\c_3
+\end{bmatrix}\,,
+\end{align*}
+where
+\begin{align*}
+&
+\begin{bmatrix}
+c_1\\c_2\\c_3
+\end{bmatrix}
+=
+\begin{bmatrix}
+u-b\dot x_1-\tfrac{1}{2}(m_2+2m_3)l_2
+\dot\theta_2^2\sin\theta_2-\tfrac{1}{2}m_3l_3\dot\theta_3^2\sin\theta_3\\
+(\tfrac{1}{2}m_2+m_3)l_2 g\sin\theta_2 - \tfrac{1}{2}m_3l_2l_3\dot\theta_3^2\sin(\theta_2-\theta_3)
+\\
+\tfrac{1}{2}m_3l_3[g\sin\theta_3+l_2\dot\theta_2^2\sin(\theta_2-\theta_3)] 
+\end{bmatrix}\,.
+\end{align*}
+%
+This linear equation system can be solved for $\ddot x_1,
+\ddot\theta_2,\ddot\theta_3$ and used for numerical simulation.
+
+
+\section{Unicycling}
+%
+\begin{figure}[tb]
+\centering
+\includegraphics[height = 5cm]{./figures/unicycle}
+\caption{Unicycle.}
+\label{fig:unicycle}
+\end{figure}
+%
+A sketch of the unicycle system is shown in
+Figure~\ref{fig:unicycle}. The equations of motion that govern the
+unicycle were derived in the MSc thesis by
+Forster~\cite{Forster2009}. We shall provide a sketch of the full
+derivation here, in which we follow the steps taken by
+Forster~\cite{Forster2009}, Section 3.3.
+
+
+
+\subsection{Method}
+%-------------------------------------------------------------------------------------------------------------------------------------------
+\begin{figure}[tb]
+\centering
+\input{figures/unicoords_body}
+\caption{The robotic unicycle with state variables: pitch angle
+  $\phi$, roll angle $\theta$, yaw angle $\psi$, wheel angle
+  $\phi_\te{w}$, turntable angle $\psi_\te{t}$, the associated angular
+  velocities and the location of the global origin
+  $(x_\te{c},y_\te{c})$. The actions are the wheel motor torque
+  $u_\te{w}$ and the turntable motor torque $u_\te{t}$. The global
+  coordinate system is defined by the vectors $\vec i, \vec j$ and
+  $\vec k$.}
+\label{fig:unibody}
+\end{figure}
+%-------------------------------------------------------------------------------------------------------------------------------------------
+The robotic unicycle is shown in Figure~\ref{fig:unibody} with global
+coordinate system defined by the orthonormal vectors ${\vec i}, \vec j$ and
+$\vec k$. The spatial position of the unicycle is fully defined by the
+pitch angle $\phi$, roll angle $\theta$, yaw angle $\psi$, wheel angle
+$\phi_\te{w}$, turntable angle $\psi_\te{t}$ and location of the
+global origin with respect to the body-centred coordinate system
+$(x_\te{c},y_\te{c})$. We chose the state vector to be $\vec x =
+[\phi,\dot\phi,\theta,\dot\theta,\psi,\dot\psi,\dot\phi_\te{w},
+\dot\psi_\te{t},x_\te{c},y_\te{c}]\T \in\R^{10}$ where we exclude
+$\phi_\te{w}$ and $\psi_\te{t}$ since they clearly have no effect on
+the dynamics. The action vector $\vec u$ is made up of a wheel motor
+torque $u_\te{w}$ and a turntable motor torque $u_\te{t}$.  
+
+Let us start with the coordinates $(x_\te{c},y_\te{c})$. These are
+centred on the point of contact with the floor and define the location
+of the global origin. The coordinate $x_\te{c}$ lies parallel to the
+current direction of travel and $y_\te{c}$ is orthogonal to it. These
+coordinates evolve according to
+\begin{align}
+\dot x_\te{c} &= r_\te{w} \dot\phi_\te{w} \cos\psi \label{eq:xceqn}  \\
+\dot y_\te{c} &= r_\te{w} \dot\phi_\te{w} \sin\psi \label{eq:yceqn}
+\end{align}
+where $r_\te{w}$ is the wheel radius.  The full unicycle model was
+obtained by analysing the wheel, frame and turntable as individual
+Free Body Diagrams (FBDs), as depicted in Figure~\ref{fig:FBDs}. Linear momentum
+and moment of momentum for each FBD were then resolved to yield six
+scalar equations for each free body. The internal forces were then
+eliminated to yield five independent scalar equations which govern the
+evolution of the angular states. A description of the physical
+constants of the system along with the values we use in this thesis
+are given in Table~\ref{tab:uniconsts}.
+%-------------------------------------------------------------------------------------------------------------------------------------------
+\begin{table}
+\renewcommand{\arraystretch}{1.3}
+\begin{center}
+%\setlength{\extrarowheight}{2pt}
+\rowcolors{1}{black!10}{white}
+\centerline{
+\small
+\begin{tabular}{c  l  c  c}
+%\toprule[1.5pt] 
+{\bf Constant} & {\bf Description} & {\bf Value} & {\bf Units } \\
+\hline
+$m_\te{w}$ & Wheel mass & 1.0 & kg \\
+$r_\te{w}$ & Wheel radius & 0.225 & m \\
+$A_\te{w}$ & Moment of inertia of wheel around $\vec i_\te{w}$ & 0.0242 & kg$\,$m$^2$ \\
+$C_\te{w}$ & Moment of inertia of wheel around $\vec k_\te{w}$ & 0.0484 & kg$\,$m$^2$ \\
+%
+$m_\te{f}$ & Frame mass  & 23.5 & kg \\
+$r_\te{f}$ & Frame centre of mass to wheel & 0.54 & m \\
+$A_\te{f}$ & Moment of inertia of frame around $\vec i_\te{f}$ & 0.4248 & kg$\,$m$^2$ \\
+$B_\te{f}$ & Moment of inertia of frame around $\vec j_\te{f}$ & 0.4608 & kg$\,$m$^2$ \\
+$C_\te{f}$ & Moment of inertia of frame around $\vec k_\te{f}$ & 0.8292 & kg$\,$m$^2$ \\
+%
+$m_\te{t}$ & Turntable mass & 10.0 & kg \\
+$r_\te{t}$ & Frame centre of mass to turntable & 0.27 & m \\
+$A_\te{t}$ & Moment of inertia of turntable around $\vec i_\te{t}$ & 1.3 & kg$\,$m$^2$ \\
+$C_\te{t}$ & Moment of inertia of turntable around $\vec k_\te{t}$ & 0.2 & kg$\,$m$^2$ \\
+$g$ & Gravitational acceleration & 9.81 & m$\,$s$^{-2}$ \\
+%\bottomrule[1.5pt]
+\end{tabular}
+}
+\end{center}
+\caption{Physical constants used for the simulated robotic
+  unicycle. The coordinate systems defined by the $\vec i, \vec j$ and
+  $\vec k$ vectors are shown in Figure~\ref{fig:FBDs}.}
+\label{tab:uniconsts}
+\end{table}
+%-------------------------------------------------------------------------------------------------------------------------------------------
+
+
+\subsection{Wheel FBD}
+The wheel coordinate system is defined by the orthonormal vectors
+$\vec i_\te{w},\vec j_\te{w}$ and $\vec k_\te{w}$ as shown in
+Figure~\ref{fig:wheelFBD}. We begin by noting that the angular
+velocity of the wheel coordinate system is $\Omega_\te{w} =
+\dot\psi\vec k + \dot\theta\vec j_\te{w}$. Now noting that the angular
+velocity of the wheel only differs in the $\vec k_\te{w}$ direction
+and assuming no slip between wheel and floor we have expressions for
+the velocity and angular velocity of the wheel
+\begin{align*}
+\vec v_\te{w} &= -(\vec\omega_\te{w}\times r_\te{w}\vec i_\te{w}) \\
+\vec\omega_\te{w} &= \Omega_\te{w} + \dot\phi_\te{w}\vec k_\te{w}
+\end{align*}
+From these expressions we can derive the acceleration of the wheel
+$\dot{\vec v}_\te{w}$ and the rate of change of angular momentum
+$\dot{\vec h}_\te{w}$ as
+\begin{align*}
+  \dot{\vec v}_\te{w} &= \pdiff{\vec v_\te{w}}{t} + (\Omega_\te{w}\times
+   \vec v_\te{w}) \\
+   \dot{\vec h}_\te{w} &= A_\te{w}\pdiff{\omega_\te{w}[1]}{t}\vec i_\te{w} +
+    A_\te{w}\pdiff{\omega_\te{w}[2]}{t}\vec j_\te{w} +
+    C_\te{w}\pdiff{\omega_\te{w}[3]}{t}\vec k_\te{w} +
+   (\Omega_\te{w}\times \vec h_\te{w})
+\end{align*}
+where angular momentum in the wheel frame of reference is $\vec h_\te{w}
+= [A_\te{w}; A_\te{w}; C_\te{w}] \circ \vec\omega_\te{w}$.  Now we consider
+the forces acting on the wheel free body. These are given by the
+unknown quantities: axle force $F_\te{w}$, axle torque $Q_\te{w}$ \&
+reaction force $R$ and the known quantities: wheel weight $W_\te{w}$
+\& friction torque $T$. These forces and moments are shown in the
+right-hand plot of Figure~\ref{fig:wheelFBD}. Note that we actually
+know the component of the axle torque $Q_\te{w}$ in the $\vec
+k_\te{w}$ direction as it is given by the reaction of the wheel motor
+on the wheel itself $u_\te{w}$. Resolving the rate of change of linear
+momentum and the rate of change of angular momentum around the center
+of mass leads to
+\begin{align}
+  m_\te{w}\dot{\vec v}_\te{w} &= R + F_\te{w} + W_\te{w} \label{eq:wFBD1} \\
+  \dot{\vec h}_\te{w} &= (r_\te{w}\vec i_\te{w} \times R) + Q_\te{w} +
+  T \label{eq:wFBD2}
+\end{align}
+
+
+%-------------------------------------------------------------------------------------------------------------------------------------------
+\begin{figure}
+\centering
+\subfigure[The wheel as a free body diagram and coordinate system defined by $\vec i_\te{w},\vec j_\te{w}$ and $\vec k_\te{w}$]{
+\input{figures/unicoords_wheel}
+\input{figures/unicoords_wheel2}
+\label{fig:wheelFBD}
+}
+\subfigure[The frame as a free body diagram and coordinate system defined by $\vec i_\te{f},\vec j_\te{f}$ and $\vec k_\te{f}$]{
+\input{figures/unicoords_frame}
+\input{figures/unicoords_frame2}
+\label{fig:frameFBD}
+}
+\subfigure[The turntable as a free body diagram and coordinate system defined by $\vec i_\te{t},\vec j_\te{t}$ and $\vec k_\te{t}$]{
+\input{figures/unicoords_turntable}
+\input{figures/unicoords_turntable2}
+\label{fig:turntableFBD}
+}
+\caption{Free body diagrams of the wheel, frame and turntable of the unicycle. The model has the angular state variables pitch $\phi$, roll $\theta$, yaw $\psi$, wheel angle $\phi_\te{w}$ and turntable angle $\psi_\te{t}$. The vectors $\vec i, \vec j$ and $\vec k$ define the global fixed frame of reference. The centres of mass for each component are shown by the black dots. Forces and moments are shown on the right, with unknown quantities as dashed lines.}
+\label{fig:FBDs}
+\end{figure}
+%-------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+\subsection{Frame FBD}
+The frame coordinate system is defined by the orthonormal vectors $\vec i_\te{f},\vec j_\te{f}$ and $\vec k_\te{f}=\vec k_\te{w}$ as shown in Figure~\ref{fig:frameFBD}. In this case, the angular velocity of the frame $\vec\omega_\te{f}$ is given by the angular velocity of the wheel plus an additional spin about the wheel axis and the velocity of the frame $\vec v_\te{f}$ is given by the velocity of the wheel plus an additional rotation about the wheel centre
+\begin{align*}
+\vec v_\te{f} &= \vec v_\te{w} -(\vec\omega_\te{f}\times r_\te{f}\vec i_\te{f}) \\
+\vec\omega_\te{f} &= \Omega_\te{w} + \dot\phi\vec k_\te{f}
+\end{align*}
+As before, we can now derive the acceleration of the frame $\dot{\vec v}_\te{f}$ and the rate of change of angular momentum $\dot{\vec h}_\te{f}$ as
+\begin{align*}
+\dot{\vec v}_\te{f} &= \pdiff{{\vec v}_\te{f}}{t} + (\Omega_\te{f}\times {\vec v}_\te{f}) \\
+\dot{\vec h}_\te{f} &= A_\te{f}\pdiff{\omega_\te{f}[1]}{t}\vec i_\te{f} + B_\te{f}\pdiff{\omega_\te{f}[2]}{t}\vec j_\te{f} + C_\te{f}\pdiff{\omega_\te{f}[3]}{t}\vec k_\te{f} +  (\Omega_\te{f}\times {\vec h}_\te{f})
+\end{align*}
+where angular momentum of the frame in this frame of reference is ${\vec h}_\te{f} = [A_\te{f}; B_\te{f}; C_\te{f}] \circ \vec\omega_\te{f}$. The forces and moments acting on the frame are shown on the right in Figure~\ref{fig:frameFBD}. They consist of the known frame weight $W_\te{f}$ and the unknown: wheel axle force $F_\te{f}=-F_\te{w}$, wheel axle torque $Q_\te{f}=-Q_\te{w}$, turntable axle force $G_\te{f}$ \& turntable axle torque $P_\te{f}$. But again we know that the dimension of $P_\te{f}$ acting along $\vec i_\te{f}$ is given by the reaction of the frame to the turntable motor $u_\te{t}$.  So resolving the rate of change of linear momentum and the rate of change of angular momentum around the centre of mass gives us
+\begin{align}
+m_\te{f}\dot{\vec v}_\te{f} &= F_\te{f} + G_\te{f} + W_\te{f} \label{eq:fFBD1} \\
+\dot{\vec h}_\te{f} &= (r_\te{f}\vec i_\te{f} \times F_\te{f}) - (r_\te{t}\vec i_\te{f} \times G_\te{f}) + Q_\te{f} + P_\te{f} \label{eq:fFBD2} 
+\end{align}
+
+
+\subsection{Turntable FBD}
+Finally, the turntable coordinate system is defined by the orthonormal vectors $\vec i_\te{t} = \vec k_\te{f},\vec j_\te{t} = \vec j_\te{f}$ and $\vec k_\te{t} = -\vec i_\te{f}$  as shown in Figure~\ref{fig:turntableFBD}. The velocity of the turntable centre ${\vec v}_\te{t}$ is equal to the velocity of the wheel plus an additiona lterm caused by rotation about the wheel centre, while the angular velocity $\vec\omega_\te{t}$ differs from $\Omega_\te{t}=\Omega_\te{f}$ only along $\vec k_\te{t}$ 
+\begin{align*}
+{\vec v}_\te{t} &= {\vec v}_\te{w} + (\Omega_\te{t}\times r\vec k_\te{t}) \\
+\vec\omega_\te{t} &= \Omega_\te{t} + \dot\psi_\te{t}\vec k_\te{t}
+\end{align*}
+Again, we derive the acceleration of the frame $\dot{\vec v}_\te{t}$ and the rate of change of angular momentum $\dot{\vec h}_\te{t}$ as
+\begin{align*}
+\dot{\vec v}_\te{t} &= \pdiff{{\vec v}_\te{f}}{t} + (\Omega_\te{f}\times {\vec v}_\te{f}) \\
+\dot{\vec h}_\te{t} &= A_\te{t}\pdiff{\omega_\te{t}[1]}{t}\vec i_\te{t} + A_\te{t}\pdiff{\omega_\te{t}[2]}{t}\vec j_\te{t} + C_\te{t}\pdiff{\omega_\te{t}[3]}{t}\vec k_\te{t} +  (\Omega_\te{t}\times {\vec h}_\te{t})
+\end{align*}
+where ${\vec h}_\te{t} = [A_\te{t}; A_\te{t}; C_\te{t}] \circ \vec\omega_\te{t}$. The forces and moments acting on the turntable lead to the last of our equations
+\begin{align}
+m_\te{t}\dot{\vec v}_\te{t} &= G_\te{t} + W_\te{t} \label{eq:tFBD1} \\
+\dot{\vec h}_\te{t} &= P_\te{t} \label{eq:tFBD2} 
+\end{align}
+
+
+
+
+
+\subsection{Eliminating Internal Forces}
+We now have 18 kinematic relationships given by
+Equations~\eqref{eq:wFBD1}--\eqref{eq:tFBD2} which govern the
+dynamics of the unicycle. These can be reduced to five expressions by
+eliminating the 13 scalar unknowns found in the unknown internal
+forces, $F$ and $G$, the unknown reaction force $R$ and the partially
+unkown torques $Q$ and $P$. The first can be obtained from
+Equation~\eqref{eq:tFBD2} and noting that the component of $P_\te{f}$
+about $\vec k_\te{t}$ is the reaction to the motor torque $u_\te{t}$
+\begin{align}
+\dot{\vec h}_\te{t}\T\vec k_\te{t} &= u_\te{t} \label{eq:uniE1} 
+\end{align}
+The second can be obtained by first making use of the relationships
+$G_\te{f}=-G_\te{t}$ \& $P_\te{f}=-P_\te{t}$ and then rearranging
+Equation~\eqref{eq:fFBD1}, Equation~\eqref{eq:tFBD1} and Equation~\eqref{eq:tFBD2} to get
+\begin{align*}
+  F_\te{f} &= m_\te{t}\dot{\vec v}_\te{t} + m_\te{f}\dot{\vec v}_\te{f} -W_\te{t} - W_\te{f} \\
+  G_\te{f} &= W_\te{t} - m_\te{t}\dot{\vec v}_\te{t} \\
+  P_\te{f} &= -\dot{\vec h}_\te{t}
+\end{align*}
+Substituting these into Equation~\eqref{eq:fFBD2} and noting that $Q_\te{w}=-Q_\te{f}$ gives us
+\begin{align*}
+Q_\te{w} &= -\dot{\vec h}_\te{f} -\dot{\vec h}_\te{t} - \Big( r_\te{f}\vec i_\te{f} \times (W_\te{f}+W_\te{t} - m_\te{f}\dot{\vec v}_\te{f} - m_\te{t}\dot{\vec v}_\te{t}) \Big) - \Big(r_\te{t}\vec i_\te{f} \times (W_\te{t}-m_\te{t}\dot{\vec v}_\te{t})\Big)
+\end{align*}
+Once again, the component of $Q_\te{w}$ about the wheel axis is equal to the torque provided by the wheel motor $u_\te{w}$, therefore $Q_\te{w}\T\vec k_\te{w} = u_\te{w}$ and we have our second expression
+\begin{align}
+-\bigg(\dot{\vec h}_\te{f} +\dot{\vec h}_\te{t} + \Big( r_\te{f}\vec i_\te{f} \times (W_\te{f}+W_\te{t} - m_\te{f}\dot{\vec v}_\te{f} - m_\te{t}\dot{\vec v}_\te{t}) \Big) + \Big(r_\te{t}\vec i_\te{f} \times (W_\te{t}-m_\te{t}\dot{\vec v}_\te{t})\Big) \bigg)\T \vec k_\te{w} = u_\te{w}
+ \label{eq:uniE2} 
+\end{align}
+Finally, Equation~\eqref{eq:wFBD1} can be combined with our expression for $F_\te{f}=-F_\te{w}$ to find the reaction force at the base
+\begin{equation*}
+R = m_\te{w}\dot{\vec v}_\te{w} + m_\te{f}\dot{\vec v}_\te{f} + m_\te{t}\dot{\vec v}_\te{t} -W_\te{w} - W_\te{f} - W_\te{t}
+\end{equation*}
+and can be substituted into Equation~\eqref{eq:wFBD2} to obtain the following three relationships
+\begin{align}
+  \dot{\vec h}_\te{w} &= \Big(r_\te{w}{\vec i}_\te{w} \times (m_\te{w}\dot{\vec v}_\te{w} + m_\te{f}\dot{\vec v}_\te{f} + m_\te{t}\dot{\vec v}_\te{t} -W_\te{w} - W_\te{f} - W_\te{t}) \Big) \label{eq:uniE3} \\
+  \nonumber & \quad-\bigg(\dot{\vec h}_\te{f} +\dot{\vec h}_\te{t} + \Big(
+  r_\te{f}\vec i_\te{f} \times (W_\te{f}+W_\te{t} - m_\te{f}\dot{\vec
+    v}_\te{f} - m_\te{t}\dot{\vec v}_\te{t}) \Big) + \Big(r_\te{t}\vec
+  i_\te{f} \times (W_\te{t}-m_\te{t}\dot{\vec v}_\te{t})\Big) \bigg) +
+  T
+\end{align}
+The five expressions contained in
+Equations~\eqref{eq:uniE1}--\eqref{eq:uniE3} form the foundation for
+the model we use. The only unknowns remaining in these relationships
+are the states: $\phi, \dot\phi, \theta, \dot\theta, \dot\psi,
+\dot\phi_\te{w}, \dot\psi_\te{t}$, the torque actions: $u_\te{w},
+u_\te{t}$ and the accelerations:
+$\ddot\phi,\ddot\theta,\ddot\psi,\ddot\phi_\te{w},
+\ddot\psi_\te{t}$. The equations were then rearranged by Forster,
+through use of the Symbolic Toolbox in MATLAB, to isolate the five
+acceleration terms. We use this mapping along with
+Equations~\eqref{eq:xceqn}--\eqref{eq:yceqn} to perform simulations of
+the unicycle.
+
+
+\chapter{Testing and Debugging}
+
+A crucial ingredient that is required for \textsc{pilco}'s success is
+the computation of some gradients. Every important function needs to
+compute some sort of function value and the derivative of this
+function value with respect to some of the input values.
+
+We have included some relatively generic\footnote{The interfaces of
+  the most important functions, e.g., controllers, cost functions, GP
+  predictions, are unified.} gradient test functions in \texttt{\path
+  test/}. In all functions, the analytic gradients are compared with
+finite-difference approximations (see \texttt{\path
+  test/checkgrad.m}).
+
+Usually, the test functions can be called with the variables in the
+MATLAB workspace during the execution of \textsc{pilco}. 
+
+
+\section{Gradient Checks for the Controller Function}
+
+\texttt{conT} checks gradients of the policy (controller) functions.
+\subsection{Interface}
+\begin{lstlisting}
+function [dd dy dh] = conT(deriv, policy, m, s, delta)
+\end{lstlisting}
+
+\begin{par}
+\textbf{Input arguments:}
+\end{par} 
+
+\begin{verbatim}
+deriv    desired derivative. options:
+     (i)    'dMdm' - derivative of the mean of the predicted control
+             wrt the mean of the input distribution
+     (ii)   'dMds' - derivative of the mean of the predicted control
+             wrt the variance of the input distribution
+     (iii)  'dMdp' - derivative of the mean of the predicted control
+             wrt the controller parameters
+     (iv)   'dSdm' - derivative of the variance of the predicted control
+             wrt the mean of the input distribution
+     (v)    'dSds' - derivative of the variance of the predicted control
+             wrt the variance of the input distribution
+     (vi)   'dSdp' - derivative of the variance of the predicted control
+              wrt the controller parameters
+     (vii)  'dCdm' - derivative of inv(s)*(covariance of the input and the
+             predicted control) wrt the mean of the input distribution
+     (viii) 'dCds' - derivative of inv(s)*(covariance of the input and the
+             predicted control) wrt the variance of the input distribution
+     (ix)   'dCdp' - derivative of inv(s)*(covariance of the input and the
+             predicted control) wrt the controller parameters
+policy   policy structure
+  .fcn   function handle to policy
+  .<>    other fields that are passed on to the policy
+m        mean of the input distribution
+s        covariance of the input distribution
+delta    (optional) finite difference parameter. Default: 1e-4
+\end{verbatim}
+
+\begin{par}
+\textbf{Output arguments:}
+\end{par} 
+\begin{verbatim}
+dd         relative error of analytical vs. finite difference gradient
+dy         analytical gradient
+dh         finite difference gradient
+\end{verbatim}
+
+\section{Gradient Checks for the Cost Function}
+\texttt{lossT} checks gradients of the (immediate) cost functions,
+which are specific to each scenario.
+\subsection{Interface}
+\begin{lstlisting}
+function [dd dy dh] = lossT(deriv, policy, m, s, delta)
+\end{lstlisting}
+
+\begin{par}
+\textbf{Input arguments:}
+\end{par} 
+\begin{verbatim}
+deriv    desired derivative. options:
+      (i)   'dMdm' - derivative of the mean of the predicted cost
+             wrt the mean of the input distribution
+      (ii)  'dMds' - derivative of the mean of the predicted cost
+             wrt the variance of the input distribution
+      (iii) 'dSdm' - derivative of the variance of the predicted cost
+             wrt the mean of the input distribution
+      (iv)  'dSds' - derivative of the variance of the predicted cost
+             wrt the variance of the input distribution
+      (v)   'dCdm' - derivative of inv(s)*(covariance of the input and the
+             predicted cost) wrt the mean of the input distribution
+      (vi)  'dCds' - derivative of inv(s)*(covariance of the input and the
+             predicted cost) wrt the variance of the input distribution
+cost     cost structure
+  .fcn   function handle to cost
+  .<>    other fields that are passed on to the cost
+m        mean of the input distribution
+s        covariance of the input distribution
+delta    (optional) finite difference parameter. Default: 1e-4
+\end{verbatim}
+\begin{par}
+\textbf{Output arguments:}
+\end{par} \vspace{1em}
+\begin{verbatim}
+dd         relative error of analytical vs. finite difference gradient
+dy         analytical gradient
+dh         finite difference gradient
+\end{verbatim}
+
+
+
+\section{Gradient Checks for the GP Prediction Function}
+\texttt{gpT} checks gradients of the functions that implement the GP
+prediction at an uncertain test input, i.e., all \texttt{gp*}
+functions. These functions can be found in \texttt{\path gp/}.
+
+\subsection{Interface}
+\begin{lstlisting}
+function [dd dy dh] = gpT(deriv, gp, m, s, delta)
+\end{lstlisting}
+
+
+\begin{par}
+\textbf{Input arguments:}
+\end{par} 
+\begin{verbatim}
+deriv    desired derivative. options:
+     (i)    'dMdm' - derivative of the mean of the GP prediction
+             wrt the mean of the input distribution
+     (ii)   'dMds' - derivative of the mean of the GP prediction
+             wrt the variance of the input distribution
+     (iii)  'dMdp' - derivative of the mean of the GP prediction
+             wrt the GP parameters
+     (iv)   'dSdm' - derivative of the variance of the GP prediction
+             wrt the mean of the input distribution
+     (v)    'dSds' - derivative of the variance of the GP prediction
+             wrt the variance of the input distribution
+     (vi)   'dSdp' - derivative of the variance of the GP prediction
+             wrt the GP parameters
+     (vii)  'dVdm' - derivative of inv(s)*(covariance of the input and the
+             GP prediction) wrt the mean of the input distribution
+     (viii) 'dVds' - derivative of inv(s)*(covariance of the input and the
+             GP prediction) wrt the variance of the input distribution
+     (ix)   'dVdp' - derivative of inv(s)*(covariance of the input and the
+             GP prediction) wrt the GP parameters
+gp       GP structure
+  .fcn   function handle to the GP function used for predictions at
+         uncertain inputs
+  .<>    other fields that are passed on to the GP function
+m        mean of the input distribution
+s        covariance of the input distribution
+delta    (optional) finite difference parameter. Default: 1e-4
+\end{verbatim}
+\begin{par}
+\textbf{Output arguments:}
+\end{par} 
+\begin{verbatim}
+dd         relative error of analytical vs. finite difference gradient
+dy         analytical gradient
+dh         finite difference gradient
+\end{verbatim}
+
+
+
+
+
+\section{Gradient Checks for the State Propagation Function}
+
+\texttt{propagateT} checks gradients of the function
+\texttt{propagated}, which implements state propagation $p(\vec x_t)
+\to p(\vec x_{t+1})$. This function can be found in \texttt{\path
+  base/}.
+
+\subsection{Interface}
+
+\begin{lstlisting}
+[dd dy dh] = propagateT(deriv, plant, dynmodel, policy, m, s, delta)
+\end{lstlisting}
+
+\begin{par}
+\textbf{Input arguments:}
+\end{par} 
+\begin{verbatim}
+m                 mean of the state distribution at time t           [D x 1]
+s                 covariance of the state distribution at time t     [D x D]
+plant             plant structure
+dynmodel          dynamics model structure
+policy            policy structure
+\end{verbatim}
+\begin{par}
+\textbf{Output arguments:}
+\end{par} 
+\begin{verbatim}
+Mnext             predicted mean at time t+1                         [E x 1]
+Snext             predicted covariance at time t+1                   [E x E]
+dMdm              output mean wrt input mean                         [E x D]
+dMds              output mean wrt input covariance matrix         [E  x D*D]
+dSdm              output covariance matrix wrt input mean        [E*E x  D ]
+dSds              output cov wrt input cov                       [E*E x D*D]
+dMdp              output mean wrt policy parameters                  [E x P]
+dSdp              output covariance matrix wrt policy parameters [E*E x  P ]
+
+where P is the number of policy parameters.
+\end{verbatim}
+
+
+
+
+\section{Gradient Checks for Policy Evaluation}
+\texttt{valueT} checks the overall gradients $\partial
+J(\vec\theta)/\partial\vec\theta$ of the expected long-term cost $J$
+with respect all policy parameters $\vec\theta$. Policy evaluation,
+i.e., computing $J$, and the corresponding gradients are implemented
+in \texttt{value.m} to be found in \texttt{\path base/}.
+
+
+\subsection{Interface}
+
+\begin{lstlisting}
+[d dy dh] = valueT(p, delta, m, s, dynmodel, policy, plant, cost, H)
+\end{lstlisting}
+
+\begin{par}
+\textbf{Input arguments:}
+\end{par} 
+\begin{verbatim}
+p          policy parameters (can be a structure)
+  .<>      fields that contain the policy parameters (nothing else)
+m          mean of the input distribution
+s          covariance of the input distribution
+dynmodel   GP dynamics model (structure)
+policy     policy structure
+plant      plant structure
+cost       cost structure
+H          prediction horizon
+delta      (optional) finite difference parameter. Default: 1e-4
+\end{verbatim}
+\begin{par}
+\textbf{Output arguments:}
+\end{par} 
+\begin{verbatim}
+dd         relative error of analytical vs. finite difference gradient
+dy         analytical gradient
+dh         finite difference gradient
+\end{verbatim}
+
+
+
+\chapter{Code and Auto-generated Documentation of the Main Functions}
+In the following, we include the auto-generated documentation of the
+most important functions of the \textsc{pilco} learning framework. If
+you change the documentation in the \texttt{*.m} files, please run
+\texttt{\path doc/generate\_docs.m} to update the rest of this
+chapter. HTML files will be generated as well and can be found in
+\texttt{\path doc/html/}.
+
+\section{\texttt{Base} Directory}
+
+%%%%%%%%%% import auto-generated documentation
+\input{tex/applyController.tex}
+%\input{tex/calcCost.tex}
+%\input{tex/pred.tex}
+%\input{tex/predcost.tex}
+\input{tex/propagate.tex}
+%\input{tex/propagated.tex}
+\input{tex/rollout.tex}
+%\input{tex/simulate.tex}
+\input{tex/trainDynModel.tex}
+\input{tex/value.tex}
+
+\section{\texttt{Control} Directory}
+%%%%%%%%%% import auto-generated documentation
+\input{tex/conCat.tex}
+\input{tex/congp.tex}
+\input{tex/conlin.tex}
+\section{\texttt{GP} Directory}
+
+
+%\input{tex/gpr.tex}
+\input{tex/train.tex}
+\input{tex/hypCurb.tex}
+\input{tex/fitc.tex}
+%\input{tex/covNoise.tex}
+%\input{tex/covSEard.tex}
+%\input{tex/covSum.tex}
+\input{tex/gp0.tex}
+%\input{tex/gp0d.tex}
+\input{tex/gp1.tex}
+%\input{tex/gp1d.tex}
+\input{tex/gp2.tex}
+%\input{tex/gp2d.tex}
+
+% \section{\texttt{Loss} Directory}
+
+% \input{tex/lossAdd.tex}
+% \input{tex/lossHinge.tex}
+% \input{tex/lossLin.tex}
+% \input{tex/lossQuad.tex}
+% \input{tex/lossSat.tex}
+% \input{tex/reward.tex}
+
+%\chapter{Detailed Code}
+
+
+
+
+% \section{\texttt{Base} Directory}
+
+% %%%%%%%%%% import auto-generated documentation
+% \input{tex/applyController.tex}
+% \input{tex/calcCost.tex}
+% \input{tex/pred.tex}
+% \input{tex/predcost.tex}
+% \input{tex/propagate.tex}
+% \input{tex/propagated.tex}
+% \input{tex/rollout.tex}
+% \input{tex/simulate.tex}
+% \input{tex/trainDynModel.tex}
+% \input{tex/value.tex}
+
+
+% %%%%%%%%%% import auto-generated documentation
+% \input{tex/conCat.tex}
+% \input{tex/congp.tex}
+% \input{tex/conlin.tex}
+% \chapter{\texttt{GP} Directory}
+
+% %\input{tex/covNoise.tex}
+% %\input{tex/covSEard.tex}
+% %\input{tex/covSum.tex}
+% \input{tex/fitc.tex}
+% \input{tex/gp0.tex}
+% \input{tex/gp0d.tex}
+% \input{tex/gp1.tex}
+% \input{tex/gp1d.tex}
+% \input{tex/gp2.tex}
+% \input{tex/gp2d.tex}
+% \input{tex/gpr.tex}
+% \input{tex/hypCurb.tex}
+% \input{tex/train.tex}
+
+% \chapter{\texttt{Loss} Directory}
+
+% \input{tex/lossAdd.tex}
+% \input{tex/lossHinge.tex}
+% \input{tex/lossLin.tex}
+% \input{tex/lossQuad.tex}
+% \input{tex/lossSat.tex}
+% \input{tex/reward.tex}
+
+
+
+% \chapter{\texttt{Scenarios} Directory}
+% % fix the filenames --> make the consistent: settings, loss, draw,
+% % ....
+
+% %%% cart double pendulum
+% \input{tex/cartDouble_learn.tex}
+% \input{tex/draw_cdp.tex}
+% \input{tex/draw_rollout_cdp.tex}
+% \input{tex/dynamics_cdp.tex}
+% \input{tex/getPlotDistr_cdp.tex}
+% \input{tex/loss_cdp.tex}
+% \input{tex/settings_cdp.tex}
+
+% %%% cart pole
+% \input{tex/cartPole_learn.tex}
+% \input{tex/draw_cp.tex}
+% \input{tex/draw_rollout_cp.tex}
+% \input{tex/dynamics_cp.tex}
+% \input{tex/getPlotDistr_cp.tex}
+% \input{tex/loss_cp.tex}
+% \input{tex/settings_cp.tex}
+
+% %%% double pendulum
+% \input{tex/DoublePend_learn.tex}
+% \input{tex/draw_dp.tex}
+% \input{tex/draw_rollout_dp.tex}
+% \input{tex/dynamics_dp.tex}
+% \input{tex/getPlotDistr_dp.tex}
+% \input{tex/loss_dp.tex}
+% \input{tex/settings_dp.tex}
+
+
+% %%% pendubot
+% \input{tex/pendubot_learn.tex}
+% \input{tex/draw_pendubot.tex}
+% \input{tex/draw_rollout_pendubot.tex}
+% \input{tex/dynamics_pendubot.tex}
+% \input{tex/getPlotDistr_pendubot.tex}
+% \input{tex/loss_pendubot.tex}
+% \input{tex/settings_pendubot.tex}
+
+
+% %%% pendulum
+% \input{tex/pendulum_learn.tex}
+% \input{tex/draw_pendulum.tex}
+% \input{tex/draw_rollout_pendulum.tex}
+% \input{tex/dynamics_pendulum.tex}
+% %\input{tex/getPlotDistr_pendulum.tex}
+% \input{tex/loss_pendulum.tex}
+% \input{tex/settings_pendulum.tex}
+
+
+% %%% unicycle
+% \input{tex/augment_unicycle.tex}
+% \input{tex/unicycle_learn.tex}
+% \input{tex/draw_unicycle.tex}
+% \input{tex/draw_rollout_unicycle.tex}
+% \input{tex/dynamics_unicycle.tex}
+% \input{tex/loss_unicycle.tex}
+% \input{tex/settings_unicycle.tex}
+
+
+% \section{\texttt{Test} Directory}
+% \input{tex/checkgrad.tex}
+% \input{tex/conT.tex}
+% \input{tex/gpT.tex}
+% \input{tex/gSinSatT.tex}
+% \input{tex/lossT.tex}
+% \input{tex/propagateT.tex}
+% \input{tex/valueT.tex}
+
+
+% \chapter{\texttt{Util} Directory}
+
+% \input{tex/error_ellipse.tex}
+% \input{tex/gaussian.tex}
+% \input{tex/gSat.tex}
+% \input{tex/gSin.tex}
+% \input{tex/gTrig.tex}
+% \input{tex/maha.tex}
+% \input{tex/minimize.tex}
+% \input{tex/rewrap.tex}
+% \input{tex/unwrap.tex}
+% \input{tex/solve_chol.tex}
+% \input{tex/sq_dist.tex}
+% %\input{tex/trigaug.tex}
+% %\input{tex/trigSquash.tex}
+
+
+
+\bibliographystyle{plain}
+\bibliography{literature}
+
+\end{document}
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 

@@ -1,0 +1,485 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>gpT</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="gpT.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#1">gpT.m</a></li><li><a href="#2">Code</a></li></ul></div><h2>gpT.m<a name="1"></a></h2><p><b>Summary:</b> Test derivatives of gp*-family of functions. It is assumed that the gp* function computes the mean and the variance of a GP prediction for a Gaussian distributed input <img src="gpT_eq96160.png" alt="$x\sim\mathcal N(m,s)$">. The GP-family of functions is located in <a href="rootDir">rootDir</a>/gp and is called gp*.m</p><pre class="language-matlab"><span class="keyword">function</span> [dd dy dh] = gpT(deriv, gp, m, s, delta)
+</pre><p><b>Input arguments:</b></p><pre class="language-matlab">deriv    <span class="string">desired</span> <span class="string">derivative.</span> <span class="string">options:</span>
+     (i)    <span class="string">'dMdm'</span> - derivative of <span class="string">the</span> <span class="string">mean</span> <span class="string">of</span> <span class="string">the</span> <span class="string">GP</span> <span class="string">prediction</span>
+             wrt <span class="string">the</span> <span class="string">mean</span> <span class="string">of</span> <span class="string">the</span> <span class="string">input</span> <span class="string">distribution</span>
+     (ii)   <span class="string">'dMds'</span> - derivative of <span class="string">the</span> <span class="string">mean</span> <span class="string">of</span> <span class="string">the</span> <span class="string">GP</span> <span class="string">prediction</span>
+             wrt <span class="string">the</span> <span class="string">variance</span> <span class="string">of</span> <span class="string">the</span> <span class="string">input</span> <span class="string">distribution</span>
+     (iii)  <span class="string">'dMdp'</span> - derivative of <span class="string">the</span> <span class="string">mean</span> <span class="string">of</span> <span class="string">the</span> <span class="string">GP</span> <span class="string">prediction</span>
+             wrt <span class="string">the</span> <span class="string">GP</span> <span class="string">parameters</span>
+     (iv)   <span class="string">'dSdm'</span> - derivative of <span class="string">the</span> <span class="string">variance</span> <span class="string">of</span> <span class="string">the</span> <span class="string">GP</span> <span class="string">prediction</span>
+             wrt <span class="string">the</span> <span class="string">mean</span> <span class="string">of</span> <span class="string">the</span> <span class="string">input</span> <span class="string">distribution</span>
+     (v)    <span class="string">'dSds'</span> - derivative of <span class="string">the</span> <span class="string">variance</span> <span class="string">of</span> <span class="string">the</span> <span class="string">GP</span> <span class="string">prediction</span>
+             wrt <span class="string">the</span> <span class="string">variance</span> <span class="string">of</span> <span class="string">the</span> <span class="string">input</span> <span class="string">distribution</span>
+     (vi)   <span class="string">'dSdp'</span> - derivative of <span class="string">the</span> <span class="string">variance</span> <span class="string">of</span> <span class="string">the</span> <span class="string">GP</span> <span class="string">prediction</span>
+             wrt <span class="string">the</span> <span class="string">GP</span> <span class="string">parameters</span>
+     (vii)  <span class="string">'dVdm'</span> - derivative of <span class="string">inv(s)*(covariance of the input and the</span>
+             GP <span class="string">prediction) wrt the mean of the input distribution</span>
+     (viii) <span class="string">'dVds'</span> - derivative of <span class="string">inv(s)*(covariance of the input and the</span>
+             GP <span class="string">prediction) wrt the variance of the input distribution</span>
+     (ix)   <span class="string">'dVdp'</span> - derivative of <span class="string">inv(s)*(covariance of the input and the</span>
+             GP <span class="string">prediction) wrt the GP parameters</span>
+gp       <span class="string">GP</span> <span class="string">structure</span>
+  .fcn   <span class="keyword">function</span> handle to <span class="string">the</span> <span class="string">GP</span> <span class="string">function</span> <span class="string">used</span> <span class="string">for</span> <span class="string">predictions</span> <span class="string">at</span>
+         uncertain <span class="string">inputs</span>
+  .&lt;&gt;    other fields <span class="string">that</span> <span class="string">are</span> <span class="string">passed</span> <span class="string">on</span> <span class="string">to</span> <span class="string">the</span> <span class="string">GP</span> <span class="string">function</span>
+m        <span class="string">mean</span> <span class="string">of</span> <span class="string">the</span> <span class="string">input</span> <span class="string">distribution</span>
+s        <span class="string">covariance</span> <span class="string">of</span> <span class="string">the</span> <span class="string">input</span> <span class="string">distribution</span>
+delta    (optional) finite <span class="string">difference</span> <span class="string">parameter.</span> <span class="string">Default:</span> <span class="string">1e-4</span>
+</pre><p><b>Output arguments:</b></p><pre class="language-matlab">dd         <span class="string">relative</span> <span class="string">error</span> <span class="string">of</span> <span class="string">analytical</span> <span class="string">vs.</span> <span class="string">finite</span> <span class="string">difference</span> <span class="string">gradient</span>
+dy         <span class="string">analytical</span> <span class="string">gradient</span>
+dh         <span class="string">finite</span> <span class="string">difference</span> <span class="string">gradient</span>
+</pre><p>Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</p><p>Last modified: 2013-06-07</p><pre class="codeinput"><span class="keyword">function</span> [dd dy dh] = gpT(deriv, gp, m, s, delta)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput"><span class="comment">% set up a default training set and input distribution if not passed in</span>
+<span class="keyword">if</span> nargin &lt; 2
+  nn = 1000; np = 100;
+  D = 5; E = 4;         <span class="comment">% input and predictive dimensions</span>
+
+  gp.fcn = @gp0d;
+  gp.hyp = [randn(D+1,E); zeros(1,E)];
+  gp.inputs = randn(nn,D);
+  gp.targets = randn(nn,E);
+  gp.induce = randn(np,D,E);
+<span class="keyword">end</span>
+
+<span class="keyword">if</span> nargin &lt; 3           <span class="comment">% no input distribution specified</span>
+  <span class="keyword">if</span> isfield(gp, <span class="string">'p'</span>)   <span class="comment">% if gp is a policy, extract targets/inputs</span>
+    gp.inputs = gp.p.inputs; gp.targets = gp.p.targets;
+  <span class="keyword">end</span>
+  D = size(gp.inputs, 2);
+  m = randn(D,1); s = randn(D); s = s*s';
+<span class="keyword">end</span>
+
+<span class="keyword">if</span> nargin &lt; 5; delta = 1e-4; <span class="keyword">end</span>
+D = length(m);                                                      <span class="comment">% input size</span>
+
+
+<span class="comment">% check derivatives</span>
+<span class="keyword">switch</span> deriv
+
+  <span class="keyword">case</span> <span class="string">'dMdm'</span>
+    [dd dy dh] = checkgrad(@gpT0, m, delta, gp, s);
+
+  <span class="keyword">case</span> <span class="string">'dSdm'</span>
+    [dd dy dh] = checkgrad(@gpT1, m, delta, gp, s);
+
+  <span class="keyword">case</span> <span class="string">'dVdm'</span>
+    [dd dy dh] = checkgrad(@gpT2, m, delta, gp, s);
+
+  <span class="keyword">case</span> <span class="string">'dMds'</span>
+    [dd dy dh] = checkgrad(@gpT3, s(tril(ones(D))==1), delta, gp, m);
+
+  <span class="keyword">case</span> <span class="string">'dSds'</span>
+    [dd dy dh] = checkgrad(@gpT4, s(tril(ones(D))==1), delta, gp, m);
+
+  <span class="keyword">case</span> <span class="string">'dVds'</span>
+    [dd dy dh] = checkgrad(@gpT5, s(tril(ones(D))==1), delta, gp, m);
+
+  <span class="keyword">case</span> <span class="string">'dMdp'</span>
+    p = unwrap(gp);
+    [dd dy dh] = checkgrad(@gpT6, p, delta, gp, m, s) ;
+
+  <span class="keyword">case</span> <span class="string">'dSdp'</span>
+    p = unwrap(gp);
+    [dd dy dh] = checkgrad(@gpT7, p, delta, gp, m, s) ;
+
+  <span class="keyword">case</span> <span class="string">'dVdp'</span>
+    p = unwrap(gp);
+    [dd dy dh] = checkgrad(@gpT8, p, delta, gp, m, s) ;
+
+<span class="keyword">end</span>
+</pre><pre class="codeinput"><span class="keyword">function</span> [f, df] = gpT0(m, gp, s)                             <span class="comment">% dMdm</span>
+<span class="keyword">if</span> nargout == 1
+  M = gp.fcn(gp, m, s);
+<span class="keyword">else</span>
+  [M, S, V, dMdm] = gp.fcn(gp, m, s);
+  df = dMdm;
+<span class="keyword">end</span>
+f = M;
+
+<span class="keyword">function</span> [f, df] = gpT1(m, gp, s)                             <span class="comment">% dSdm</span>
+<span class="keyword">if</span> nargout == 1
+  [M, S] = gp.fcn(gp, m, s);
+<span class="keyword">else</span>
+  [M, S, V, dMdm, dSdm] = gp.fcn(gp, m, s);
+  df = dSdm;
+<span class="keyword">end</span>
+f = S;
+
+<span class="keyword">function</span> [f, df] = gpT2(m, gp, s)                             <span class="comment">% dVdm</span>
+<span class="keyword">if</span> nargout == 1
+  [M, S, V] = gp.fcn(gp, m, s);
+<span class="keyword">else</span>
+  [M, S, V, dMdm, dSdm, dVdm] = gp.fcn(gp, m, s);
+  df = dVdm;
+<span class="keyword">end</span>
+f = V;
+
+<span class="keyword">function</span> [f, df] = gpT3(s, gp, m)                             <span class="comment">% dMds</span>
+d = length(m);
+v(tril(ones(d))==1) = s; s = reshape(v,d,d); s = s+s'-diag(diag(s));
+<span class="keyword">if</span> nargout == 1
+  M = gp.fcn(gp, m, s);
+<span class="keyword">else</span>
+  [M, S, V, dMdm, dSdm, dVdm, dMds] = gp.fcn(gp, m, s);
+  dd = length(M); dMds = reshape(dMds,dd,d,d); df = zeros(dd,d*(d+1)/2);
+  <span class="keyword">for</span> i=1:dd;
+    dMdsi(:,:) = dMds(i,:,:); dMdsi = dMdsi + dMdsi'-diag(diag(dMdsi));
+    df(i,:) = dMdsi(tril(ones(d))==1);
+  <span class="keyword">end</span>
+<span class="keyword">end</span>
+f = M;
+
+<span class="keyword">function</span> [f, df] = gpT4(s, gp, m)                             <span class="comment">% dSds</span>
+d = length(m);
+v(tril(ones(d))==1) = s; s = reshape(v,d,d); s = s+s'-diag(diag(s));
+<span class="keyword">if</span> nargout == 1
+  [M, S] = gp.fcn(gp, m, s);
+<span class="keyword">else</span>
+  [M, S, C, dMdm, dSdm, dCdm, dMds, dSds] = gp.fcn(gp, m, s);
+  dd = length(M); dSds = reshape(dSds,dd,dd,d,d); df = zeros(dd,dd,d*(d+1)/2);
+  <span class="keyword">for</span> i=1:dd; <span class="keyword">for</span> j=1:dd
+      dSdsi(:,:) = dSds(i,j,:,:); dSdsi = dSdsi+dSdsi'-diag(diag(dSdsi));
+      df(i,j,:) = dSdsi(tril(ones(d))==1);
+    <span class="keyword">end</span>; <span class="keyword">end</span>
+<span class="keyword">end</span>
+f = S;
+
+<span class="keyword">function</span> [f, df] = gpT5(s, gp, m)                             <span class="comment">% dVds</span>
+d = length(m);
+v(tril(ones(d))==1) = s; s = reshape(v,d,d); s = s+s'-diag(diag(s));
+<span class="keyword">if</span> nargout == 1
+  [M, S, V] = gp.fcn(gp, m, s);
+<span class="keyword">else</span>
+  [M, S, V, dMdm, dSdm, dVdm, dMds, dSds, dVds] = gp.fcn(gp, m, s);
+  dd = length(M); dVds = reshape(dVds,d,dd,d,d); df = zeros(d,dd,d*(d+1)/2);
+  <span class="keyword">for</span> i=1:d; <span class="keyword">for</span> j=1:dd
+      dCdsi = squeeze(dVds(i,j,:,:)); dCdsi = dCdsi+dCdsi'-diag(diag(dCdsi));
+      df(i,j,:) = dCdsi(tril(ones(d))==1);
+    <span class="keyword">end</span>; <span class="keyword">end</span>
+<span class="keyword">end</span>
+f = V;
+
+<span class="keyword">function</span> [f, df] = gpT6(p, gp, m, s)                          <span class="comment">% dMdp</span>
+gp = rewrap(gp, p);
+<span class="keyword">if</span> nargout == 1
+  M = gp.fcn(gp, m, s);
+<span class="keyword">else</span>
+  [M, S, V, dMdm, dSdm, dVdm, dMds, dSds, dVds, dMdp] = <span class="keyword">...</span>
+    gp.fcn(gp, m, s);
+  df = dMdp;
+<span class="keyword">end</span>
+f = M;
+
+<span class="keyword">function</span> [f, df] = gpT7(p, gp, m, s)                          <span class="comment">% dSdp</span>
+gp = rewrap(gp, p);
+<span class="keyword">if</span> nargout == 1
+  [M, S] = gp.fcn(gp, m, s);
+<span class="keyword">else</span>
+  [M, S, V, dMdm, dSdm, dVdm, dMds, dSds, dVds, dMdp, dSdp] = <span class="keyword">...</span>
+    gp.fcn(gp, m, s);
+  df = dSdp;
+<span class="keyword">end</span>
+f = S;
+
+<span class="keyword">function</span> [f, df] = gpT8(p, gp, m, s)
+gp = rewrap(gp, p);
+<span class="keyword">if</span> nargout == 1
+  [M, S, V] = gp.fcn(gp, m, s);
+<span class="keyword">else</span>
+  [M, S, V, dMdm, dSdm, dVdm, dMds, dSds, dVds, dMdp, dSdp, dVdp] = <span class="keyword">...</span>
+    gp.fcn(gp, m, s);
+  df = dVdp;
+
+<span class="keyword">end</span>
+f = V;
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% gpT.m
+% *Summary:* Test derivatives of gp*-family of functions. It is assumed that
+% the gp* function computes the mean and the variance of a GP prediction
+% for a Gaussian distributed input $x\sim\mathcal N(m,s)$.
+% The GP-family of functions is located in <rootDir>/gp and is called gp*.m
+%
+%
+%   function [dd dy dh] = gpT(deriv, gp, m, s, delta)
+%
+%
+% *Input arguments:*
+%
+%   deriv    desired derivative. options:
+%        (i)    'dMdm' - derivative of the mean of the GP prediction
+%                wrt the mean of the input distribution
+%        (ii)   'dMds' - derivative of the mean of the GP prediction
+%                wrt the variance of the input distribution
+%        (iii)  'dMdp' - derivative of the mean of the GP prediction
+%                wrt the GP parameters
+%        (iv)   'dSdm' - derivative of the variance of the GP prediction
+%                wrt the mean of the input distribution
+%        (v)    'dSds' - derivative of the variance of the GP prediction
+%                wrt the variance of the input distribution
+%        (vi)   'dSdp' - derivative of the variance of the GP prediction
+%                wrt the GP parameters
+%        (vii)  'dVdm' - derivative of inv(s)*(covariance of the input and the
+%                GP prediction) wrt the mean of the input distribution
+%        (viii) 'dVds' - derivative of inv(s)*(covariance of the input and the
+%                GP prediction) wrt the variance of the input distribution
+%        (ix)   'dVdp' - derivative of inv(s)*(covariance of the input and the
+%                GP prediction) wrt the GP parameters
+%   gp       GP structure
+%     .fcn   function handle to the GP function used for predictions at
+%            uncertain inputs
+%     .<>    other fields that are passed on to the GP function
+%   m        mean of the input distribution
+%   s        covariance of the input distribution
+%   delta    (optional) finite difference parameter. Default: 1e-4
+%
+%
+% *Output arguments:*
+%
+%   dd         relative error of analytical vs. finite difference gradient
+%   dy         analytical gradient
+%   dh         finite difference gradient
+%
+% Copyright (C) 2008-2013 by
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modified: 2013-06-07
+
+function [dd dy dh] = gpT(deriv, gp, m, s, delta)
+%% Code
+
+% set up a default training set and input distribution if not passed in
+if nargin < 2
+  nn = 1000; np = 100;
+  D = 5; E = 4;         % input and predictive dimensions
+  
+  gp.fcn = @gp0d;
+  gp.hyp = [randn(D+1,E); zeros(1,E)];
+  gp.inputs = randn(nn,D);
+  gp.targets = randn(nn,E);
+  gp.induce = randn(np,D,E);
+end
+
+if nargin < 3           % no input distribution specified
+  if isfield(gp, 'p')   % if gp is a policy, extract targets/inputs
+    gp.inputs = gp.p.inputs; gp.targets = gp.p.targets;
+  end
+  D = size(gp.inputs, 2);
+  m = randn(D,1); s = randn(D); s = s*s';
+end
+
+if nargin < 5; delta = 1e-4; end
+D = length(m);                                                      % input size
+
+
+% check derivatives
+switch deriv
+  
+  case 'dMdm'
+    [dd dy dh] = checkgrad(@gpT0, m, delta, gp, s);
+    
+  case 'dSdm'
+    [dd dy dh] = checkgrad(@gpT1, m, delta, gp, s);
+    
+  case 'dVdm'
+    [dd dy dh] = checkgrad(@gpT2, m, delta, gp, s);
+    
+  case 'dMds'
+    [dd dy dh] = checkgrad(@gpT3, s(tril(ones(D))==1), delta, gp, m);
+    
+  case 'dSds'
+    [dd dy dh] = checkgrad(@gpT4, s(tril(ones(D))==1), delta, gp, m);
+    
+  case 'dVds'
+    [dd dy dh] = checkgrad(@gpT5, s(tril(ones(D))==1), delta, gp, m);
+    
+  case 'dMdp'
+    p = unwrap(gp);
+    [dd dy dh] = checkgrad(@gpT6, p, delta, gp, m, s) ;
+    
+  case 'dSdp'
+    p = unwrap(gp);
+    [dd dy dh] = checkgrad(@gpT7, p, delta, gp, m, s) ;
+    
+  case 'dVdp'
+    p = unwrap(gp);
+    [dd dy dh] = checkgrad(@gpT8, p, delta, gp, m, s) ;
+    
+end
+
+
+function [f, df] = gpT0(m, gp, s)                             % dMdm
+if nargout == 1
+  M = gp.fcn(gp, m, s);
+else
+  [M, S, V, dMdm] = gp.fcn(gp, m, s);
+  df = dMdm;
+end
+f = M;
+
+function [f, df] = gpT1(m, gp, s)                             % dSdm
+if nargout == 1
+  [M, S] = gp.fcn(gp, m, s);
+else
+  [M, S, V, dMdm, dSdm] = gp.fcn(gp, m, s);
+  df = dSdm;
+end
+f = S;
+
+function [f, df] = gpT2(m, gp, s)                             % dVdm
+if nargout == 1
+  [M, S, V] = gp.fcn(gp, m, s);
+else
+  [M, S, V, dMdm, dSdm, dVdm] = gp.fcn(gp, m, s);
+  df = dVdm;
+end
+f = V;
+
+function [f, df] = gpT3(s, gp, m)                             % dMds
+d = length(m);
+v(tril(ones(d))==1) = s; s = reshape(v,d,d); s = s+s'-diag(diag(s));
+if nargout == 1
+  M = gp.fcn(gp, m, s);
+else
+  [M, S, V, dMdm, dSdm, dVdm, dMds] = gp.fcn(gp, m, s);
+  dd = length(M); dMds = reshape(dMds,dd,d,d); df = zeros(dd,d*(d+1)/2);
+  for i=1:dd;
+    dMdsi(:,:) = dMds(i,:,:); dMdsi = dMdsi + dMdsi'-diag(diag(dMdsi));
+    df(i,:) = dMdsi(tril(ones(d))==1);
+  end
+end
+f = M;
+
+function [f, df] = gpT4(s, gp, m)                             % dSds
+d = length(m);
+v(tril(ones(d))==1) = s; s = reshape(v,d,d); s = s+s'-diag(diag(s));
+if nargout == 1
+  [M, S] = gp.fcn(gp, m, s);
+else
+  [M, S, C, dMdm, dSdm, dCdm, dMds, dSds] = gp.fcn(gp, m, s);
+  dd = length(M); dSds = reshape(dSds,dd,dd,d,d); df = zeros(dd,dd,d*(d+1)/2);
+  for i=1:dd; for j=1:dd
+      dSdsi(:,:) = dSds(i,j,:,:); dSdsi = dSdsi+dSdsi'-diag(diag(dSdsi));
+      df(i,j,:) = dSdsi(tril(ones(d))==1);
+    end; end
+end
+f = S;
+
+function [f, df] = gpT5(s, gp, m)                             % dVds
+d = length(m);
+v(tril(ones(d))==1) = s; s = reshape(v,d,d); s = s+s'-diag(diag(s));
+if nargout == 1
+  [M, S, V] = gp.fcn(gp, m, s);
+else
+  [M, S, V, dMdm, dSdm, dVdm, dMds, dSds, dVds] = gp.fcn(gp, m, s);
+  dd = length(M); dVds = reshape(dVds,d,dd,d,d); df = zeros(d,dd,d*(d+1)/2);
+  for i=1:d; for j=1:dd
+      dCdsi = squeeze(dVds(i,j,:,:)); dCdsi = dCdsi+dCdsi'-diag(diag(dCdsi));
+      df(i,j,:) = dCdsi(tril(ones(d))==1);
+    end; end
+end
+f = V;
+
+function [f, df] = gpT6(p, gp, m, s)                          % dMdp
+gp = rewrap(gp, p);
+if nargout == 1
+  M = gp.fcn(gp, m, s);
+else
+  [M, S, V, dMdm, dSdm, dVdm, dMds, dSds, dVds, dMdp] = ...
+    gp.fcn(gp, m, s);
+  df = dMdp;
+end
+f = M;
+
+function [f, df] = gpT7(p, gp, m, s)                          % dSdp
+gp = rewrap(gp, p);
+if nargout == 1
+  [M, S] = gp.fcn(gp, m, s);
+else
+  [M, S, V, dMdm, dSdm, dVdm, dMds, dSds, dVds, dMdp, dSdp] = ...
+    gp.fcn(gp, m, s);
+  df = dSdp;
+end
+f = S;
+
+function [f, df] = gpT8(p, gp, m, s)
+gp = rewrap(gp, p);
+if nargout == 1
+  [M, S, V] = gp.fcn(gp, m, s);
+else
+  [M, S, V, dMdm, dSdm, dVdm, dMds, dSds, dVds, dMdp, dSdp, dVdp] = ...
+    gp.fcn(gp, m, s);
+  df = dVdp;
+  
+end
+f = V;
+
+##### SOURCE END #####
+--></body></html>

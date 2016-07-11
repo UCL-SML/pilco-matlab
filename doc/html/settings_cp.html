@@ -1,0 +1,320 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>settings_cp.m</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="settings_cp.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>settings_cp.m</h1><!--introduction--><p><b>Summary:</b> Script set up the cart-pole scenario</p><p>Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</p><p>Last modified: 2013-05-24</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">High-Level Steps</a></li><li><a href="#2">Code</a></li></ul></div><h2>High-Level Steps<a name="1"></a></h2><div><ol><li>Define state and important indices</li><li>Set up scenario</li><li>Set up the plant structure</li><li>Set up the policy structure</li><li>Set up the cost structure</li><li>Set up the GP dynamics model structure</li><li>Parameters for policy optimization</li><li>Plotting verbosity</li><li>Some array initializations</li></ol></div><h2>Code<a name="2"></a></h2><pre class="codeinput">rand(<span class="string">'seed'</span>,1); randn(<span class="string">'seed'</span>,1); format <span class="string">short</span>; format <span class="string">compact</span>;
+<span class="comment">% include some paths</span>
+<span class="keyword">try</span>
+  rd = <span class="string">'../../'</span>;
+  addpath([rd <span class="string">'base'</span>],[rd <span class="string">'util'</span>],[rd <span class="string">'gp'</span>],[rd <span class="string">'control'</span>],[rd <span class="string">'loss'</span>]);
+<span class="keyword">catch</span>
+<span class="keyword">end</span>
+
+
+<span class="comment">% 1. Define state and important indices</span>
+
+<span class="comment">% 1a. Full state representation (including all augmentations)</span>
+<span class="comment">%</span>
+<span class="comment">%  1  x          cart position</span>
+<span class="comment">%  2  v          cart velocity</span>
+<span class="comment">%  3  dtheta     angular velocity</span>
+<span class="comment">%  4  theta      angle of the pendulum</span>
+<span class="comment">%  5  sin(theta) complex representation ...</span>
+<span class="comment">%  6  cos(theta) of theta</span>
+<span class="comment">%  7  u          force applied to cart</span>
+<span class="comment">%</span>
+
+<span class="comment">% 1b. Important indices</span>
+<span class="comment">% odei  indicies for the ode solver</span>
+<span class="comment">% augi  indicies for variables augmented to the ode variables</span>
+<span class="comment">% dyno  indicies for the output from the dynamics model and indicies to loss</span>
+<span class="comment">% angi  indicies for variables treated as angles (using sin/cos representation)</span>
+<span class="comment">% dyni  indicies for inputs to the dynamics model</span>
+<span class="comment">% poli  indicies for the inputs to the policy</span>
+<span class="comment">% difi  indicies for training targets that are differences (rather than values)</span>
+
+odei = [1 2 3 4];            <span class="comment">% varibles for the ode solver</span>
+augi = [];                   <span class="comment">% variables to be augmented</span>
+dyno = [1 2 3 4];            <span class="comment">% variables to be predicted (and known to loss)</span>
+angi = [4];                  <span class="comment">% angle variables</span>
+dyni = [1 2 3 5 6];          <span class="comment">% variables that serve as inputs to the dynamics GP</span>
+poli = [1 2 3 5 6];          <span class="comment">% variables that serve as inputs to the policy</span>
+difi = [1 2 3 4];            <span class="comment">% variables that are learned via differences</span>
+
+
+<span class="comment">% 2. Set up the scenario</span>
+dt = 0.10;                         <span class="comment">% [s] sampling time</span>
+T = 4.0;                           <span class="comment">% [s] initial prediction horizon time</span>
+H = ceil(T/dt);                    <span class="comment">% prediction steps (optimization horizon)</span>
+mu0 = [0 0 0 0]';                  <span class="comment">% initial state mean</span>
+S0 = diag([0.1 0.1 0.1 0.1].^2);   <span class="comment">% initial state covariance</span>
+N = 15;                            <span class="comment">% number controller optimizations</span>
+J = 1;                             <span class="comment">% initial J trajectories of length H</span>
+K = 1;                             <span class="comment">% no. of initial states for which we optimize</span>
+nc = 10;                          <span class="comment">% number of controller basis functions</span>
+
+<span class="comment">% 3. Plant structure</span>
+plant.dynamics = @dynamics_cp;                    <span class="comment">% dynamics ode function</span>
+plant.noise = diag(ones(1,4)*0.01.^2);            <span class="comment">% measurement noise</span>
+plant.dt = dt;
+plant.ctrl = @zoh;                                <span class="comment">% controler is zero order hold</span>
+plant.odei = odei;
+plant.augi = augi;
+plant.angi = angi;
+plant.poli = poli;
+plant.dyno = dyno;
+plant.dyni = dyni;
+plant.difi = difi;
+plant.prop = @propagated;
+
+<span class="comment">% 4. Policy structure</span>
+policy.fcn = @(policy,m,s)conCat(@congp,@gSat,policy,m,s);<span class="comment">% controller</span>
+                                                          <span class="comment">% representation</span>
+policy.maxU = 10;                                         <span class="comment">% max. amplitude of</span>
+                                                          <span class="comment">% control</span>
+[mm ss cc] = gTrig(mu0, S0, plant.angi);                  <span class="comment">% represent angles</span>
+mm = [mu0; mm]; cc = S0*cc; ss = [S0 cc; cc' ss];         <span class="comment">% in complex plane</span>
+policy.p.inputs = gaussian(mm(poli), ss(poli,poli), nc)'; <span class="comment">% init. location of</span>
+                                                          <span class="comment">% basis functions</span>
+policy.p.targets = 0.1*randn(nc, length(policy.maxU));    <span class="comment">% init. policy targets</span>
+                                                          <span class="comment">% (close to zero)</span>
+policy.p.hyp = log([1 1 1 0.7 0.7 1 0.01])';              <span class="comment">% initialize policy</span>
+                                                          <span class="comment">% hyper-parameters</span>
+
+<span class="comment">% 5. Set up the cost structure</span>
+cost.fcn = @loss_cp;                       <span class="comment">% cost function</span>
+cost.gamma = 1;                            <span class="comment">% discount factor</span>
+cost.p = 0.5;                              <span class="comment">% length of pendulum</span>
+cost.width = 0.25;                         <span class="comment">% cost function width</span>
+cost.expl =  0.0;                          <span class="comment">% exploration parameter (UCB)</span>
+cost.angle = plant.angi;                   <span class="comment">% index of angle (for cost function)</span>
+cost.target = [0 0 0 pi]';                 <span class="comment">% target state</span>
+
+<span class="comment">% 6. Dynamics model structure</span>
+dynmodel.fcn = @gp1d;                <span class="comment">% function for GP predictions</span>
+dynmodel.train = @train;             <span class="comment">% function to train dynamics model</span>
+dynmodel.induce = zeros(300,0,1);    <span class="comment">% shared inducing inputs (sparse GP)</span>
+trainOpt = [300 500];                <span class="comment">% defines the max. number of line searches</span>
+                                     <span class="comment">% when training the GP dynamics models</span>
+                                     <span class="comment">% trainOpt(1): full GP,</span>
+                                     <span class="comment">% trainOpt(2): sparse GP (FITC)</span>
+
+<span class="comment">% 7. Parameters for policy optimization</span>
+opt.length = 150;                        <span class="comment">% max. number of line searches</span>
+opt.MFEPLS = 30;                         <span class="comment">% max. number of function evaluations</span>
+                                         <span class="comment">% per line search</span>
+opt.verbosity = 1;                       <span class="comment">% verbosity: specifies how much</span>
+                                         <span class="comment">% information is displayed during</span>
+                                         <span class="comment">% policy learning. Options: 0-3</span>
+
+<span class="comment">% 8. Plotting verbosity</span>
+plotting.verbosity = 1;            <span class="comment">% 0: no plots</span>
+                                   <span class="comment">% 1: some plots</span>
+                                   <span class="comment">% 2: all plots</span>
+
+<span class="comment">% 9. Some initializations</span>
+x = []; y = [];
+fantasy.mean = cell(1,N); fantasy.std = cell(1,N);
+realCost = cell(1,N); M = cell(N,1); Sigma = cell(N,1);
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% settings_cp.m
+% *Summary:* Script set up the cart-pole scenario
+%
+% Copyright (C) 2008-2013 by 
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modified: 2013-05-24
+%
+%% High-Level Steps
+% # Define state and important indices
+% # Set up scenario
+% # Set up the plant structure
+% # Set up the policy structure
+% # Set up the cost structure
+% # Set up the GP dynamics model structure
+% # Parameters for policy optimization
+% # Plotting verbosity
+% # Some array initializations
+
+%% Code
+
+rand('seed',1); randn('seed',1); format short; format compact; 
+% include some paths
+try
+  rd = '../../';
+  addpath([rd 'base'],[rd 'util'],[rd 'gp'],[rd 'control'],[rd 'loss']);
+catch
+end
+
+
+% 1. Define state and important indices
+
+% 1a. Full state representation (including all augmentations)
+%
+%  1  x          cart position
+%  2  v          cart velocity
+%  3  dtheta     angular velocity
+%  4  theta      angle of the pendulum
+%  5  sin(theta) complex representation ...
+%  6  cos(theta) of theta
+%  7  u          force applied to cart
+%
+
+% 1b. Important indices
+% odei  indicies for the ode solver
+% augi  indicies for variables augmented to the ode variables
+% dyno  indicies for the output from the dynamics model and indicies to loss
+% angi  indicies for variables treated as angles (using sin/cos representation)
+% dyni  indicies for inputs to the dynamics model
+% poli  indicies for the inputs to the policy
+% difi  indicies for training targets that are differences (rather than values)
+
+odei = [1 2 3 4];            % varibles for the ode solver
+augi = [];                   % variables to be augmented
+dyno = [1 2 3 4];            % variables to be predicted (and known to loss)
+angi = [4];                  % angle variables
+dyni = [1 2 3 5 6];          % variables that serve as inputs to the dynamics GP
+poli = [1 2 3 5 6];          % variables that serve as inputs to the policy
+difi = [1 2 3 4];            % variables that are learned via differences
+
+
+% 2. Set up the scenario
+dt = 0.10;                         % [s] sampling time
+T = 4.0;                           % [s] initial prediction horizon time
+H = ceil(T/dt);                    % prediction steps (optimization horizon)
+mu0 = [0 0 0 0]';                  % initial state mean
+S0 = diag([0.1 0.1 0.1 0.1].^2);   % initial state covariance
+N = 15;                            % number controller optimizations
+J = 1;                             % initial J trajectories of length H
+K = 1;                             % no. of initial states for which we optimize
+nc = 10;                          % number of controller basis functions
+
+% 3. Plant structure
+plant.dynamics = @dynamics_cp;                    % dynamics ode function
+plant.noise = diag(ones(1,4)*0.01.^2);            % measurement noise
+plant.dt = dt;
+plant.ctrl = @zoh;                                % controler is zero order hold
+plant.odei = odei;
+plant.augi = augi;
+plant.angi = angi;
+plant.poli = poli;
+plant.dyno = dyno;
+plant.dyni = dyni;
+plant.difi = difi;
+plant.prop = @propagated;
+
+% 4. Policy structure
+policy.fcn = @(policy,m,s)conCat(@congp,@gSat,policy,m,s);% controller 
+                                                          % representation
+policy.maxU = 10;                                         % max. amplitude of 
+                                                          % control
+[mm ss cc] = gTrig(mu0, S0, plant.angi);                  % represent angles 
+mm = [mu0; mm]; cc = S0*cc; ss = [S0 cc; cc' ss];         % in complex plane          
+policy.p.inputs = gaussian(mm(poli), ss(poli,poli), nc)'; % init. location of 
+                                                          % basis functions
+policy.p.targets = 0.1*randn(nc, length(policy.maxU));    % init. policy targets 
+                                                          % (close to zero)
+policy.p.hyp = log([1 1 1 0.7 0.7 1 0.01])';              % initialize policy
+                                                          % hyper-parameters
+
+% 5. Set up the cost structure
+cost.fcn = @loss_cp;                       % cost function
+cost.gamma = 1;                            % discount factor
+cost.p = 0.5;                              % length of pendulum
+cost.width = 0.25;                         % cost function width
+cost.expl =  0.0;                          % exploration parameter (UCB)
+cost.angle = plant.angi;                   % index of angle (for cost function)
+cost.target = [0 0 0 pi]';                 % target state
+
+% 6. Dynamics model structure
+dynmodel.fcn = @gp1d;                % function for GP predictions
+dynmodel.train = @train;             % function to train dynamics model
+dynmodel.induce = zeros(300,0,1);    % shared inducing inputs (sparse GP)
+trainOpt = [300 500];                % defines the max. number of line searches
+                                     % when training the GP dynamics models
+                                     % trainOpt(1): full GP,
+                                     % trainOpt(2): sparse GP (FITC)
+
+% 7. Parameters for policy optimization
+opt.length = 150;                        % max. number of line searches
+opt.MFEPLS = 30;                         % max. number of function evaluations
+                                         % per line search
+opt.verbosity = 1;                       % verbosity: specifies how much 
+                                         % information is displayed during
+                                         % policy learning. Options: 0-3
+
+% 8. Plotting verbosity
+plotting.verbosity = 1;            % 0: no plots
+                                   % 1: some plots
+                                   % 2: all plots
+
+% 9. Some initializations
+x = []; y = [];
+fantasy.mean = cell(1,N); fantasy.std = cell(1,N);
+realCost = cell(1,N); M = cell(N,1); Sigma = cell(N,1);
+##### SOURCE END #####
+--></body></html>

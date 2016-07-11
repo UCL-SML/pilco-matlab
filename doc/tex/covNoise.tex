@@ -1,0 +1,52 @@
+
+% This LaTeX was auto-generated from an M-file by MATLAB.
+% To make changes, update the M-file and republish this document.
+
+
+
+    
+    
+
+\subsection*{covNoise.m} 
+
+\begin{par}
+Independent covariance function, ie "white noise", with specified variance. The covariance function is specified as:
+\end{par} \vspace{1em}
+\begin{par}
+k(x\^{}p,x\^{}q) = s2 * \ensuremath{\backslash}delta(p,q)
+\end{par} \vspace{1em}
+\begin{par}
+where s2 is the noise variance and \ensuremath{\backslash}delta(p,q) is a Kronecker delta function which is 1 iff p=q and zero otherwise. The hyperparameter is
+\end{par} \vspace{1em}
+\begin{par}
+logtheta = [ log(sqrt(s2)) ]
+\end{par} \vspace{1em}
+\begin{par}
+For more help on design of covariance functions, try "help covFunctions".
+\end{par} \vspace{1em}
+\begin{par}
+(C) Copyright 2006 by Carl Edward Rasmussen, 2006-03-24.
+\end{par} \vspace{1em}
+
+\begin{lstlisting}
+function [A, B] = covNoise(logtheta, x, z)
+\end{lstlisting}
+
+
+\subsection*{Code} 
+
+
+\begin{lstlisting}
+if nargin == 0, A = '1'; return; end              % report number of parameters
+
+s2 = exp(2*logtheta);                                          % noise variance
+
+if nargin == 2                                      % compute covariance matrix
+  A = s2*eye(size(x,1));
+elseif nargout == 2                              % compute test set covariances
+  A = s2;
+  B = 0;                               % zeros cross covariance by independence
+else                                                % compute derivative matrix
+  A = 2*s2*eye(size(x,1));
+end
+\end{lstlisting}

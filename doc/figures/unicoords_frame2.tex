@@ -1,0 +1,71 @@
+%set the plot display orientation
+%synatax: \tdplotsetdisplay{\theta_d}{\phi_d}
+\tdplotsetmaincoords{65}{100}
+
+%define polar coordinates for some vector
+%TODO: look into using 3d spherical coordinate system
+\pgfmathsetmacro{\magW}{4}
+\pgfmathsetmacro{\psiW}{-30}
+\pgfmathsetmacro{\theW}{10}
+\pgfmathsetmacro{\phiW}{15}
+
+%start tikz picture, and use the tdplot_main_coords style to implement the display 
+%coordinate transformation provided by 3dplot
+\footnotesize
+\begin{tikzpicture}[scale=0.85,tdplot_main_coords]
+
+%set up some coordinates ... GET FROM MATLAB
+%-----------------------
+\coordinate (O) at (0,0,0);
+
+\coordinate (B) at (3,5.1962,0);
+\coordinate (W) at (3.2256,5.0659,1.4772);
+\coordinate (Wt) at (3.6767,4.8054,4.4316);
+\coordinate (Wtp) at (3.2256,5.0659,4.4316);
+\coordinate (Wbp) at (3.2256,5.0659,0);
+\coordinate (T) at (3.2969,3.6799,5.7578);
+\coordinate (F) at (3.2612,4.3729,3.6175);
+
+%draw figure contents
+%--------------------
+
+
+% draw wheel
+\tdplotsetrotatedcoords{\psiW}{100}{0} % add 90 to j angle
+\tdplotsetrotatedcoordsorigin{(W)}
+\draw[tdplot_rotated_coords,very thick,black!30,fill=black!30,fill opacity=0.2] (0,0,0) circle (1.5);
+\draw[tdplot_rotated_coords,fill=black] (0,0,0) circle (0.12);
+
+% draw frame
+\draw[very thick,black] (W) -- (T);
+\tdplotsetrotatedcoordsorigin{(F)}
+\tdplotsetrotatedcoords{\psiW}{100}{0}
+\draw[tdplot_rotated_coords,fill=black] (0,0,0) circle (0.12);
+
+% draw turntable
+\tdplotsetrotatedcoords{\psiW}{\theW}{\phiW}
+\tdplotsetrotatedcoordsorigin{(T)}
+\draw[tdplot_rotated_coords,very thick,black!30,fill=black!30,fill opacity=0.2] (0,0,0) circle (1.5);
+\draw[tdplot_rotated_coords,fill=black] (0,0,0) circle (0.12);
+
+% draw forces and moments
+\tdplotdrawarcarrow[red,thick,dashed]{(W)}{0.5}{50}{360}{}{}
+\tdplotsetrotatedcoords{0}{0}{0}
+\tdplotsetrotatedcoordsorigin{(W)}
+\draw[tdplot_rotated_coords,thick,-latex,red,dashed] (0,0.8,0.8) -- (0,0.05,0.05);
+
+\tdplotdrawarcarrow[red,thick,dashed]{(T)}{0.5}{50}{360}{}{}
+\tdplotsetrotatedcoords{0}{0}{0}
+\tdplotsetrotatedcoordsorigin{(T)}
+\draw[tdplot_rotated_coords,thick,-latex,red,dashed] (0,0.8,0.8) -- (0,0.05,0.05);
+
+\tdplotsetrotatedcoordsorigin{(F)}
+\draw[tdplot_rotated_coords,thick,-latex,red] (0,0,-0.12) -- (0,0,-1.2);
+
+\node at (0,3.5,1.5) {\color{red}$W_\te{f}$};
+\node at (0,4,4.7) {\color{red}$G_\te{f}$};
+\node at (0,2.3,4) {\color{red}$P_\te{f}$};
+\node at (0,4.8,0.65) {\color{red}$F_\te{f}$};
+\node at (0,3.95,0.25) {\color{red}$Q_\te{f}$};
+
+\end{tikzpicture}

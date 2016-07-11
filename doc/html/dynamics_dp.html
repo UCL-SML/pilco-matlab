@@ -1,0 +1,200 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>dynamics_dp</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="dynamics_dp.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#1">dynamics_dp.m</a></li><li><a href="#2">Code</a></li></ul></div><h2>dynamics_dp.m<a name="1"></a></h2><p><b>Summary:</b> Implements ths ODE for simulating the double pendulum dynamics, where an input torque can be applied to both links, f1:torque at inner joint, f2:torque at outer joint</p><pre>  function dz = dynamics_dp(t, z, f1, f2)</pre><p><b>Input arguments:</b></p><pre class="codeinput"><span class="comment">%		t     current time step (called from ODE solver)</span>
+<span class="comment">%   z     state                                                    [4 x 1]</span>
+<span class="comment">%   f1    (optional): torque f1(t) applied to inner pendulum</span>
+<span class="comment">%   f2    (optional): torque f2(t) applied to outer pendulum</span>
+<span class="comment">%</span>
+<span class="comment">% *Output arguments:*</span>
+<span class="comment">%</span>
+<span class="comment">%   dz    if 4 input arguments:      state derivative wrt time</span>
+<span class="comment">%         if only 2 input arguments: total mechanical energy</span>
+<span class="comment">%</span>
+<span class="comment">%   Note: It is assumed that the state variables are of the following order:</span>
+<span class="comment">%         dtheta1:  [rad/s] angular velocity of inner pendulum</span>
+<span class="comment">%         dtheta2:  [rad/s] angular velocity of outer pendulum</span>
+<span class="comment">%         theta1:   [rad]   angle of inner pendulum</span>
+<span class="comment">%         theta2:   [rad]   angle of outer pendulum</span>
+<span class="comment">%</span>
+<span class="comment">% A detailed derivation of the dynamics can be found in:</span>
+<span class="comment">%</span>
+<span class="comment">% M.P. Deisenroth:</span>
+<span class="comment">% Efficient Reinforcement Learning Using Gaussian Processes, Appendix C,</span>
+<span class="comment">% KIT Scientific Publishing, 2010.</span>
+<span class="comment">%</span>
+<span class="comment">%</span>
+<span class="comment">% Copyright (C) 2008-2013 by</span>
+<span class="comment">% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</span>
+<span class="comment">%</span>
+<span class="comment">% Last modified: 2013-03-08</span>
+
+<span class="keyword">function</span> dz = dynamics_dp(t, z, f1, f2)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput">m1 = 0.5;  <span class="comment">% [kg]     mass of 1st link</span>
+m2 = 0.5;  <span class="comment">% [kg]     mass of 2nd link</span>
+b1 = 0.0;  <span class="comment">% [Ns/m]   coefficient of friction (1st joint)</span>
+b2 = 0.0;  <span class="comment">% [Ns/m]   coefficient of friction (2nd joint)</span>
+l1 = 0.5;  <span class="comment">% [m]      length of 1st pendulum</span>
+l2 = 0.5;  <span class="comment">% [m]      length of 2nd pendulum</span>
+g  = 9.82; <span class="comment">% [m/s^2]  acceleration of gravity</span>
+I1 = m1*l1^2/12;  <span class="comment">% moment of inertia around pendulum midpoint (1st link)</span>
+I2 = m2*l2^2/12;  <span class="comment">% moment of inertia around pendulum midpoint (2nd link)</span>
+
+<span class="keyword">if</span> nargin == 4 <span class="comment">% compute time derivatives</span>
+
+  A = [l1^2*(0.25*m1+m2) + I1,      0.5*m2*l1*l2*cos(z(3)-z(4));
+       0.5*m2*l1*l2*cos(z(3)-z(4)), l2^2*0.25*m2 + I2          ];
+  b = [g*l1*sin(z(3))*(0.5*m1+m2) - 0.5*m2*l1*l2*z(2)^2*sin(z(3)-z(4)) <span class="keyword">...</span>
+                                                        + f1(t)-b1*z(1);
+       0.5*m2*l2*(l1*z(1)^2*sin(z(3)-z(4))+g*sin(z(4))) + f2(t)-b2*z(2)];
+  x = A\b;
+
+  dz = zeros(4,1);
+  dz(1) = x(1);
+  dz(2) = x(2);
+  dz(3) = z(1);
+  dz(4) = z(2);
+
+<span class="keyword">else</span> <span class="comment">% compute total mechanical energy</span>
+  dz = m1*l1^2*z(1)^2/8 + I1*z(1)^2/2 + m2/2*(l1^2*z(1)^2 <span class="keyword">...</span>
+    + l2^2*z(2)^2/4 + l1*l2*z(1)*z(2)*cos(z(3)-z(4))) + I2*z(2)^2/2 <span class="keyword">...</span>
+    + m1*g*l1*cos(z(3))/2 + m2*g*(l1*cos(z(3))+l2*cos(z(4))/2);
+<span class="keyword">end</span>
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% dynamics_dp.m
+% *Summary:* Implements ths ODE for simulating the double pendulum 
+% dynamics, where an input torque can be applied to both links, 
+% f1:torque at inner joint, f2:torque at outer joint
+%
+%    function dz = dynamics_dp(t, z, f1, f2)
+%
+%
+% *Input arguments:*
+%
+%		t     current time step (called from ODE solver)
+%   z     state                                                    [4 x 1]
+%   f1    (optional): torque f1(t) applied to inner pendulum
+%   f2    (optional): torque f2(t) applied to outer pendulum
+%
+% *Output arguments:*
+%   
+%   dz    if 4 input arguments:      state derivative wrt time
+%         if only 2 input arguments: total mechanical energy
+%
+%   Note: It is assumed that the state variables are of the following order:
+%         dtheta1:  [rad/s] angular velocity of inner pendulum
+%         dtheta2:  [rad/s] angular velocity of outer pendulum
+%         theta1:   [rad]   angle of inner pendulum
+%         theta2:   [rad]   angle of outer pendulum
+%
+% A detailed derivation of the dynamics can be found in:
+%
+% M.P. Deisenroth: 
+% Efficient Reinforcement Learning Using Gaussian Processes, Appendix C, 
+% KIT Scientific Publishing, 2010.
+%
+%
+% Copyright (C) 2008-2013 by
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modified: 2013-03-08
+
+function dz = dynamics_dp(t, z, f1, f2)
+%% Code
+m1 = 0.5;  % [kg]     mass of 1st link
+m2 = 0.5;  % [kg]     mass of 2nd link
+b1 = 0.0;  % [Ns/m]   coefficient of friction (1st joint)
+b2 = 0.0;  % [Ns/m]   coefficient of friction (2nd joint)
+l1 = 0.5;  % [m]      length of 1st pendulum
+l2 = 0.5;  % [m]      length of 2nd pendulum
+g  = 9.82; % [m/s^2]  acceleration of gravity
+I1 = m1*l1^2/12;  % moment of inertia around pendulum midpoint (1st link)
+I2 = m2*l2^2/12;  % moment of inertia around pendulum midpoint (2nd link)
+
+if nargin == 4 % compute time derivatives
+
+  A = [l1^2*(0.25*m1+m2) + I1,      0.5*m2*l1*l2*cos(z(3)-z(4));
+       0.5*m2*l1*l2*cos(z(3)-z(4)), l2^2*0.25*m2 + I2          ];
+  b = [g*l1*sin(z(3))*(0.5*m1+m2) - 0.5*m2*l1*l2*z(2)^2*sin(z(3)-z(4)) ...
+                                                        + f1(t)-b1*z(1);
+       0.5*m2*l2*(l1*z(1)^2*sin(z(3)-z(4))+g*sin(z(4))) + f2(t)-b2*z(2)];
+  x = A\b;
+
+  dz = zeros(4,1);
+  dz(1) = x(1);
+  dz(2) = x(2);
+  dz(3) = z(1);
+  dz(4) = z(2);
+
+else % compute total mechanical energy
+  dz = m1*l1^2*z(1)^2/8 + I1*z(1)^2/2 + m2/2*(l1^2*z(1)^2 ...
+    + l2^2*z(2)^2/4 + l1*l2*z(1)*z(2)*cos(z(3)-z(4))) + I2*z(2)^2/2 ...
+    + m1*g*l1*cos(z(3))/2 + m2*g*(l1*cos(z(3))+l2*cos(z(4))/2);
+end
+##### SOURCE END #####
+--></body></html>

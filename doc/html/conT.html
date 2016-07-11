@@ -1,0 +1,451 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>conT</title><meta name="generator" content="MATLAB 8.0"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2013-06-07"><meta name="DC.source" content="conT.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#1">conT.m</a></li><li><a href="#2">Code</a></li></ul></div><h2>conT.m<a name="1"></a></h2><p><b>Summary:</b> Test derivatives of controller functions. It is assumed that the controller function computes the mean and the variance of the control signal for a Gaussian distributed input <img src="conT_eq96160.png" alt="$x\sim\mathcal N(m,s)$"></p><pre class="language-matlab"><span class="keyword">function</span> [dd dy dh] = conT(deriv, policy, m, s, delta)
+</pre><p><b>Input arguments:</b></p><pre class="language-matlab">deriv    <span class="string">desired</span> <span class="string">derivative.</span> <span class="string">options:</span>
+     (i)    <span class="string">'dMdm'</span> - derivative of <span class="string">the</span> <span class="string">mean</span> <span class="string">of</span> <span class="string">the</span> <span class="string">predicted</span> <span class="string">control</span>
+             wrt <span class="string">the</span> <span class="string">mean</span> <span class="string">of</span> <span class="string">the</span> <span class="string">input</span> <span class="string">distribution</span>
+     (ii)   <span class="string">'dMds'</span> - derivative of <span class="string">the</span> <span class="string">mean</span> <span class="string">of</span> <span class="string">the</span> <span class="string">predicted</span> <span class="string">control</span>
+             wrt <span class="string">the</span> <span class="string">variance</span> <span class="string">of</span> <span class="string">the</span> <span class="string">input</span> <span class="string">distribution</span>
+     (iii)  <span class="string">'dMdp'</span> - derivative of <span class="string">the</span> <span class="string">mean</span> <span class="string">of</span> <span class="string">the</span> <span class="string">predicted</span> <span class="string">control</span>
+             wrt <span class="string">the</span> <span class="string">controller</span> <span class="string">parameters</span>
+     (iv)   <span class="string">'dSdm'</span> - derivative of <span class="string">the</span> <span class="string">variance</span> <span class="string">of</span> <span class="string">the</span> <span class="string">predicted</span> <span class="string">control</span>
+             wrt <span class="string">the</span> <span class="string">mean</span> <span class="string">of</span> <span class="string">the</span> <span class="string">input</span> <span class="string">distribution</span>
+     (v)    <span class="string">'dSds'</span> - derivative of <span class="string">the</span> <span class="string">variance</span> <span class="string">of</span> <span class="string">the</span> <span class="string">predicted</span> <span class="string">control</span>
+             wrt <span class="string">the</span> <span class="string">variance</span> <span class="string">of</span> <span class="string">the</span> <span class="string">input</span> <span class="string">distribution</span>
+     (vi)   <span class="string">'dSdp'</span> - derivative of <span class="string">the</span> <span class="string">variance</span> <span class="string">of</span> <span class="string">the</span> <span class="string">predicted</span> <span class="string">control</span>
+              wrt <span class="string">the</span> <span class="string">controller</span> <span class="string">parameters</span>
+     (vii)  <span class="string">'dCdm'</span> - derivative of <span class="string">inv(s)*(covariance of the input and the</span>
+             predicted <span class="string">control) wrt the mean of the input distribution</span>
+     (viii) <span class="string">'dCds'</span> - derivative of <span class="string">inv(s)*(covariance of the input and the</span>
+             predicted <span class="string">control) wrt the variance of the input distribution</span>
+     (ix)   <span class="string">'dCdp'</span> - derivative of <span class="string">inv(s)*(covariance of the input and the</span>
+             predicted <span class="string">control) wrt the controller parameters</span>
+policy   <span class="string">policy</span> <span class="string">structure</span>
+  .fcn   <span class="keyword">function</span> handle to <span class="string">policy</span>
+  .&lt;&gt;    other fields <span class="string">that</span> <span class="string">are</span> <span class="string">passed</span> <span class="string">on</span> <span class="string">to</span> <span class="string">the</span> <span class="string">policy</span>
+m        <span class="string">mean</span> <span class="string">of</span> <span class="string">the</span> <span class="string">input</span> <span class="string">distribution</span>
+s        <span class="string">covariance</span> <span class="string">of</span> <span class="string">the</span> <span class="string">input</span> <span class="string">distribution</span>
+delta    (optional) finite <span class="string">difference</span> <span class="string">parameter.</span> <span class="string">Default:</span> <span class="string">1e-4</span>
+</pre><p><b>Output arguments:</b></p><pre class="language-matlab">dd         <span class="string">relative</span> <span class="string">error</span> <span class="string">of</span> <span class="string">analytical</span> <span class="string">vs.</span> <span class="string">finite</span> <span class="string">difference</span> <span class="string">gradient</span>
+dy         <span class="string">analytical</span> <span class="string">gradient</span>
+dh         <span class="string">finite</span> <span class="string">difference</span> <span class="string">gradient</span>
+</pre><p>Copyright (C) 2008-2013 by Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.</p><p>Last modified: 2013-05-30</p><pre class="codeinput"><span class="keyword">function</span> [dd dy dh] = conT(deriv, policy, m, s, delta)
+</pre><h2>Code<a name="2"></a></h2><pre class="codeinput"><span class="keyword">if</span> nargin &lt; 5; delta = 1e-4; <span class="keyword">end</span> <span class="comment">% default value</span>
+
+<span class="comment">% if no input arguments, create random policy parameters and check derivatives</span>
+<span class="keyword">if</span> nargin == 0
+  D = 2;
+  d = 3;
+  policy.w = randn(D,d);
+  policy.b = randn(D,1);
+  m = randn(d,1);
+  s = randn(d); s = s*s';
+  policy.maxU = <span class="string">'2 3'</span>;
+  policy.fcn = @(policy, m, s)conCat(@conLin, @gSat, policy, m, s);
+<span class="keyword">end</span>
+
+D = length(policy.maxU);
+d = length(m);
+
+<span class="keyword">switch</span> deriv
+  <span class="keyword">case</span> <span class="string">'dMdm'</span>
+      [dd dy dh] = checkgrad(@conT0, m, delta, policy, s);
+
+  <span class="keyword">case</span> <span class="string">'dSdm'</span>
+      [dd dy dh] = checkgrad(@conT1, m, delta, policy, s);
+
+  <span class="keyword">case</span> <span class="string">'dCdm'</span>
+      [dd dy dh] = checkgrad(@conT2, m, delta, policy, s);
+
+  <span class="keyword">case</span> <span class="string">'dMds'</span>
+      [dd dy dh] = checkgrad(@conT3, s(tril(ones(d))==1), delta, policy, m);
+
+  <span class="keyword">case</span> <span class="string">'dSds'</span>
+      [dd dy dh] = checkgrad(@conT4, s(tril(ones(d))==1), delta, policy, m);
+
+  <span class="keyword">case</span> <span class="string">'dCds'</span>
+      [dd dy dh] = checkgrad(@conT5, s(tril(ones(d))==1), delta, policy, m);
+
+  <span class="keyword">case</span> <span class="string">'dMdp'</span>
+      [dd dy dh] = checkgrad(@conT6, policy.p, delta, policy, m, s);
+
+  <span class="keyword">case</span> <span class="string">'dSdp'</span>
+      [dd dy dh] = checkgrad(@conT7, policy.p, delta, policy, m, s);
+
+  <span class="keyword">case</span> <span class="string">'dCdp'</span>
+      [dd dy dh] = checkgrad(@conT8, policy.p, delta, policy, m, s);
+
+<span class="keyword">end</span>
+</pre><pre class="codeinput"><span class="keyword">function</span> [f, df] = conT0(m, policy, s)                                  <span class="comment">% dMdm</span>
+<span class="keyword">if</span> nargout &lt; 2
+    M = policy.fcn(policy, m, s);
+<span class="keyword">else</span>
+    [M, S, C, dMdm] = policy.fcn(policy, m, s);
+    df = dMdm;
+<span class="keyword">end</span>
+f = M;
+
+<span class="keyword">function</span> [f, df] = conT1(m, policy, s)                                  <span class="comment">% dSdm</span>
+<span class="keyword">if</span> nargout &lt; 2
+    [M, S] = policy.fcn(policy, m, s);
+<span class="keyword">else</span>
+    [M, S, C, dMdm, dSdm] = policy.fcn(policy, m, s);
+     df = dSdm;
+<span class="keyword">end</span>
+f = S;
+
+<span class="keyword">function</span> [f, df] = conT2(m, policy, s)                                  <span class="comment">% dCdm</span>
+<span class="keyword">if</span> nargout &lt; 2
+    [M, S, C] = policy.fcn(policy, m, s);
+<span class="keyword">else</span>
+    [M, S, C, dMdm, dSdm, dCdm] = policy.fcn(policy, m, s);
+    df = dCdm;
+<span class="keyword">end</span>
+f = C;
+
+<span class="keyword">function</span> [f, df] = conT3(s, policy, m)                                  <span class="comment">% dMds</span>
+d = length(m);
+v(tril(ones(d))==1) = s; s = reshape(v,d,d); s = s+s'-diag(diag(s));
+<span class="keyword">if</span> nargout &lt; 2
+    M = policy.fcn(policy, m, s);
+<span class="keyword">else</span>
+    [M, S, C, dMdm, dSdm, dCdm, dMds] = policy.fcn(policy, m, s);
+    dd = length(M); dMds = reshape(dMds,dd,d,d); df = zeros(dd,d*(d+1)/2);
+    <span class="keyword">for</span> i=1:dd;
+        dMdsi(:,:) = dMds(i,:,:); dMdsi = dMdsi + dMdsi'-diag(diag(dMdsi));
+        df(i,:) = dMdsi(tril(ones(d))==1);
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+f = M;
+
+<span class="keyword">function</span> [f, df] = conT4(s, policy, m)                                  <span class="comment">% dSds</span>
+d = length(m);
+v(tril(ones(d))==1) = s; s = reshape(v,d,d); s = s+s'-diag(diag(s));
+<span class="keyword">if</span> nargout &lt; 2
+    [M, S] = policy.fcn(policy, m, s);
+<span class="keyword">else</span>
+    [M, S, C, dMdm, dSdm, dCdm, dMds, dSds] = policy.fcn(policy, m, s);
+    dd = length(M); dSds = reshape(dSds,dd,dd,d,d); df = zeros(dd,dd,d*(d+1)/2);
+    <span class="keyword">for</span> i=1:dd; <span class="keyword">for</span> j=1:dd
+        dSdsi(:,:) = dSds(i,j,:,:); dSdsi = dSdsi+dSdsi'-diag(diag(dSdsi));
+        df(i,j,:) = dSdsi(tril(ones(d))==1);
+    <span class="keyword">end</span>; <span class="keyword">end</span>
+<span class="keyword">end</span>
+f = S;
+
+<span class="keyword">function</span> [f, df] = conT5(s, policy, m)                                  <span class="comment">% dCds</span>
+d = length(m);
+v(tril(ones(d))==1) = s; s = reshape(v,d,d); s = s+s'-diag(diag(s));
+<span class="keyword">if</span> nargout &lt; 2
+    [M, S, C] = policy.fcn(policy, m, s);
+<span class="keyword">else</span>
+    [M, S, C, dMdm, dSdm, dCdm, dMds, dSds, dCds] = policy.fcn(policy, m, s);
+    dd = length(M); dCds = reshape(dCds,d,dd,d,d); df = zeros(d,dd,d*(d+1)/2);
+    <span class="keyword">for</span> i=1:d; <span class="keyword">for</span> j=1:dd
+        dCdsi = squeeze(dCds(i,j,:,:)); dCdsi = dCdsi+dCdsi'-diag(diag(dCdsi));
+        df(i,j,:) = dCdsi(tril(ones(d))==1);
+    <span class="keyword">end</span>; <span class="keyword">end</span>
+<span class="keyword">end</span>
+f = C;
+
+<span class="keyword">function</span> [f, df] = conT6(p, policy, m, s)                               <span class="comment">% dMdp</span>
+policy.p = p;
+<span class="keyword">if</span> nargout &lt; 2
+    M = policy.fcn(policy, m, s);
+<span class="keyword">else</span>
+    [M, S, C, dMdm, dSdm, dCdm, dMds, dSds, dCds, dMdp] = policy.fcn(policy, m, s);
+    df = dMdp;
+<span class="keyword">end</span>
+f = M;
+
+<span class="keyword">function</span> [f, df] = conT7(p, policy, m, s)
+policy.p = p;
+<span class="keyword">if</span> nargout &lt; 2
+    [M, S] = policy.fcn(policy, m, s);
+<span class="keyword">else</span>
+    [M, S, C, dMdm, dSdm, dCdm, dMds, dSds, dCds, dMdp, dSdp] = policy.fcn(policy, m, s);
+    df = dSdp;
+<span class="keyword">end</span>
+f = S;
+
+<span class="keyword">function</span> [f, df] = conT8(p, policy, m, s)
+policy.p = p;
+<span class="keyword">if</span> nargout &lt; 2
+    [M, S, C] = policy.fcn(policy, m, s);
+<span class="keyword">else</span>
+    [M, S, C, dMdm, dSdm, dCdm, dMds, dSds, dCds, dMdp, dSdp, dCdp] = <span class="keyword">...</span>
+                                                      policy.fcn(policy, m, s);
+    df = dCdp;
+<span class="keyword">end</span>
+f = C;
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2012b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% conT.m
+% *Summary:* Test derivatives of controller functions. It is assumed that
+% the controller function computes the mean and the variance of the
+% control signal for a Gaussian distributed input $x\sim\mathcal N(m,s)$
+%
+%
+%   function [dd dy dh] = conT(deriv, policy, m, s, delta)
+%
+%
+% *Input arguments:*
+%
+%   deriv    desired derivative. options:
+%        (i)    'dMdm' - derivative of the mean of the predicted control
+%                wrt the mean of the input distribution
+%        (ii)   'dMds' - derivative of the mean of the predicted control 
+%                wrt the variance of the input distribution
+%        (iii)  'dMdp' - derivative of the mean of the predicted control 
+%                wrt the controller parameters
+%        (iv)   'dSdm' - derivative of the variance of the predicted control 
+%                wrt the mean of the input distribution
+%        (v)    'dSds' - derivative of the variance of the predicted control 
+%                wrt the variance of the input distribution
+%        (vi)   'dSdp' - derivative of the variance of the predicted control 
+%                 wrt the controller parameters
+%        (vii)  'dCdm' - derivative of inv(s)*(covariance of the input and the 
+%                predicted control) wrt the mean of the input distribution
+%        (viii) 'dCds' - derivative of inv(s)*(covariance of the input and the 
+%                predicted control) wrt the variance of the input distribution
+%        (ix)   'dCdp' - derivative of inv(s)*(covariance of the input and the 
+%                predicted control) wrt the controller parameters
+%   policy   policy structure
+%     .fcn   function handle to policy
+%     .<>    other fields that are passed on to the policy
+%   m        mean of the input distribution
+%   s        covariance of the input distribution
+%   delta    (optional) finite difference parameter. Default: 1e-4
+%
+%
+% *Output arguments:*
+%
+%   dd         relative error of analytical vs. finite difference gradient
+%   dy         analytical gradient
+%   dh         finite difference gradient
+%
+% Copyright (C) 2008-2013 by 
+% Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
+%
+% Last modified: 2013-05-30
+
+function [dd dy dh] = conT(deriv, policy, m, s, delta)
+%% Code
+
+if nargin < 5; delta = 1e-4; end % default value
+
+% if no input arguments, create random policy parameters and check derivatives
+if nargin == 0
+  D = 2;
+  d = 3;
+  policy.w = randn(D,d);
+  policy.b = randn(D,1);
+  m = randn(d,1);
+  s = randn(d); s = s*s';
+  policy.maxU = '2 3';
+  policy.fcn = @(policy, m, s)conCat(@conLin, @gSat, policy, m, s);
+end
+
+D = length(policy.maxU);
+d = length(m);
+
+switch deriv
+  case 'dMdm'
+      [dd dy dh] = checkgrad(@conT0, m, delta, policy, s);
+
+  case 'dSdm'
+      [dd dy dh] = checkgrad(@conT1, m, delta, policy, s);
+
+  case 'dCdm'
+      [dd dy dh] = checkgrad(@conT2, m, delta, policy, s);
+
+  case 'dMds'
+      [dd dy dh] = checkgrad(@conT3, s(tril(ones(d))==1), delta, policy, m);
+
+  case 'dSds'
+      [dd dy dh] = checkgrad(@conT4, s(tril(ones(d))==1), delta, policy, m);
+
+  case 'dCds'
+      [dd dy dh] = checkgrad(@conT5, s(tril(ones(d))==1), delta, policy, m);
+
+  case 'dMdp'
+      [dd dy dh] = checkgrad(@conT6, policy.p, delta, policy, m, s);
+ 
+  case 'dSdp'
+      [dd dy dh] = checkgrad(@conT7, policy.p, delta, policy, m, s);
+
+  case 'dCdp'
+      [dd dy dh] = checkgrad(@conT8, policy.p, delta, policy, m, s);
+
+end
+
+function [f, df] = conT0(m, policy, s)                                  % dMdm
+if nargout < 2
+    M = policy.fcn(policy, m, s);
+else
+    [M, S, C, dMdm] = policy.fcn(policy, m, s);
+    df = dMdm;
+end
+f = M; 
+
+function [f, df] = conT1(m, policy, s)                                  % dSdm
+if nargout < 2
+    [M, S] = policy.fcn(policy, m, s);
+else
+    [M, S, C, dMdm, dSdm] = policy.fcn(policy, m, s);
+     df = dSdm;
+end
+f = S;
+
+function [f, df] = conT2(m, policy, s)                                  % dCdm
+if nargout < 2
+    [M, S, C] = policy.fcn(policy, m, s);
+else
+    [M, S, C, dMdm, dSdm, dCdm] = policy.fcn(policy, m, s);
+    df = dCdm;
+end
+f = C;
+
+function [f, df] = conT3(s, policy, m)                                  % dMds
+d = length(m);
+v(tril(ones(d))==1) = s; s = reshape(v,d,d); s = s+s'-diag(diag(s));
+if nargout < 2
+    M = policy.fcn(policy, m, s);
+else
+    [M, S, C, dMdm, dSdm, dCdm, dMds] = policy.fcn(policy, m, s);
+    dd = length(M); dMds = reshape(dMds,dd,d,d); df = zeros(dd,d*(d+1)/2);
+    for i=1:dd; 
+        dMdsi(:,:) = dMds(i,:,:); dMdsi = dMdsi + dMdsi'-diag(diag(dMdsi)); 
+        df(i,:) = dMdsi(tril(ones(d))==1);
+    end
+end
+f = M;
+
+function [f, df] = conT4(s, policy, m)                                  % dSds
+d = length(m);
+v(tril(ones(d))==1) = s; s = reshape(v,d,d); s = s+s'-diag(diag(s));
+if nargout < 2
+    [M, S] = policy.fcn(policy, m, s);
+else
+    [M, S, C, dMdm, dSdm, dCdm, dMds, dSds] = policy.fcn(policy, m, s);
+    dd = length(M); dSds = reshape(dSds,dd,dd,d,d); df = zeros(dd,dd,d*(d+1)/2);
+    for i=1:dd; for j=1:dd
+        dSdsi(:,:) = dSds(i,j,:,:); dSdsi = dSdsi+dSdsi'-diag(diag(dSdsi)); 
+        df(i,j,:) = dSdsi(tril(ones(d))==1);
+    end; end
+end
+f = S;
+
+function [f, df] = conT5(s, policy, m)                                  % dCds
+d = length(m);
+v(tril(ones(d))==1) = s; s = reshape(v,d,d); s = s+s'-diag(diag(s));
+if nargout < 2
+    [M, S, C] = policy.fcn(policy, m, s);
+else
+    [M, S, C, dMdm, dSdm, dCdm, dMds, dSds, dCds] = policy.fcn(policy, m, s);
+    dd = length(M); dCds = reshape(dCds,d,dd,d,d); df = zeros(d,dd,d*(d+1)/2);
+    for i=1:d; for j=1:dd
+        dCdsi = squeeze(dCds(i,j,:,:)); dCdsi = dCdsi+dCdsi'-diag(diag(dCdsi)); 
+        df(i,j,:) = dCdsi(tril(ones(d))==1);
+    end; end
+end
+f = C;
+
+function [f, df] = conT6(p, policy, m, s)                               % dMdp
+policy.p = p;
+if nargout < 2
+    M = policy.fcn(policy, m, s);
+else
+    [M, S, C, dMdm, dSdm, dCdm, dMds, dSds, dCds, dMdp] = policy.fcn(policy, m, s);
+    df = dMdp;
+end
+f = M;
+
+function [f, df] = conT7(p, policy, m, s)
+policy.p = p;
+if nargout < 2
+    [M, S] = policy.fcn(policy, m, s);
+else
+    [M, S, C, dMdm, dSdm, dCdm, dMds, dSds, dCds, dMdp, dSdp] = policy.fcn(policy, m, s);
+    df = dSdp;
+end
+f = S;
+
+function [f, df] = conT8(p, policy, m, s)
+policy.p = p;
+if nargout < 2
+    [M, S, C] = policy.fcn(policy, m, s);
+else
+    [M, S, C, dMdm, dSdm, dCdm, dMds, dSds, dCds, dMdp, dSdp, dCdp] = ...
+                                                      policy.fcn(policy, m, s);
+    df = dCdp;
+end
+f = C;
+
+##### SOURCE END #####
+--></body></html>
