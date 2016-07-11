@@ -29,7 +29,7 @@ try
 catch
 end
 
-rand('seed',5); randn('seed',5); format short; format compact; 
+rand('seed',1); randn('seed',1); format short; format compact; 
 
 % 1. Define state and important indices
 
@@ -65,7 +65,7 @@ difi = [1 2 3 4];
 
 % 2. Set up the scenario
 dt = 0.1;                          % [s] sampling time
-T = 4.0;                           % [s] prediction horizon
+T = 3.0;                           % [s] prediction horizon
 H = ceil(T/dt);                    % prediction steps (optimization horizon)
 mu0 = [0 0 pi pi]';                % initial state mean
 S0 = diag([0.1 0.1 0.01 0.01].^2); % initial state covariance
@@ -93,7 +93,7 @@ plant.prop = @propagated;   % handle to function that propagates state over time
 % 4. Set up the policy structure
 policy.fcn = @(policy,m,s)conCat(@congp,@gSat,policy,m,s);% controller 
                                                           % representation
-policy.maxU = [5 5];                                      % max. amplitude of 
+policy.maxU = [2 2];                                      % max. amplitude of 
                                                           % torques
 [mm ss cc] = gTrig(mu0, S0, plant.angi);                  % represent angles 
 mm = [mu0; mm]; cc = S0*cc; ss = [S0 cc; cc' ss];         % in complex plane      
@@ -132,7 +132,7 @@ opt.verbosity = 1;                       % verbosity: specifies how much
                                          % policy learning. Options: 0-3
 
 % 8. Plotting verbosity
-plotting.verbosity = 0;            % 0: no plots
+plotting.verbosity = 1;            % 0: no plots
                                    % 1: some plots
                                    % 2: all plots
 

@@ -27,10 +27,8 @@ try
   addpath([rd 'base'],[rd 'util'],[rd 'gp'],[rd 'control'],[rd 'loss']);
 catch
 end
-seed = 12;
-rng(seed)
 
-basename = ['pendulum_', num2str(seed), '_'];       % filename used for saving data
+rand('seed',5); randn('seed',13); 
 
 
 
@@ -61,15 +59,15 @@ poli = [1 3 4];             % variables that serve as inputs to the policy
 difi = [1 2];               % variables that are learned via differences
 
 % 2. Set up the scenario
-dt = 0.2;                      % [s] sampling time
-T = 25;                        % [s] prediction time
+dt = 0.1;                      % [s] sampling time
+T = 4;                         % [s] prediction time
 H = ceil(T/dt);                % prediction steps (optimization horizon)
 mu0 = [0 0]';                  % initial state mean
 S0 = 0.01*eye(2);              % initial state variance
-N = 20;                        % number of policy optimizations
+N = 10;                        % number of policy optimizations
 J = 1;                         % no. of inital training rollouts (of length H)
 K = 1;                         % number of initial states for which we optimize
-nc = 30;                       % size of controller training set
+nc = 20;                       % size of controller training set
 
 % 3. Set up the plant structure
 plant.dynamics = @dynamics_pendulum;    % dynamics ODE function
@@ -88,9 +86,9 @@ plant.prop = @propagated;
 % 4. Set up the policy structure
 policy.fcn = @(policy,m,s)conCat(@congp,@gSat,policy,m,s);% controller 
                                                           % representation
-policy.maxU = 6;                                        % max. amplitude of 
+policy.maxU = 2.5;                                        % max. amplitude of 
                                                           % torque
-[mm, ss, cc] = gTrig(mu0, S0, plant.angi);                  % represent angles 
+[mm ss cc] = gTrig(mu0, S0, plant.angi);                  % represent angles 
 mm = [mu0; mm]; cc = S0*cc; ss = [S0 cc; cc' ss];         % in complex plane      
 policy.p.inputs = gaussian(mm(poli), ss(poli,poli), nc)'; % init. location of 
                                                           % basis functions
@@ -114,7 +112,7 @@ cost.target = [0 pi]';                               % target state
 % 6. Set up the GP dynamics model structure
 dynmodel.fcn = @gp1d;                % function for GP predictions
 dynmodel.train = @train;             % function to train dynamics model
-dynmodel.induce = zeros(2000,0,1);    % shared inducing inputs (sparse GP)
+dynmodel.induce = zeros(300,0,1);    % shared inducing inputs (sparse GP)
 trainOpt = [300 500];                % defines the max. number of line searches
                                      % when training the GP dynamics models
                                      % trainOpt(1): full GP,
@@ -122,7 +120,7 @@ trainOpt = [300 500];                % defines the max. number of line searches
                                      
 % 7. Parameters for policy optimization
 opt.length = 75;                         % max. number of line searches
-opt.MFEPLS = 20;                         % max. number of function evaluations
+opt.MFEPLS = 30;                         % max. number of function evaluations
                                          % per line search
 opt.verbosity = 1;                       % verbosity: specifies how much 
                                          % information is displayed during
@@ -132,7 +130,7 @@ opt.method = 'BFGS';                     % optimization algorithm. Options:
 
 
 % 8. Plotting verbosity
-plotting.verbosity = 0;            % 0: no plots
+plotting.verbosity = 1;            % 0: no plots
                                    % 1: some plots
                                    % 2: all plots
 

@@ -38,13 +38,13 @@
 
 function dz = dynamics_dp(t, z, f1, f2)
 %% Code
-m1 = 1;  % [kg]     mass of 1st link
-m2 = 1;  % [kg]     mass of 2nd link
-b1 = 1;  % [Ns/m]   coefficient of friction (1st joint)
-b2 = 1;  % [Ns/m]   coefficient of friction (2nd joint)
-l1 = 1;  % [m]      length of 1st pendulum
-l2 = 1;  % [m]      length of 2nd pendulum
-g  = 0;%9.82; % [m/s^2]  acceleration of gravity
+m1 = 0.5;  % [kg]     mass of 1st link
+m2 = 0.5;  % [kg]     mass of 2nd link
+b1 = 0.0;  % [Ns/m]   coefficient of friction (1st joint)
+b2 = 0.0;  % [Ns/m]   coefficient of friction (2nd joint)
+l1 = 0.5;  % [m]      length of 1st pendulum
+l2 = 0.5;  % [m]      length of 2nd pendulum
+g  = 9.82; % [m/s^2]  acceleration of gravity
 I1 = m1*l1^2/12;  % moment of inertia around pendulum midpoint (1st link)
 I2 = m2*l2^2/12;  % moment of inertia around pendulum midpoint (2nd link)
 

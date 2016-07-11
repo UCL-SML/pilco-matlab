@@ -36,8 +36,8 @@ function dz = dynamics_pendulum(t,z,u)
 
 l = 1;    % [m]        length of pendulum
 m = 1;    % [kg]       mass of pendulum
-g = 0*9.82; % [m/s^2]    acceleration of gravity
-b = 1; % [s*Nm/rad] friction coefficient
+g = 9.82; % [m/s^2]    acceleration of gravity
+b = 0.01; % [s*Nm/rad] friction coefficient
 
 dz = zeros(2,1);
 dz(1) = ( u(t) - b*z(1) - m*g*l*sin(z(2))/2 ) / (m*l^2/3);

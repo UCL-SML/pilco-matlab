@@ -17,6 +17,7 @@
 % 1. Initialization
 clear all; close all;
 settings_pendulum;            % load scenario-specific settings
+basename = 'pendulum_';       % filename used for saving data
 
 % 2. Initial J random rollouts
 for jj = 1:J

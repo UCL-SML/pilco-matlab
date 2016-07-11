@@ -16,10 +16,10 @@
 %   e     (optional) scale vector; default: 1                        [ I  x  1 ]
 %
 %
-% Copyright (C) 2008-2014 by
+% Copyright (C) 2008-2013 by
 % Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
 %
-% Last modified: 2014-08-13
+% Last modified: 2013-03-25
 
 function gTrigT(m, v, i, e)
 %% Code
@@ -117,7 +117,7 @@ d = length(m);
 vv(tril(ones(d))==1) = v; vv = reshape(vv,d,d);
 vv = vv + vv' - diag(diag(vv));
 [M, V, C, dMdm, dVdm, dCdm, dMdv] = gTrig(m, vv, i, e);
-dMdv = reshape(dMdv,[length(M) size(vv)]);
+dMdv = reshape(dMdv,[length(M) size(v)]);
 f = M(j); df = squeeze(dMdv(j,:,:));
 df = df+df'-diag(diag(df)); df = df(tril(ones(d))==1);
 
@@ -126,7 +126,7 @@ d = length(m);
 vv(tril(ones(d))==1) = v; vv = reshape(vv,d,d);
 vv = vv + vv' - diag(diag(vv));
 [M, V, C, dMdm, dVdm, dCdm, dMdv, dVdv] = gTrig(m, vv, i, e);
-dVdv = reshape(dVdv,[size(V) size(vv)]);
+dVdv = reshape(dVdv,[size(V) size(v)]);
 dd = length(M); p = fix((j+dd-1)/dd); q = j-(p-1)*dd;
 f = V(p,q); df = squeeze(dVdv(p,q,:,:));
 df = df+df'-diag(diag(df)); df = df(tril(ones(d))==1);
@@ -136,7 +136,7 @@ d = length(m);
 vv(tril(ones(d))==1) = v; vv = reshape(vv,d,d);
 vv = vv + vv' - diag(diag(vv));
 [M, V, C, dMdm, dVdm, dCdm, dMdv, dVdv, dCdv] = gTrig(m, vv, i, e);
-dCdv = reshape(dCdv,[size(C) size(vv)]);
+dCdv = reshape(dCdv,[size(C) size(v)]);
 dd = length(M); p = fix((j+dd-1)/dd); q = j-(p-1)*dd;
 f = C(p,q); df = squeeze(dCdv(p,q,:,:));
 df = df+df'-diag(diag(df)); df = df(tril(ones(d))==1);

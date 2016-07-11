@@ -1,0 +1,33 @@
+\BOOKMARK [0][-]{chapter.1}{Introduction}{}% 1
+\BOOKMARK [1][-]{section.1.1}{Intended Use}{chapter.1}% 2
+\BOOKMARK [1][-]{section.1.2}{Software Design and Implementation}{chapter.1}% 3
+\BOOKMARK [2][-]{subsection.1.2.1}{Model Learning}{section.1.2}% 4
+\BOOKMARK [2][-]{subsection.1.2.2}{Policy Learning}{section.1.2}% 5
+\BOOKMARK [2][-]{subsection.1.2.3}{Policy Application}{section.1.2}% 6
+\BOOKMARK [1][-]{section.1.3}{User Interface by Example}{chapter.1}% 7
+\BOOKMARK [1][-]{section.1.4}{Quick Start}{chapter.1}% 8
+\BOOKMARK [0][-]{chapter.2}{Software Package Overview}{}% 9
+\BOOKMARK [1][-]{section.2.1}{Main Modules}{chapter.2}% 10
+\BOOKMARK [2][-]{subsection.2.1.1}{applyController}{section.2.1}% 11
+\BOOKMARK [2][-]{subsection.2.1.2}{trainDynModel}{section.2.1}% 12
+\BOOKMARK [2][-]{subsection.2.1.3}{learnPolicy}{section.2.1}% 13
+\BOOKMARK [1][-]{section.2.2}{Working with a Real Robot}{chapter.2}% 14
+\BOOKMARK [0][-]{chapter.3}{Important Function Interfaces}{}% 15
+\BOOKMARK [1][-]{section.3.1}{GP Predictions}{chapter.3}% 16
+\BOOKMARK [2][-]{subsection.3.1.1}{Input Arguments}{section.3.1}% 17
+\BOOKMARK [2][-]{subsection.3.1.2}{Output Arguments}{section.3.1}% 18
+\BOOKMARK [1][-]{section.3.2}{Controller}{chapter.3}% 19
+\BOOKMARK [2][-]{subsection.3.2.1}{Interface}{section.3.2}% 20
+\BOOKMARK [1][-]{section.3.3}{Cost Functions}{chapter.3}% 21
+\BOOKMARK [2][-]{subsection.3.3.1}{Interface for Scenario-specific Cost Functions}{section.3.3}% 22
+\BOOKMARK [2][-]{subsection.3.3.2}{General Building Blocks}{section.3.3}% 23
+\BOOKMARK [0][-]{chapter.4}{How to Create Your Own Scenario}{}% 24
+\BOOKMARK [1][-]{section.4.1}{Necessary Files}{chapter.4}% 25
+\BOOKMARK [1][-]{section.4.2}{ODE Dynamics}{chapter.4}% 26
+\BOOKMARK [1][-]{section.4.3}{Scenario-specific Settings}{chapter.4}% 27
+\BOOKMARK [2][-]{subsection.4.3.1}{Adding Paths}{section.4.3}% 28
+\BOOKMARK [2][-]{subsection.4.3.2}{Indices}{section.4.3}% 29
+\BOOKMARK [2][-]{subsection.4.3.3}{General Settings}{section.4.3}% 30
+\BOOKMARK [2][-]{subsection.4.3.4}{Plant Structure}{section.4.3}% 31
+\BOOKMARK [2][-]{subsection.4.3.5}{Policy Structure}{section.4.3}% 32
+\BOOKMARK [2][-]{subsection.4.3.6}{Cost Function Structure}{section.4.3}% 33

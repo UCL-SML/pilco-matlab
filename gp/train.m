@@ -26,10 +26,10 @@
 %   nlml                    negative log-marginal likelihood
 %
 %
-% Copyright (C) 2008-2014 by
+% Copyright (C) 2008-2013 by
 % Marc Deisenroth, Andrew McHutchon, Joe Hall, and Carl Edward Rasmussen.
 %
-% Last modified: 2014-07-15
+% Last modified: 2016-07-11
 %
 %% High-Level Steps
 % # Initialization
@@ -81,8 +81,8 @@ if isfield(gpmodel,'induce')            % are we using a sparse approximation?
     iter = 3*iter; % train a lot for the first time (it's still cheap!)
 %    [cidx, ctrs] = kmeans(gpmodel.inputs, M); % kmeans: initialize pseudo inputs
     for i = 1:uE
-      j = randperm(N);
-      gpmodel.induce(:,:,i) = gpmodel.inputs(j(1:M),:);       % random subset
+       j = randperm(N);
+       gpmodel.induce(:,:,i) = gpmodel.inputs(j(1:M),:);       % random subset
 %      gpmodel.induce(:,:,i) = ctrs;
     end
   end

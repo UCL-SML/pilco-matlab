@@ -61,14 +61,14 @@ difi = [1 2 3 4];            % variables that are learned via differences
 
 % 2. Set up the scenario
 dt = 0.10;                         % [s] sampling time
-T = 3.0;                           % [s] initial prediction horizon time
+T = 4.0;                           % [s] initial prediction horizon time
 H = ceil(T/dt);                    % prediction steps (optimization horizon)
 mu0 = [0 0 0 0]';                  % initial state mean
 S0 = diag([0.1 0.1 0.1 0.1].^2);   % initial state covariance
 N = 15;                            % number controller optimizations
 J = 1;                             % initial J trajectories of length H
 K = 1;                             % no. of initial states for which we optimize
-nc = 100;                          % number of controller basis functions
+nc = 10;                          % number of controller basis functions
 
 % 3. Plant structure
 plant.dynamics = @dynamics_cp;                    % dynamics ode function
@@ -117,8 +117,8 @@ trainOpt = [300 500];                % defines the max. number of line searches
                                      % trainOpt(2): sparse GP (FITC)
 
 % 7. Parameters for policy optimization
-opt.length = 100;                        % max. number of line searches
-opt.MFEPLS = 20;                         % max. number of function evaluations
+opt.length = 150;                        % max. number of line searches
+opt.MFEPLS = 30;                         % max. number of function evaluations
                                          % per line search
 opt.verbosity = 1;                       % verbosity: specifies how much 
                                          % information is displayed during
