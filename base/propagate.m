@@ -21,7 +21,7 @@
 % Marc Deisenroth, Andrew McHutchon, Joe Hall, Henrik Ohlsson,
 % and Carl Edward Rasmussen. 
 %
-% Last modified: 2013-01-23
+% Last modified: 2016-07-19
 %
 %% High-Level Steps
 % # Augment state distribution with trigonometric functions
@@ -50,8 +50,8 @@ i = 1:D0; j = 1:D0; k = D0+1:D1;
 [M(k), S(k,k) C] = gTrig(M(i), S(i,i), angi);
 q = S(j,i)*C; S(j,k) = q; S(k,j) = q';
 
-sn2 = exp(2*dynmodel.hyp(end,:)); sn2(difi) = sn2(difi)/2;
-mm=zeros(D1,1); mm(i)=M(i); ss(i,i)=S(i,i)+diag(sn2);
+%sn2 = exp(2*dynmodel.hyp(end,:));  sn2(difi) = sn2(difi)/2;
+mm=zeros(D1,1); mm(i)=M(i); ss(i,i)=S(i,i); %+diag(sn2);
 [mm(k), ss(k,k) C] = gTrig(mm(i), ss(i,i), angi);     % noisy state measurement
 q = ss(j,i)*C; ss(j,k) = q; ss(k,j) = q';
 
